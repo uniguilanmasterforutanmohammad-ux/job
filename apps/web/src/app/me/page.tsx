@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   ArrowLeftRight,
@@ -11,6 +11,7 @@ import {
   CheckCircle2,
   CreditCard,
   Gift,
+  IdCard,
   LayoutDashboard,
   Layers,
   LogOut,
@@ -55,7 +56,14 @@ const LEGACY_USER_KEY = 'bp_student_user';
  * to the server. That also stops the check-in list from polling while the
  * شاگرد is reading something else.
  */
-type PortalTab = 'home' | 'clubs' | 'attendance' | 'appointments' | 'finance' | 'absence';
+type PortalTab =
+  | 'home'
+  | 'clubs'
+  | 'attendance'
+  | 'appointments'
+  | 'finance'
+  | 'absence'
+  | 'profile';
 
 const PORTAL_TABS: { key: PortalTab; label: string; icon: typeof LayoutDashboard }[] = [
   { key: 'home', label: 'خانه', icon: LayoutDashboard },
@@ -64,6 +72,7 @@ const PORTAL_TABS: { key: PortalTab; label: string; icon: typeof LayoutDashboard
   { key: 'appointments', label: 'نوبت‌های من', icon: CalendarClock },
   { key: 'finance', label: 'مالی و کیف پول', icon: CreditCard },
   { key: 'absence', label: 'درخواست غیبت', icon: CalendarX2 },
+  { key: 'profile', label: 'پروفایل من', icon: IdCard },
 ];
 
 /** `POST /auth/login` — same session shape the OTP portal login returns. */
@@ -447,6 +456,18 @@ function CustomerLoginPanel({ onSuccess }: { onSuccess: (s: CustomerSession) => 
   );
 }
 
+/** One labelled line of the profile card. */
+function ProfileRow({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-2 py-2.5">
+      <span className="text-slate-500">{label}</span>
+      <span className="flex flex-wrap items-center gap-2 font-medium text-slate-800 dark:text-slate-100">
+        {children}
+      </span>
+    </div>
+  );
+}
+
 /** Clubs grouped by industry — «آموزش زبان»، «ورزش و تندرستی»، … */
 function groupClubsByIndustry(clubs: CustomerClub[]) {
   const groups: { industry: string; clubs: CustomerClub[] }[] = [];
@@ -488,6 +509,9 @@ function ClubRow({
                 {club.branch.name}
                 {club.branch.city ? ` • ${club.branch.city}` : ''}
               </span>
+            )}
+            {club.joinedAt && (
+              <span className="nums">عضو از {formatJalali(club.joinedAt)}</span>
             )}
           </p>
         </div>
@@ -679,7 +703,17 @@ function CustomerDashboard({
   // Tells the password card whether to ask for the current password.
   const meQuery = useQuery({
     queryKey: ['customer-me'],
-    queryFn: () => apiGet<{ member: { hasPassword?: boolean } }>('/auth/me'),
+    queryFn: () =>
+      apiGet<{
+        member: {
+          fullName: string;
+          phone: string | null;
+          email: string | null;
+          hasPassword?: boolean;
+        };
+        tenant: { name: string; industry: string };
+        branch: { id: string; name: string } | null;
+      }>('/auth/me'),
   });
 
   const [coords, setCoords] = useState<{ lat: number; lng: number; acc: number } | null>(null);
@@ -779,6 +813,7 @@ function CustomerDashboard({
   const attendance = attendanceQuery.data;
   const clubGroups = groupClubsByIndustry(clubsQuery.data ?? []);
   const busyTenantId = switchClub.isPending ? (switchClub.variables ?? null) : null;
+  const activeClub = (clubsQuery.data ?? []).find((club) => club.tenantId === session.tenantId);
 
   return (
     <div className="space-y-5">
@@ -1251,8 +1286,69 @@ function CustomerDashboard({
         </>
       )}
 
-      {tab === 'home' && (
+      {tab === 'profile' && (
         <>
+      {/* نام، شمارهٔ تماس و مجموعهٔ فعال — همان چیزی که کاربر با آن شناسایی
+          می‌شود (درخواست کاربر: «صفحهٔ پروفایل حاوی اطلاعات شماره تماس»). */}
+      <Card>
+        <CardHeader
+          title="اطلاعات من"
+          description="نام، شمارهٔ تماس و مجموعه‌ای که همین حالا در پنل فعال است"
+        />
+        <CardBody className="space-y-3 text-sm">
+          {meQuery.isLoading ? (
+            <Skeleton className="h-24 w-full" />
+          ) : (
+            <div className="divide-y divide-slate-100 dark:divide-slate-800">
+              <ProfileRow label="نام و نام خانوادگی">
+                {activeClub?.fullName || session.fullName || meQuery.data?.member.fullName}
+              </ProfileRow>
+              <ProfileRow label="شمارهٔ موبایل">
+                <span className="nums" dir="ltr">
+                  {session.phone ?? meQuery.data?.member.phone ?? '—'}
+                </span>
+              </ProfileRow>
+              {meQuery.data?.member.email && (
+                <ProfileRow label="ایمیل">
+                  <span dir="ltr">{meQuery.data.member.email}</span>
+                </ProfileRow>
+              )}
+              <ProfileRow label="مجموعهٔ فعال">
+                {session.tenantName}
+                {registry.label(activeClub?.industry ?? meQuery.data?.tenant.industry) && (
+                  <Badge tone="neutral">
+                    {registry.label(activeClub?.industry ?? meQuery.data?.tenant.industry)}
+                  </Badge>
+                )}
+              </ProfileRow>
+              {(activeClub?.branch?.name || meQuery.data?.branch?.name) && (
+                <ProfileRow label="محل / آموزشگاه">
+                  {activeClub?.branch?.name ?? meQuery.data?.branch?.name}
+                  {activeClub?.branch?.city ? ` • ${activeClub.branch.city}` : ''}
+                </ProfileRow>
+              )}
+              {activeClub?.joinedAt && (
+                <ProfileRow label="عضویت در این مجموعه از">
+                  <span className="nums">{formatJalali(activeClub.joinedAt)}</span>
+                </ProfileRow>
+              )}
+              <ProfileRow label="وضعیت ورود">
+                {meQuery.data?.member.hasPassword ? (
+                  <span>با رمز عبور یا کد یکبار مصرف وارد می‌شوید</span>
+                ) : (
+                  <span className="text-amber-600">فعلاً فقط با کد یکبار مصرف وارد می‌شوید</span>
+                )}
+              </ProfileRow>
+            </div>
+          )}
+          <p className="rounded-xl bg-slate-50 p-3 text-xs leading-6 text-slate-500 dark:bg-slate-800/60">
+            شمارهٔ موبایل شما کلید ورود و شناسایی‌تان است: با همین شماره می‌توانید در چند صنف و
+            مجموعهٔ مختلف عضو باشید. برای دیدن یا تغییر مجموعهٔ فعال، از بخش «صنف‌ها و مجموعه‌ها»
+            استفاده کنید.
+          </p>
+        </CardBody>
+      </Card>
+
       <ChangePasswordCard
         hasPassword={meQuery.data?.member.hasPassword}
         token={session.accessToken}

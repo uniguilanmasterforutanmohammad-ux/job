@@ -161,6 +161,8 @@ export type CustomerClub = {
   branch: { id: string; name: string; city: string | null } | null;
   isActive: boolean;
   primaryLinked: boolean;
+  /** When this membership started (ISO) — shown on the profile card. */
+  joinedAt?: string;
 };
 
 export type CustomerLoginResult = {
