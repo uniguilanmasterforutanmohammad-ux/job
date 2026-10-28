@@ -56,6 +56,24 @@ pnpm --filter @repo/api test        # تست‌های زنده اجرا می‌�
 
 آدرس API با `SMOKE_API_URL` قابل تغییر است (پیش‌فرض `http://localhost:4000`).
 
+### ۳) لینت (Lint)
+
+```bash
+pnpm lint          # turbo run lint — همهٔ بسته‌ها
+```
+
+کانفیگ تخت (flat) مشترک در `packages/config/eslint.config.mjs` است و هر بسته
+`eslint.config.mjs` خودش را دارد (`apps/web` قواعد `@next/next` و `react-hooks`
+را اضافه می‌کند). دو نکته:
+
+- `typescript-eslint@8` با TypeScript ۷ (کامپایلر نیتیو که API جاوااسکریپت
+  ندارد) کار نمی‌کند؛ به همین دلیل `typescript-eslint` و `typescript@6` در
+  `packages/config` نصب شده‌اند تا زنجیرهٔ لینت با TS 6 اجرا شود، در حالی که
+  بیلد و تایپ‌چک پروژه روی TypeScript ۷ می‌ماند.
+- قاعده‌های advisory (مثل `react-hooks/set-state-in-effect` و
+  `@typescript-eslint/no-explicit-any`) روی `warn` هستند تا لینت سبز بماند، ولی
+  هشدارها در خروجی دیده می‌شوند.
+
 ## قواعد افزودن تست
 
 - فایل تست کنار سورس با پسوند `.spec.ts` قرار می‌گیرد.

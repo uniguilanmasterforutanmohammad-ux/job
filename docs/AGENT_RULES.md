@@ -122,7 +122,15 @@
 | ۴۴ | ثبت/نمایش واژهٔ محل در رجیستری صنف و شعبهٔ پیش‌فرض صنفی                 | `60197dc` | `feat(api): register and expose the location noun of every industry`     |
 | ۴۵ | مدیریت شعبه‌ها (ویرایش/حذف/شمارش) + انتساب کاربر نهایی به شعبه            | `62355ed` | `feat(api): manage branches and file each end-user under one`            |
 | ۴۶ | کارت مدیریت شعبه‌ها در پنل + فیلد شعبه در فرم کاربر نهایی               | `5da9dd0` | `feat(web): manage a business's locations from the panel, named per industry` |
-| ۴۷ | ثبت ردیف‌های ۴۲ تا ۴۶ + مستندات و کامنت تسک‌فایل                          | این کامیت | `docs(agent): log the location-noun and branch-management commits`       |
+| ۴۷ | ثبت ردیف‌های ۴۲ تا ۴۶ + مستندات و کامنت تسک‌فایل                          | `2e92880` | `docs(agent): log the location-noun and branch-management commits`       |
+| ۴۸ | تنظیم/تغییر رمز عبور توسط خود کاربر (API)                                 | `7c7f0e9` | `feat(api): let members set or change their own password`                |
+| ۴۹ | کارت رمز عبور در پنل و پورتال + تب ورود با رمز در پورتال                   | `375a267` | `feat(web): password card in the settings panel and the customer portal` |
+| ۵۰ | کانفیگ تخت ESLint و سبزکردن `pnpm lint` در همهٔ بسته‌ها                    | `3408943` | `chore(lint): add a flat ESLint config and wire lint in every package`   |
+| ۵۱ | کارت محل‌ها در ابتدای داشبورد + توضیح «هسته است، نه ماژول»                 | `d6fd7ad` | `feat(web): put the locations KPI first on the dashboard and explain it is core` |
+| ۵۲ | ماژول APP برای صنف‌های آموزشی + اصلاح اسکریپت `db:deploy`                  | `c8b9903` | `fix(shared,db): give the education verticals the end-user portal`       |
+| ۵۳ | تغییر کسب‌وکار فعال کاربر نهایی + پیام کامل «عدم عضویت»                    | `8b0aaf1` | `feat(api): switch the active club of a portal user and say "no membership" clearly` |
+| ۵۴ | پنل کاربری بخش‌بندی‌شده + سوئیچ عضویت + حذف لود مداوم حاضری                 | `c7d8230` | `feat(web): turn the customer panel into a sectioned panel with club switching` |
+| ۵۵ | ثبت ردیف‌های ۴۷ تا ۵۴ + مستندات و کامنت تسک‌فایل                          | این کامیت | `docs(agent): log the password, lint and portal commits`                 |
 
 > کامیت ثبت لاگ هر ردیف در اجرای بعدی در جدول ثبت می‌شود؛ چون
 > هیچ کامیتی نمی‌تواند هش خودش را درون خودش داشته باشد.
@@ -200,6 +208,18 @@
 | ۴۶ — کارت شعبه‌ها (UI)      | زنده (Chrome/CDP) | ۲۱/۲۱ بررسی: عنوان «آموزشگاه‌ها»/«شعبه‌ها»، ساخت/ویرایش/غیرفعال‌سازی/حذف فقط روی همان ردیف، فیلد انتخاب آموزشگاه در فرم زبان‌آموز جدید | ✅ ۲۱/۲۱ |
 | ۴۲–۴۶ — اسموک روی API زنده | e2e            | `vitest run test/smoke.e2e.spec.ts`                                                              | ✅ ۴ پاس |
 | ۴۲–۴۶ — تایپ و بیلد        | typecheck/build | `pnpm typecheck` (۶/۶)، `pnpm test`، `pnpm build`                                              | ✅ |
+| ۴۸ — تغییر رمز (واحد)      | واحد           | `apps/api/src/modules/auth/auth.service.spec.ts` (۶ تست: تنظیم رمز اول، رمز فعلی نادرست/ناقص، تکرار رمز، ابطال نشست) | ✅ ۶/۶ |
+| ۴۸ — تغییر رمز (زنده)      | زنده (HTTP)    | تنظیم رمز اول شاگرد → ورود با رمز → `CURRENT_PASSWORD_REQUIRED`/`INVALID_PASSWORD`/`SAME_PASSWORD` → چرخش رمز مالک و بازگشت | ✅ ۲۴/۲۴ |
+| ۴۸/۴۹ — UI رمز عبور       | زنده (Chrome/CDP) | ۲۴/۲۴ بررسی: کارت «تغییر رمز/تنظیم رمز»، خطای رمز نادرست، تب ورود با رمز در پورتال، خروج پس از تغییر، تنظیم رمز اول با OTP | ✅ ۲۴/۲۴ |
+| ۵۰ — لینت کل ورک‌اسپیس     | lint           | `pnpm lint` → ۶ تسک سبز، ۰ خطا (۶ هشدار API + ۱۱ هشدار وب از قواعد advisory)                     | ✅ |
+| ۵۱ — ترتیب کارت محل‌ها      | زنده (Chrome/CDP) | ۵/۵: اولین KPI (راست‌ترین) «شعبه‌ها» و پیش از «شاگردان کل»، زیرنویس شمارش، لینک `/settings`، متن «هسته … نه ماژول» | ✅ ۵/۵ |
+| ۵۲ — مهاجرت + واحد          | واحد + psql    | `pnpm --filter @repo/db run deploy` (۱۷ مهاجرت)؛ `@repo/shared` ۲۱ پاس (شامل تست APP برای صنف‌های آموزشی) | ✅ |
+| ۵۲ — فعال‌سازی APP          | دستی (psql)    | پیش‌فرض `LANGUAGE_SCHOOL`/`ART_MUSIC`/`EARLY_CHILD` شامل APP شد و APP برای `biz-زبان-آموزان-تنکا` فعال گردید | ✅ |
+| ۵۳ — چندعضویتی (واحد)      | واحد           | `apps/api/src/modules/app/app-switch-club.service.spec.ts` (۳ تست: توکن سوئیچ‌شده، ۴۰۳ غیرعضو، کاربر بی‌شماره) | ✅ ۳/۳ |
+| ۵۳ — چندعضویتی (زنده)      | زنده (HTTP)    | ۲۰/۲۰: عضویت یک شماره در دو کسب‌وکار، فهرست دو عضویت، سوئیچ و بازگشت (claim `tid`)، ۴۰۳ `NOT_A_MEMBER`، ۴۰۱، پیام کامل ۴۰۴ `NO_MEMBERSHIP` | ✅ ۲۰/۲۰ |
+| ۵۴ — پنل بخش‌بندی‌شده       | زنده (Chrome/CDP) | ۲۱/۲۱: پنج بخش، نبود ویجت حاضری در خانه، صفر درخواست targets در خانه، نمایش هر کارت در بخش خودش، سوئیچ کسب‌وکار فعال | ✅ ۲۱/۲۱ |
+| ۴۸–۵۴ — کل بسته‌ها         | واحد           | `pnpm test` → ۱۶۲ پاس (API، ۲۵ فایل) + ۲۱ پاس (`@repo/shared`)                                  | ✅ |
+| ۴۸–۵۴ — تایپ/بیلد/اسموک    | typecheck/build/e2e | `pnpm typecheck` (۶/۶)، `pnpm build`، اسموک زندهٔ API (۴ پاس)                                   | ✅ |
 
 ### نکتهٔ عملیاتی (کش Next در حالت توسعه)
 
