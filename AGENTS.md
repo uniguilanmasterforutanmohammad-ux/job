@@ -63,7 +63,11 @@ follow it for every task:
 2. **Mark every test you write or run with a comment**: add
    `// TaskForMyAgent — <task title>` at the top of the spec file, and record the
    test + result in the "Test Log" table of `docs/AGENT_RULES.md`.
-3. **At the end of every run**, after all steps are done and nothing is left
+3. **Mark every finished task in `TaskForMyAgent.md`**: go back to that file and
+   add a completion line directly under the task (and under each sub-item):
+   `✅ **تکمیل شد** — <Jalali date> — کامیت: \`<hash>\` — <what changed / tests>`.
+   Never edit the user's own text — insertions only — then commit the file.
+4. **At the end of every run**, after all steps are done and nothing is left
    open, read `TaskForMyAgent.md` once more and automatically pick up any task
-   added there (implement, test, commit, register). If nothing is left, say so
-   explicitly in the final answer.
+   added there (implement, test, commit, register, and mark it complete). If
+   nothing is left, say so explicitly in the final answer.
