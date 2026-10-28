@@ -1,4 +1,10 @@
 import { Injectable, Logger } from '@nestjs/common';
+import {
+  SYSTEM_ROLE_DEFAULT_PERMISSIONS,
+  SYSTEM_ROLE_KEYS,
+  SYSTEM_ROLE_LABELS,
+  type SystemRole,
+} from '@repo/shared';
 import { buildMeta, toSkipTake } from '../../common/dto/pagination.dto.js';
 import { DomainException } from '../../common/exceptions/domain.exception.js';
 import { PrismaService } from '../../database/prisma.service.js';
@@ -140,11 +146,31 @@ export class TenantsExtService {
         phone: dto.phone ?? null,
         email: dto.email ?? null,
         branchId: dto.branchId ?? null,
-        roleId: dto.roleId ?? null,
+        // A member without a role row has *no* permission (the guard reads the
+        // role), so the tenant role behind the chosen system role is linked —
+        // and created from the shared defaults if the business lacks it.
+        roleId: dto.roleId ?? (await this.ensureSystemRole(tenantId, dto.systemRole)),
         systemRole: dto.systemRole,
       },
       select: { id: true, fullName: true, phone: true, systemRole: true, isActive: true },
     });
+  }
+
+  /** Finds/creates the tenant role of a system role and returns its id. */
+  private async ensureSystemRole(tenantId: string, systemRole: SystemRole): Promise<string> {
+    const role = await this.prisma.client.role.upsert({
+      where: { tenantId_key: { tenantId, key: SYSTEM_ROLE_KEYS[systemRole] } },
+      update: {},
+      create: {
+        tenantId,
+        key: SYSTEM_ROLE_KEYS[systemRole],
+        name: SYSTEM_ROLE_LABELS[systemRole],
+        isSystem: true,
+        permissions: SYSTEM_ROLE_DEFAULT_PERMISSIONS[systemRole],
+      },
+      select: { id: true },
+    });
+    return role.id;
   }
 
   async listMembers(tenantId: string, page = 1, pageSize = 20) {
@@ -174,6 +200,10 @@ export class TenantsExtService {
   async updateMember(tenantId: string, memberId: string, dto: UpdateMemberDto) {
     const member = await this.prisma.client.member.findFirst({ where: { id: memberId, tenantId } });
     if (!member) throw DomainException.notFound('کاربر');
+    // Changing the system role without naming a role row must also move the
+    // permissions, otherwise the user keeps the old role's access.
+    const roleId =
+      dto.roleId ?? (dto.systemRole ? await this.ensureSystemRole(tenantId, dto.systemRole) : undefined);
     return this.prisma.client.member.update({
       where: { id: memberId },
       data: {
@@ -181,7 +211,7 @@ export class TenantsExtService {
         ...(dto.phone !== undefined ? { phone: dto.phone } : {}),
         ...(dto.email !== undefined ? { email: dto.email } : {}),
         ...(dto.branchId !== undefined ? { branchId: dto.branchId } : {}),
-        ...(dto.roleId !== undefined ? { roleId: dto.roleId } : {}),
+        ...(roleId !== undefined ? { roleId } : {}),
         ...(dto.systemRole !== undefined ? { systemRole: dto.systemRole } : {}),
         ...(dto.isActive !== undefined ? { isActive: dto.isActive } : {}),
       },
