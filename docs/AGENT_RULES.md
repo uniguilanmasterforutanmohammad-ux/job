@@ -72,6 +72,8 @@
 | ۷ | ثبت کامیت‌ها در جدول لاگ + به‌روزرسانی `TaskForMyAgent.md`               | `27ad93f` | `chore(agent): register task commits and task-file update`             |
 | ۸ | صفحهٔ اصلی (لندینگ) + ثبت‌نام کسب‌وکار + نام‌گذاری درست پنل مشتری (۳ مرحله) | `cde87ec`، `11dc556`، `4b59393` | `refactor(naming)` → `feat(web): landing` → `feat(web): register` |
 | ۹ | به‌روزرسانی مستندات (STATUS/DEV_ACCOUNTS) و ثبت آن در این جدول           | این کامیت | `docs: status + dev accounts for landing/register/customer portal`      |
+| ۱۰ | شفاف‌سازی «ثبت‌نام مشتری» در پنل `/me`                                   | `a1a3fd7` | `feat(web): make consumer signup explicit in the /me portal`            |
+| ۱۱ | ثبت ردیف‌های ۹ و ۱۰ در همین جدول                                        | این کامیت | `docs(agent): log landing/register commits in registry`                 |
 
 > کامیت ثبت لاگ هر ردیف در اجرای بعدی در جدول ثبت می‌شود؛ چون
 > هیچ کامیتی نمی‌تواند هش خودش را درون خودش داشته باشد.
@@ -96,6 +98,8 @@
 | ۸ — لندینگ               | زنده (HTTP+SSR)| `/`=200 با ۱۰۶ گره متن فارسی در SSR (بدون خطای رندر)                            | ✅ |
 | ۸ — ثبت‌نام کسب‌وکار       | زنده (HTTP)    | `POST /auth/register` با OTP نامعتبر → خطای `OTP_NOT_FOUND` (قرارداد فیلدها درست) | ✅ |
 | ۸ — کل بسته              | typecheck/build | `pnpm typecheck`، `pnpm test` (۹۷ پاس)، `pnpm build`                          | ✅ |
+| ۱۰ — ثبت‌نام مشتری        | زنده (HTTP)    | `/me`=200 (کارت «ورود یا ثبت‌نام با موبایل») + `pnpm --filter @repo/web typecheck` | ✅ |
+| ۱۱ — وضعیت نهایی         | بازبینی دستی    | `git status` پاک + بررسی همهٔ مسیرها (`/`، `/register`، `/me`، `/login`، `/admin/login`=200، `/student`=308) | ✅ |
 
 ### نکتهٔ عملیاتی (کش Next در حالت توسعه)
 
