@@ -34,6 +34,7 @@ import { requestContext } from './admin-auth.controller.js';
 import {
   adminAssignPlanSchema,
   adminAuditQuerySchema,
+  adminCreateTenantSchema,
   adminCreatePlatformMemberSchema,
   adminListMembersSchema,
   adminListTenantsSchema,
@@ -49,6 +50,7 @@ import {
   adminUpsertPlanSchema,
   type AdminAssignPlanDto,
   type AdminAuditQueryDto,
+  type AdminCreateTenantDto,
   type AdminCreatePlatformMemberDto,
   type AdminListMembersDto,
   type AdminListTenantsDto,
@@ -110,6 +112,17 @@ export class AdminController {
   @ApiOperation({ summary: 'جزئیات کامل یک کسب‌وکار' })
   tenantDetail(@Param('tenantId', ParseUUIDPipe) tenantId: string) {
     return this.tenants.detail(tenantId);
+  }
+
+  @Post('tenants')
+  @RequirePlatformRoles('ADMIN')
+  @ApiOperation({ summary: 'ایجاد کسب‌وکار جدید به‌همراه ماژول‌های انتخابی' })
+  createTenant(
+    @CurrentPlatform() actor: PlatformPrincipal,
+    @Body(new ZodValidationPipe(adminCreateTenantSchema)) dto: AdminCreateTenantDto,
+    @Req() req: Request,
+  ) {
+    return this.tenants.create(actor, dto, requestContext(req));
   }
 
   @Patch('tenants/:tenantId')

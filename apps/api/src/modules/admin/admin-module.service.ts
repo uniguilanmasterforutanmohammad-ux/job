@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import {
+  defaultModulesForIndustry,
   MODULE_DEPENDENCIES,
   MODULE_KEYS,
   MODULE_LABELS,
@@ -47,9 +48,13 @@ export class AdminModuleService {
     }));
   }
 
-  /** Every known module for a tenant, with its enabled state + timestamps. */
+  /**
+   * Every known module for a tenant, with its enabled state + timestamps, plus
+   * the industry default set so the admin UI can show "پیش‌فرض این صنف" and
+   * offer to add the ones that are still missing.
+   */
   async catalogForTenant(tenantId: string) {
-    await this.assertTenant(tenantId);
+    const tenant = await this.assertTenant(tenantId);
     const rows = await this.prisma.client.tenantModule.findMany({ where: { tenantId } });
     const stateByKey = new Map(rows.map((row) => [row.key as ModuleKey, row]));
 
@@ -68,11 +73,19 @@ export class AdminModuleService {
       };
     });
 
+    const enabledKeys = new Set(
+      modules.filter((module) => module.isEnabled).map((module) => module.key),
+    );
+    const defaultModules = defaultModulesForIndustry(tenant.industry);
+
     return {
       tenantId,
+      industry: tenant.industry,
+      defaultModules,
       modules,
       enabledCount: modules.filter((m) => m.isEnabled).length,
       totalCount: modules.length,
+      missingDefaultModules: defaultModules.filter((key) => !enabledKeys.has(key)),
     };
   }
 
@@ -186,11 +199,12 @@ export class AdminModuleService {
       : this.revoke(actor, tenantId, { key: dto.key, cascade: false }, context);
   }
 
-  private async assertTenant(tenantId: string): Promise<void> {
+  private async assertTenant(tenantId: string) {
     const found = await this.prisma.client.tenant.findUnique({
       where: { id: tenantId },
-      select: { id: true, deletedAt: true },
+      select: { id: true, deletedAt: true, industry: true },
     });
     if (!found) throw DomainException.notFound('کسب‌وکار');
+    return found;
   }
 }

@@ -1,11 +1,20 @@
 import { Injectable } from '@nestjs/common';
+import { hash } from 'argon2';
+import {
+  defaultModulesForIndustry,
+  resolveModuleDependencies,
+  type ModuleKey,
+} from '@repo/shared';
 import { buildMeta, toSkipTake } from '../../common/dto/pagination.dto.js';
 import { DomainException } from '../../common/exceptions/domain.exception.js';
+import { uniqueTenantSlug } from '../../common/utils/slug.js';
 import { PrismaService } from '../../database/prisma.service.js';
 import type { IndustryCategory, TenantStatus } from '@repo/db';
+import { ModuleAccessService } from '../tenants/module-access.service.js';
 import { AdminAuditService, type AuditContext } from './admin-audit.service.js';
 import type { PlatformPrincipal } from './admin.constants.js';
 import type {
+  AdminCreateTenantDto,
   AdminListTenantsDto,
   AdminTenantStatusDto,
   AdminUpdateTenantDto,
@@ -23,14 +32,34 @@ const TENANT_SUMMARY_SELECT = {
   createdAt: true,
   deletedAt: true,
   subscription: { select: { status: true, plan: { select: { code: true, name: true } } } },
+  modules: { where: { isEnabled: true }, select: { key: true } },
   _count: { select: { members: true, branches: true, customers: true } },
 } as const;
+
+type TenantSummaryRow = {
+  industry: string | null;
+  modules: Array<{ key: string }>;
+};
+
+/** Adds the industry default module set + counts to a summary row. */
+function withModuleSummary<T extends TenantSummaryRow>(row: T) {
+  const enabledKeys = row.modules.map((module) => module.key as ModuleKey);
+  const defaultModules = defaultModulesForIndustry(row.industry);
+  const enabled = new Set<string>(enabledKeys);
+  return {
+    ...row,
+    enabledModuleKeys: enabledKeys,
+    defaultModules,
+    missingDefaultModules: defaultModules.filter((key) => !enabled.has(key)),
+  };
+}
 
 @Injectable()
 export class AdminTenantService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly audit: AdminAuditService,
+    private readonly access: ModuleAccessService,
   ) {}
 
   async list(dto: AdminListTenantsDto) {
@@ -59,7 +88,7 @@ export class AdminTenantService {
       this.prisma.client.tenant.count({ where }),
     ]);
 
-    return { data: rows, meta: buildMeta(total, dto) };
+    return { data: rows.map(withModuleSummary), meta: buildMeta(total, dto) };
   }
 
   /** Full 360° view used by the tenant detail screen. */
@@ -85,6 +114,124 @@ export class AdminTenantService {
     });
     if (!tenant) throw DomainException.notFound('کسب‌وکار');
     return tenant;
+  }
+
+  /**
+   * Creates a business from the admin console: tenant + owner role + main
+   * branch + owner member + trial subscription, with the chosen modules
+   * enabled (industry defaults when the operator did not pick any).
+   */
+  async create(
+    actor: PlatformPrincipal,
+    dto: AdminCreateTenantDto,
+    context: AuditContext = {},
+  ) {
+    const requestedModules: ModuleKey[] = dto.modules?.length
+      ? dto.modules
+      : defaultModulesForIndustry(dto.industry);
+    const modules = dto.withDependencies
+      ? resolveModuleDependencies(requestedModules)
+      : requestedModules;
+
+    if (dto.slug) {
+      const taken = await this.prisma.client.tenant.findUnique({
+        where: { slug: dto.slug },
+        select: { id: true },
+      });
+      if (taken) throw DomainException.conflict('این اسلاگ قبلاً استفاده شده است');
+    }
+    const slug =
+      dto.slug ??
+      (await uniqueTenantSlug(dto.name, async (candidate) => {
+        const found = await this.prisma.client.tenant.findUnique({
+          where: { slug: candidate },
+          select: { id: true },
+        });
+        return Boolean(found);
+      }));
+
+    const ownerPasswordHash = dto.ownerPassword ? await hash(dto.ownerPassword) : null;
+
+    const created = await this.prisma.client.$transaction(async (tx) => {
+      const tenant = await tx.tenant.create({
+        data: {
+          slug,
+          name: dto.name,
+          industry: dto.industry as IndustryCategory,
+          status: dto.status as TenantStatus,
+          phone: dto.phone,
+          email: dto.email,
+        },
+      });
+
+      const ownerRole = await tx.role.create({
+        data: {
+          tenantId: tenant.id,
+          key: 'owner',
+          name: 'مالک',
+          isSystem: true,
+          permissions: ['*'],
+        },
+      });
+
+      const branch = await tx.branch.create({
+        data: { tenantId: tenant.id, code: 'MAIN', name: 'شعبه مرکزی' },
+      });
+
+      const owner = await tx.member.create({
+        data: {
+          tenantId: tenant.id,
+          branchId: branch.id,
+          roleId: ownerRole.id,
+          systemRole: 'OWNER',
+          fullName: dto.ownerFullName,
+          phone: dto.ownerPhone,
+          email: dto.ownerEmail,
+          passwordHash: ownerPasswordHash,
+        },
+      });
+
+      if (modules.length) {
+        await tx.tenantModule.createMany({
+          data: modules.map((key) => ({ tenantId: tenant.id, key, isEnabled: true })),
+        });
+      }
+
+      await tx.subscription.create({
+        data: {
+          tenantId: tenant.id,
+          status: 'TRIAL',
+          currentPeriodStart: new Date(),
+          currentPeriodEnd: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000),
+          trialEndsAt: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000),
+          seats: 3,
+        },
+      });
+
+      return { tenant, owner, branch };
+    });
+
+    await this.audit.record(
+      actor,
+      {
+        action: 'tenant.create',
+        entity: 'tenant',
+        entityId: created.tenant.id,
+        tenantId: created.tenant.id,
+        after: {
+          name: created.tenant.name,
+          slug: created.tenant.slug,
+          industry: created.tenant.industry,
+          status: created.tenant.status,
+          ownerPhone: dto.ownerPhone,
+          modules,
+        },
+      },
+      context,
+    );
+
+    await this.access.invalidate(created.tenant.id);
+    return this.detail(created.tenant.id);
   }
 
   async update(

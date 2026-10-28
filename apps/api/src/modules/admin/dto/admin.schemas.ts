@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { MODULE_KEYS } from '@repo/shared';
+import { INDUSTRY_CATEGORIES, MODULE_KEYS } from '@repo/shared';
 
 const iranianMobile = z
   .string()
@@ -56,6 +56,32 @@ const optionalPhone = z
   .trim()
   .regex(/^0\d{9,10}$/, 'شماره تلفن نامعتبر است')
   .optional();
+
+/**
+ * Creating a business from the admin console. `modules` is optional: when it is
+ * omitted the tenant starts from the industry's default module set.
+ */
+export const adminCreateTenantSchema = z.object({
+  name: z.string().trim().min(2, 'نام کسب‌وکار باید حداقل ۲ کاراکتر باشد').max(120),
+  slug: z
+    .string()
+    .trim()
+    .min(2)
+    .max(40)
+    .regex(/^[a-z0-9-]+$/, 'اسلاگ فقط حروف کوچک انگلیسی، رقم و خط تیره')
+    .optional(),
+  industry: z.enum(INDUSTRY_CATEGORIES).default('SPORTS_COACHING'),
+  ownerFullName: z.string().trim().min(2, 'نام مالک باید حداقل ۲ کاراکتر باشد').max(120),
+  ownerPhone: iranianMobile,
+  ownerEmail: z.string().trim().email('ایمیل نامعتبر است').optional(),
+  ownerPassword: z.string().min(8, 'رمز عبور باید حداقل ۸ کاراکتر باشد').max(128).optional(),
+  phone: optionalPhone,
+  email: z.string().trim().email('ایمیل نامعتبر است').optional(),
+  modules: z.array(z.enum(MODULE_KEYS)).optional(),
+  withDependencies: z.boolean().default(true),
+  status: z.enum(['ACTIVE', 'SUSPENDED', 'ARCHIVED']).default('ACTIVE'),
+});
+export type AdminCreateTenantDto = z.infer<typeof adminCreateTenantSchema>;
 
 export const adminUpdateTenantSchema = z.object({
   name: z.string().trim().min(2).max(120).optional(),

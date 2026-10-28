@@ -3,6 +3,7 @@ import { hash, verify } from 'argon2';
 import type { AuthenticatedUser } from '@repo/shared';
 import { defaultModulesForIndustry, resolveModuleDependencies } from '@repo/shared';
 import { DomainException } from '../../common/exceptions/domain.exception.js';
+import { uniqueTenantSlug } from '../../common/utils/slug.js';
 import { PrismaService } from '../../database/prisma.service.js';
 import { OtpService } from './otp.service.js';
 import { TokenService, type TokenPair } from './token.service.js';
@@ -244,21 +245,9 @@ export class AuthService {
   }
 
   private async uniqueSlug(businessName: string): Promise<string> {
-    const base =
-      businessName
-        .trim()
-        .toLowerCase()
-        .replace(/\s+/g, '-')
-        .replace(/[^a-z0-9\u0600-\u06FF-]/g, '')
-        .slice(0, 40) || 'business';
-
-    let candidate = base.startsWith('biz-') ? base : `biz-${base}`;
-    let suffix = 1;
-    // eslint-disable-next-line no-await-in-loop
-    while (await this.prisma.client.tenant.findUnique({ where: { slug: candidate } })) {
-      suffix += 1;
-      candidate = `${base}-${suffix}`;
-    }
-    return candidate;
+    return uniqueTenantSlug(businessName, async (slug) => {
+      const found = await this.prisma.client.tenant.findUnique({ where: { slug } });
+      return Boolean(found);
+    });
   }
 }

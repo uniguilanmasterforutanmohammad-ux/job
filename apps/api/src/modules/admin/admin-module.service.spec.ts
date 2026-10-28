@@ -1,3 +1,4 @@
+// TaskForMyAgent — پنل ادمین: نمایش ماژول‌های پیش‌فرض صنف و افزودن آن‌ها
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { AdminModuleService } from './admin-module.service.js';
 import type { PrismaService } from '../../database/prisma.service.js';
@@ -112,5 +113,27 @@ describe('AdminModuleService.catalog', () => {
     const result = await service.catalogForTenant('t1');
     const sub = result.modules.find((m) => m.key === 'SUB')!;
     expect(sub.missingDependencies).toEqual(['CRM', 'FIN']);
+  });
+
+  it('returns the industry default module set and what is still missing', async () => {
+    const { service, prisma } = build();
+    prisma.client.tenant.findUnique.mockResolvedValue({
+      id: 't1',
+      deletedAt: null,
+      industry: 'SPORTS_COACHING',
+    });
+    prisma.client.tenantModule.findMany.mockResolvedValue([
+      { key: 'CRM', isEnabled: true },
+      { key: 'SCH', isEnabled: true },
+    ]);
+
+    const result = await service.catalogForTenant('t1');
+    expect(result.industry).toBe('SPORTS_COACHING');
+    expect(result.defaultModules).toContain('ATT');
+    expect(result.missingDefaultModules).toContain('ATT');
+    expect(result.missingDefaultModules).not.toContain('CRM');
+    expect([...result.missingDefaultModules].sort()).toEqual(
+      ['APP', 'ATT', 'FIN', 'MSG', 'RPT', 'SUB'].sort(),
+    );
   });
 });
