@@ -1,10 +1,11 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { hash, verify } from 'argon2';
 import type { AuthenticatedUser } from '@repo/shared';
-import { defaultModulesForIndustry, resolveModuleDependencies } from '@repo/shared';
+import { resolveModuleDependencies } from '@repo/shared';
 import { DomainException } from '../../common/exceptions/domain.exception.js';
 import { uniqueTenantSlug } from '../../common/utils/slug.js';
 import { PrismaService } from '../../database/prisma.service.js';
+import { IndustryRegistryService } from '../industries/industry-registry.service.js';
 import { OtpService } from './otp.service.js';
 import { TokenService, type TokenPair } from './token.service.js';
 import type {
@@ -27,6 +28,7 @@ export class AuthService {
     private readonly prisma: PrismaService,
     private readonly otp: OtpService,
     private readonly tokens: TokenService,
+    private readonly industries: IndustryRegistryService,
   ) {}
 
   async requestOtp(dto: RequestOtpDto) {
@@ -82,9 +84,13 @@ export class AuthService {
   async registerTenant(dto: RegisterTenantDto, context: { userAgent?: string; ip?: string }) {
     await this.otp.verify(dto.phone, dto.otpCode, 'LOGIN');
 
+    // The platform admin can close registration per industry from /admin.
+    await this.industries.assertRegistrationEnabled(dto.industry);
+
     const slug = await this.uniqueSlug(dto.businessName);
 
-    const modules = resolveModuleDependencies(defaultModulesForIndustry(dto.industry));
+    // Defaults come from the editable registry, not the static PRD map.
+    const modules = resolveModuleDependencies(await this.industries.defaultModules(dto.industry));
 
     const result = await this.prisma.client.$transaction(async (tx) => {
       const tenant = await tx.tenant.create({

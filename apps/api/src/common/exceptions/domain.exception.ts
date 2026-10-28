@@ -13,8 +13,8 @@ export class DomainException extends HttpException {
     return new DomainException(message, HttpStatus.CONFLICT, 'CONFLICT');
   }
 
-  static forbidden(message = 'دسترسی غیرمجاز') {
-    return new DomainException(message, HttpStatus.FORBIDDEN, 'FORBIDDEN');
+  static forbidden(message = 'دسترسی غیرمجاز', code = 'FORBIDDEN') {
+    return new DomainException(message, HttpStatus.FORBIDDEN, code);
   }
 
   static moduleDisabled(message = 'این ماژول برای کسب‌وکار شما فعال نیست') {

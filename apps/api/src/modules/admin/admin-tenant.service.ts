@@ -11,6 +11,7 @@ import { uniqueTenantSlug } from '../../common/utils/slug.js';
 import { PrismaService } from '../../database/prisma.service.js';
 import type { IndustryCategory, TenantStatus } from '@repo/db';
 import { ModuleAccessService } from '../tenants/module-access.service.js';
+import { IndustryRegistryService } from '../industries/industry-registry.service.js';
 import { AdminAuditService, type AuditContext } from './admin-audit.service.js';
 import type { PlatformPrincipal } from './admin.constants.js';
 import type {
@@ -42,9 +43,14 @@ type TenantSummaryRow = {
 };
 
 /** Adds the industry default module set + counts to a summary row. */
-function withModuleSummary<T extends TenantSummaryRow>(row: T) {
+function withModuleSummary<T extends TenantSummaryRow>(
+  row: T,
+  defaultsByIndustry?: Map<string, ModuleKey[]>,
+) {
   const enabledKeys = row.modules.map((module) => module.key as ModuleKey);
-  const defaultModules = defaultModulesForIndustry(row.industry);
+  const defaultModules =
+    (row.industry ? defaultsByIndustry?.get(row.industry) : undefined) ??
+    defaultModulesForIndustry(row.industry);
   const enabled = new Set<string>(enabledKeys);
   return {
     ...row,
@@ -60,6 +66,7 @@ export class AdminTenantService {
     private readonly prisma: PrismaService,
     private readonly audit: AdminAuditService,
     private readonly access: ModuleAccessService,
+    private readonly industries: IndustryRegistryService,
   ) {}
 
   async list(dto: AdminListTenantsDto) {
@@ -88,7 +95,11 @@ export class AdminTenantService {
       this.prisma.client.tenant.count({ where }),
     ]);
 
-    return { data: rows.map(withModuleSummary), meta: buildMeta(total, dto) };
+    const defaultsByIndustry = await this.industries.defaultsByIndustry();
+    return {
+      data: rows.map((row) => withModuleSummary(row, defaultsByIndustry)),
+      meta: buildMeta(total, dto),
+    };
   }
 
   /** Full 360° view used by the tenant detail screen. */
@@ -128,7 +139,7 @@ export class AdminTenantService {
   ) {
     const requestedModules: ModuleKey[] = dto.modules?.length
       ? dto.modules
-      : defaultModulesForIndustry(dto.industry);
+      : await this.industries.defaultModules(dto.industry);
     const modules = dto.withDependencies
       ? resolveModuleDependencies(requestedModules)
       : requestedModules;

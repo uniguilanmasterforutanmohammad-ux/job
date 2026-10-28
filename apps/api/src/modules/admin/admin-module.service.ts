@@ -12,6 +12,7 @@ import { PrismaService } from '../../database/prisma.service.js';
 import { AdminAuditService, type AuditContext } from './admin-audit.service.js';
 import type { PlatformPrincipal } from './admin.constants.js';
 import { ModuleAccessService } from '../tenants/module-access.service.js';
+import { IndustryRegistryService } from '../industries/industry-registry.service.js';
 import type {
   AdminModuleGrantDto,
   AdminModuleRevokeDto,
@@ -36,6 +37,7 @@ export class AdminModuleService {
     private readonly prisma: PrismaService,
     private readonly audit: AdminAuditService,
     private readonly access: ModuleAccessService,
+    private readonly industries: IndustryRegistryService,
   ) {}
 
   /** Static catalog with computed dependents, for the admin UI matrix. */
@@ -76,7 +78,7 @@ export class AdminModuleService {
     const enabledKeys = new Set(
       modules.filter((module) => module.isEnabled).map((module) => module.key),
     );
-    const defaultModules = defaultModulesForIndustry(tenant.industry);
+    const defaultModules = await this.industries.defaultModules(tenant.industry);
 
     return {
       tenantId,

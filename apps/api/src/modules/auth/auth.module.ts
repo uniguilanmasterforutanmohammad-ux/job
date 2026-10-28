@@ -9,9 +9,11 @@ import { OtpService } from './otp.service.js';
 import { TokenService } from './token.service.js';
 import { TotpService } from './totp.service.js';
 import { JwtAccessStrategy } from './strategies/jwt-access.strategy.js';
+import { IndustriesModule } from '../industries/industries.module.js';
 
 @Module({
   imports: [
+    IndustriesModule,
     PassportModule.register({ defaultStrategy: 'jwt-access' }),
     JwtModule.registerAsync({
       imports: [ConfigModule],

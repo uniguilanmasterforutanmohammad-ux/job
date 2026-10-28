@@ -5,6 +5,8 @@ import { PassportModule } from '@nestjs/passport';
 import type { AppConfig } from '../../config/configuration.js';
 import { AuthModule } from '../auth/auth.module.js';
 import { TenantsModule } from '../tenants/tenants.module.js';
+import { IndustriesModule } from '../industries/industries.module.js';
+import { AdminIndustryService } from './admin-industry.service.js';
 import { AdminAuthController } from './admin-auth.controller.js';
 import { AdminController } from './admin.controller.js';
 import { AdminAuthService } from './admin-auth.service.js';
@@ -29,6 +31,7 @@ import { TwoFactorEnforcementGuard } from './guards/two-factor-enforcement.guard
     PassportModule,
     AuthModule,
     TenantsModule,
+    IndustriesModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
@@ -47,6 +50,7 @@ import { TwoFactorEnforcementGuard } from './guards/two-factor-enforcement.guard
     AdminMemberService,
     AdminPlanService,
     AdminTeamService,
+    AdminIndustryService,
     PlatformTokenService,
     PlatformJwtStrategy,
     PlatformAuthGuard,

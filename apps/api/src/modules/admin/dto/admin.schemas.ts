@@ -111,6 +111,23 @@ export const adminTenantStatusSchema = z.object({
 export type AdminTenantStatusDto = z.infer<typeof adminTenantStatusSchema>;
 
 // ----- modules -----
+/** Activates/deactivates self-service registration for one industry. */
+export const adminIndustryRegistrationSchema = z.object({
+  isRegistrationEnabled: z.boolean(),
+  reason: z.string().trim().max(400).optional(),
+});
+export type AdminIndustryRegistrationDto = z.infer<typeof adminIndustryRegistrationSchema>;
+
+/** Replaces the default module set of one industry. */
+export const adminIndustryModulesSchema = z.object({
+  keys: z.array(z.enum(MODULE_KEYS)),
+});
+export type AdminIndustryModulesDto = z.infer<typeof adminIndustryModulesSchema>;
+
+/** Route param validator for `/admin/industries/:industry`. */
+export const adminIndustryParamSchema = z.enum(INDUSTRY_CATEGORIES);
+export type AdminIndustryParam = z.infer<typeof adminIndustryParamSchema>;
+
 export const adminModuleGrantSchema = z.object({
   keys: z.array(z.enum(MODULE_KEYS)).min(1, 'حداقل یک ماژول لازم است'),
   withDependencies: z.boolean().default(true),

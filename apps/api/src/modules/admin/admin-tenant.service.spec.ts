@@ -6,6 +6,16 @@ import type { AdminAuditService } from './admin-audit.service.js';
 import type { ModuleAccessService } from '../tenants/module-access.service.js';
 import type { PlatformPrincipal } from './admin.constants.js';
 import type { AdminCreateTenantDto } from './dto/admin.schemas.js';
+import type { IndustryRegistryService } from '../industries/industry-registry.service.js';
+import { defaultModulesForIndustry } from '@repo/shared';
+
+/** Registry stub: falls back to the static PRD defaults. */
+function stubIndustries(): IndustryRegistryService {
+  return {
+    defaultModules: vi.fn(async (industry: string | null) => defaultModulesForIndustry(industry)),
+    defaultsByIndustry: vi.fn(async () => new Map()),
+  } as unknown as IndustryRegistryService;
+}
 
 const actor: PlatformPrincipal = {
   platformMemberId: 'p1',
@@ -79,6 +89,7 @@ function build(existingSlugs: string[] = []) {
     prisma as unknown as PrismaService,
     audit as unknown as AdminAuditService,
     access as unknown as ModuleAccessService,
+    stubIndustries(),
   );
   const detail = vi
     .spyOn(service, 'detail')
@@ -190,6 +201,7 @@ describe('AdminTenantService.list module summary', () => {
       prisma as unknown as PrismaService,
       { record: vi.fn() } as unknown as AdminAuditService,
       { invalidate: vi.fn() } as unknown as ModuleAccessService,
+      stubIndustries(),
     );
 
     const result = await service.list({ page: 1, pageSize: 20, sortDir: 'desc' });

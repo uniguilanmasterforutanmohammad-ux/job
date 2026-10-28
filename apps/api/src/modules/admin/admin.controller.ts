@@ -7,6 +7,7 @@ import {
   ParseUUIDPipe,
   Patch,
   Post,
+  Put,
   Query,
   Req,
   UseGuards,
@@ -29,6 +30,7 @@ import { AdminModuleService } from './admin-module.service.js';
 import { AdminMemberService } from './admin-member.service.js';
 import { AdminPlanService } from './admin-plan.service.js';
 import { AdminTeamService } from './admin-team.service.js';
+import { AdminIndustryService } from './admin-industry.service.js';
 import type { PlatformPrincipal } from './admin.constants.js';
 import { requestContext } from './admin-auth.controller.js';
 import {
@@ -36,6 +38,9 @@ import {
   adminAuditQuerySchema,
   adminCreateTenantSchema,
   adminCreatePlatformMemberSchema,
+  adminIndustryModulesSchema,
+  adminIndustryParamSchema,
+  adminIndustryRegistrationSchema,
   adminListMembersSchema,
   adminListTenantsSchema,
   adminMemberStatusSchema,
@@ -52,6 +57,8 @@ import {
   type AdminAuditQueryDto,
   type AdminCreateTenantDto,
   type AdminCreatePlatformMemberDto,
+  type AdminIndustryModulesDto,
+  type AdminIndustryRegistrationDto,
   type AdminListMembersDto,
   type AdminListTenantsDto,
   type AdminMemberStatusDto,
@@ -84,6 +91,7 @@ export class AdminController {
     private readonly members: AdminMemberService,
     private readonly plans: AdminPlanService,
     private readonly team: AdminTeamService,
+    private readonly industries: AdminIndustryService,
     private readonly audit: AdminAuditService,
   ) {}
 
@@ -99,6 +107,37 @@ export class AdminController {
   @ApiOperation({ summary: 'کاتالوگ کامل ماژول‌های پلتفرم' })
   moduleCatalog() {
     return { keys: MODULE_KEYS, labels: MODULE_LABELS, entries: this.modules.catalog() };
+  }
+
+  // ----- industries (PRD §17 verticals) -----
+  @Get('industries')
+  @ApiOperation({ summary: 'فهرست صنف‌ها + وضعیت ثبت‌نام + ماژول‌های پیش‌فرض' })
+  listIndustries() {
+    return this.industries.list();
+  }
+
+  @Post('industries/:industry/registration')
+  @RequirePlatformRoles('ADMIN')
+  @ApiOperation({ summary: 'فعال/غیرفعال کردن ثبت‌نام در یک صنف' })
+  setIndustryRegistration(
+    @CurrentPlatform() actor: PlatformPrincipal,
+    @Param('industry', new ZodValidationPipe(adminIndustryParamSchema)) industry: string,
+    @Body(new ZodValidationPipe(adminIndustryRegistrationSchema)) dto: AdminIndustryRegistrationDto,
+    @Req() req: Request,
+  ) {
+    return this.industries.setRegistration(actor, industry, dto, requestContext(req));
+  }
+
+  @Put('industries/:industry/modules')
+  @RequirePlatformRoles('ADMIN')
+  @ApiOperation({ summary: 'جایگزینی ماژول‌های پیش‌فرض یک صنف' })
+  setIndustryModules(
+    @CurrentPlatform() actor: PlatformPrincipal,
+    @Param('industry', new ZodValidationPipe(adminIndustryParamSchema)) industry: string,
+    @Body(new ZodValidationPipe(adminIndustryModulesSchema)) dto: AdminIndustryModulesDto,
+    @Req() req: Request,
+  ) {
+    return this.industries.setModules(actor, industry, dto, requestContext(req));
   }
 
   // ----- tenants -----

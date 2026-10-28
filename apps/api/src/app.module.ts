@@ -14,6 +14,7 @@ import { NotificationProcessor } from './queue/processors/notification.processor
 import { AutomationProcessor } from './queue/processors/automation.processor.js';
 import { NotificationsModule } from './modules/notifications/notifications.module.js';
 import { AuthModule } from './modules/auth/auth.module.js';
+import { IndustriesModule } from './modules/industries/industries.module.js';
 import { TenantsModule } from './modules/tenants/tenants.module.js';
 import { CrmModule } from './modules/crm/crm.module.js';
 import { SchedulingModule } from './modules/scheduling/scheduling.module.js';
@@ -77,6 +78,7 @@ loadRootEnv();
     QueueModule,
     NotificationsModule,
     AuthModule,
+    IndustriesModule,
     TenantsModule,
     CrmModule,
     SchedulingModule,
