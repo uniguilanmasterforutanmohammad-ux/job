@@ -116,7 +116,13 @@
 | ۳۸ | ثبت ردیف ۳۷ + مستندات وضعیت/اکانت‌ها و کامنت تسک‌فایل                       | `f8e1a2c` | `docs(agent): log the password-login commit`                            |
 | ۳۹ | ثبت ردیف ۳۸ در همین جدول                                              | `5b22f61` | `docs(agent): register the password-login log commit`                    |
 | ۴۰ | آزادسازی شمارهٔ موبایل پس از حذف نرم مشتری                            | `615404f` | `feat(api): release the phone number when a customer is soft-deleted`    |
-| ۴۱ | ثبت ردیف ۴۰ + مستندات وضعیت و کامنت تسک‌فایل                            | این کامیت | `docs(agent): log the soft-delete phone-release commit`                  |
+| ۴۱ | ثبت ردیف ۴۰ + مستندات وضعیت و کامنت تسک‌فایل                            | `a08579a` | `docs(agent): log the soft-delete phone-release commit`                  |
+| ۴۲ | نام کاربران نهایی صنف در صفحهٔ اشتراک (رفع «اشتراک هنرجو» ثابت)         | `b875fff` | `fix(web): name the subscription header after the industry's end-users`  |
+| ۴۳ | نام محل هر صنف («آموزشگاه»/«شعبه») + پیوند کاربر نهایی به محل            | `1dff2c6` | `feat(shared,db): name each industry's locations and link end-users to one` |
+| ۴۴ | ثبت/نمایش واژهٔ محل در رجیستری صنف و شعبهٔ پیش‌فرض صنفی                 | `60197dc` | `feat(api): register and expose the location noun of every industry`     |
+| ۴۵ | مدیریت شعبه‌ها (ویرایش/حذف/شمارش) + انتساب کاربر نهایی به شعبه            | `62355ed` | `feat(api): manage branches and file each end-user under one`            |
+| ۴۶ | کارت مدیریت شعبه‌ها در پنل + فیلد شعبه در فرم کاربر نهایی               | `5da9dd0` | `feat(web): manage a business's locations from the panel, named per industry` |
+| ۴۷ | ثبت ردیف‌های ۴۲ تا ۴۶ + مستندات و کامنت تسک‌فایل                          | این کامیت | `docs(agent): log the location-noun and branch-management commits`       |
 
 > کامیت ثبت لاگ هر ردیف در اجرای بعدی در جدول ثبت می‌شود؛ چون
 > هیچ کامیتی نمی‌تواند هش خودش را درون خودش داشته باشد.
@@ -182,6 +188,18 @@
 | ۴۰ — کل بستهٔ API        | واحد           | `pnpm test` → ۱۴۲ پاس (API، ۲۳ فایل)                                                            | ✅ |
 | ۴۰ — تایپ و بیلد         | typecheck/build | `pnpm typecheck` (۶/۶)، `pnpm build`                                                            | ✅ |
 | ۴۰ — اسموک روی API زنده  | e2e            | `vitest run test/smoke.e2e.spec.ts`                                                              | ✅ ۴ پاس |
+| ۴۲ — نام کاربران نهایی (کل پنل) | زنده (Chrome/CDP) | ۳۱/۳۱ بررسی: پنل زبان «زبان‌آموزان» و پنل باشگاه «شاگردان»؛ نبود «زبان‌آموز»/«هنرجو» در ۱۵ صفحهٔ پنل باشگاه | ✅ ۳۱/۳۱ |
+| ۴۲ — صفحهٔ اشتراک          | زنده (Chrome/CDP) | ۴/۴ بررسی: «اشتراک زبان‌آموزان» (آموزشگاه زبان) و «اشتراک شاگردان» (باشگاه)                     | ✅ ۴/۴ |
+| ۴۲ — واژهٔ محل هر صنف       | واحد           | `packages/shared/src/industries.spec.ts` (۴ تست: آموزشگاه/مهدکودک، پیش‌فرض شعبه، نبود نشت)      | ✅ ۴/۴ |
+| ۴۳/۴۴ — مهاجرت‌ها           | دستی (psql)    | `prisma migrate deploy` → `industries.branchNoun` + `customers.branchId` و پرکردن ۳ صنف آموزشی  | ✅ |
+| ۴۴ — شعبهٔ پیش‌فرض صنفی     | واحد + زنده    | `admin-tenant.service.spec.ts`؛ ساخت کسب‌وکار ART_MUSIC از کنسول ادمین → شعبهٔ «آموزشگاه مرکزی»   | ✅ |
+| ۴۵ — مدیریت شعبه (API)     | واحد           | `apps/api/src/modules/tenants/tenants.service.spec.ts` (۱۷ تست: فهرست/شمارش، ویرایش، ردِ صنف دیگر، حذف نرم، کد تکراری) | ✅ ۱۷/۱۷ |
+| ۴۵ — انتساب کاربر به شعبه   | واحد           | `apps/api/src/modules/crm/customers.service.spec.ts` (۱۳ تست: انتساب، `INVALID_BRANCH`، آزادسازی شماره) | ✅ ۱۳/۱۳ |
+| ۴۵ — چرخهٔ شعبه (HTTP)     | زنده (HTTP)    | ۲ محل → ۲+۱ زبان‌آموز → شمارش درست → نام‌گذاری/غیرفعال‌سازی → ۴۰۹ حذف محل پر → ۴۰۰ محل صنف دیگر → حذف محل خالی | ✅ |
+| ۴۵ — کل بستهٔ API          | واحد           | `pnpm test` → ۱۵۳ پاس (API، ۲۳ فایل) + ۲۰ پاس (`@repo/shared`)                                  | ✅ |
+| ۴۶ — کارت شعبه‌ها (UI)      | زنده (Chrome/CDP) | ۲۱/۲۱ بررسی: عنوان «آموزشگاه‌ها»/«شعبه‌ها»، ساخت/ویرایش/غیرفعال‌سازی/حذف فقط روی همان ردیف، فیلد انتخاب آموزشگاه در فرم زبان‌آموز جدید | ✅ ۲۱/۲۱ |
+| ۴۲–۴۶ — اسموک روی API زنده | e2e            | `vitest run test/smoke.e2e.spec.ts`                                                              | ✅ ۴ پاس |
+| ۴۲–۴۶ — تایپ و بیلد        | typecheck/build | `pnpm typecheck` (۶/۶)، `pnpm test`، `pnpm build`                                              | ✅ |
 
 ### نکتهٔ عملیاتی (کش Next در حالت توسعه)
 
