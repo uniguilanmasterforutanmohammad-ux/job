@@ -113,7 +113,8 @@
 | ۳۵ | ثبت ردیف‌های ۳۳ و ۳۴ + مستندات وضعیت و کامنت‌های تسک‌فایل                   | `c6565da` | `docs(agent): log industry-naming and customer-form commits`            |
 | ۳۶ | ثبت ردیف ۳۵ در همین جدول                                              | `6e9bdc4` | `docs(agent): register the industry-naming log commit`                  |
 | ۳۷ | ورود با رمز عبور در کنار کد یکبار مصرف در صفحهٔ `/login`                 | `2f1b83f` | `feat(web): password login next to OTP in the business-panel login page` |
-| ۳۸ | ثبت ردیف ۳۷ + مستندات وضعیت/اکانت‌ها و کامنت تسک‌فایل                       | این کامیت | `docs(agent): log the password-login commit`                            |
+| ۳۸ | ثبت ردیف ۳۷ + مستندات وضعیت/اکانت‌ها و کامنت تسک‌فایل                       | `f8e1a2c` | `docs(agent): log the password-login commit`                            |
+| ۳۹ | ثبت ردیف ۳۸ در همین جدول                                              | این کامیت | `docs(agent): register the password-login log commit`                    |
 
 > کامیت ثبت لاگ هر ردیف در اجرای بعدی در جدول ثبت می‌شود؛ چون
 > هیچ کامیتی نمی‌تواند هش خودش را درون خودش داشته باشد.
