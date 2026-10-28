@@ -94,6 +94,11 @@ export function resolveModuleDependencies(keys: ModuleKey[]): ModuleKey[] {
  */
 export const INDUSTRY_DEFAULT_MODULES: Record<string, ModuleKey[]> = {
   SPORTS_COACHING: ['CRM', 'SCH', 'FIN', 'ATT', 'MSG', 'SUB', 'RPT', 'APP'],
+  // Education verticals need the end-user portal too: a زبان‌آموز an هنرجو and
+  // a مهدکودک parent all check their own attendance/appointments/invoices.
+  LANGUAGE_SCHOOL: ['CRM', 'SCH', 'FIN', 'MSG', 'RPT', 'APP'],
+  ART_MUSIC: ['CRM', 'SCH', 'FIN', 'MSG', 'RPT', 'APP'],
+  EARLY_CHILD: ['CRM', 'SCH', 'FIN', 'MSG', 'RPT', 'APP'],
   BEAUTY: ['CRM', 'SCH', 'FIN', 'MSG', 'MKT', 'RPT'],
   HEALTHCARE: ['CRM', 'SCH', 'FIN', 'MSG', 'DOC', 'RPT', 'APP'],
   RESTAURANT_CAFE: ['CRM', 'SCH', 'FIN', 'INV', 'SHOP', 'RPT'],

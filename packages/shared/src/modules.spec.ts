@@ -49,6 +49,14 @@ describe('module registry', () => {
     first.push('HR');
     expect(defaultModulesForIndustry('BEAUTY')).toEqual(INDUSTRY_DEFAULT_MODULES.BEAUTY);
   });
+
+  // The education verticals used to fall back to CRM/SCH/FIN/RPT, which left
+  // their زبان‌آموز/هنرجو without a customer portal (`/app/*` → MODULE_DISABLED).
+  it('gives every education vertical the end-user portal', () => {
+    for (const industry of ['LANGUAGE_SCHOOL', 'ART_MUSIC', 'EARLY_CHILD', 'SPORTS_COACHING']) {
+      expect(defaultModulesForIndustry(industry)).toContain('APP');
+    }
+  });
 });
 
 describe('resolveModuleDependencies', () => {

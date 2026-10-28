@@ -15,7 +15,7 @@
     "format": "prettier --write \"**/*.{ts,tsx,js,json,md,yml,yaml,css}\"",
     "db:generate": "pnpm --filter @repo/db generate",
     "db:migrate": "pnpm --filter @repo/db migrate",
-    "db:deploy": "pnpm --filter @repo/db deploy",
+    "db:deploy": "pnpm --filter @repo/db run deploy",
     "db:seed": "pnpm --filter @repo/db seed",
     "db:studio": "pnpm --filter @repo/db studio",
     "docker:up": "docker compose up -d",
