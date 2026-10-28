@@ -7,13 +7,17 @@ import type { ModuleAccessService } from '../tenants/module-access.service.js';
 import type { PlatformPrincipal } from './admin.constants.js';
 import type { AdminCreateTenantDto } from './dto/admin.schemas.js';
 import type { IndustryRegistryService } from '../industries/industry-registry.service.js';
-import { defaultModulesForIndustry } from '@repo/shared';
+import { BRANCH_NOUNS, defaultModulesForIndustry } from '@repo/shared';
 
-/** Registry stub: falls back to the static PRD defaults. */
+/** Registry stub: falls back to the static PRD defaults and shared nouns. */
 function stubIndustries(): IndustryRegistryService {
   return {
     defaultModules: vi.fn(async (industry: string | null) => defaultModulesForIndustry(industry)),
     defaultsByIndustry: vi.fn(async () => new Map()),
+    get: vi.fn(async (industry: string) => ({
+      key: industry,
+      branchNoun: BRANCH_NOUNS[industry as keyof typeof BRANCH_NOUNS] ?? null,
+    })),
   } as unknown as IndustryRegistryService;
 }
 
@@ -147,6 +151,16 @@ describe('AdminTenantService.create', () => {
     expect(created.find((row) => row.model === 'role')!.data.key).toBe('owner');
     expect(created.find((row) => row.model === 'branch')!.data.code).toBe('MAIN');
     expect(created.find((row) => row.model === 'subscription')!.data.status).toBe('TRIAL');
+  });
+
+  it('names the default location after the industry (آموزشگاه/شعبه)', async () => {
+    const school = build();
+    await school.service.create(actor, { ...baseDto, industry: 'LANGUAGE_SCHOOL', modules: ['CRM'] });
+    expect(school.created.find((row) => row.model === 'branch')!.data.name).toBe('آموزشگاه مرکزی');
+
+    const shop = build();
+    await shop.service.create(actor, { ...baseDto, industry: 'RETAIL', modules: ['CRM'] });
+    expect(shop.created.find((row) => row.model === 'branch')!.data.name).toBe('شعبه مرکزی');
   });
 
   it('derives a unique biz- slug from the name', async () => {

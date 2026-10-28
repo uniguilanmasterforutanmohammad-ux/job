@@ -25,6 +25,8 @@ export class IndustriesController {
       description: row.description,
       endUserNoun: row.endUserNoun,
       endUserNounPlural: row.endUserNounPlural,
+      branchNoun: row.branchNoun,
+      branchNounPlural: row.branchNounPlural,
       isRegistrationEnabled: row.isRegistrationEnabled,
       defaultModules: row.defaultModules,
     }));

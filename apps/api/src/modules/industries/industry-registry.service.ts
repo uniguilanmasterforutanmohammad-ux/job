@@ -1,5 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import {
+  BRANCH_NOUNS,
+  BRANCH_NOUNS_PLURAL,
   END_USER_NOUNS,
   END_USER_NOUNS_PLURAL,
   INDUSTRY_CATEGORIES,
@@ -20,6 +22,9 @@ export type IndustryEntry = {
   isRegistrationEnabled: boolean;
   endUserNoun: string | null;
   endUserNounPlural: string | null;
+  /** What this industry calls one of its locations («آموزشگاه»/«شعبه» …). */
+  branchNoun: string | null;
+  branchNounPlural: string | null;
   sortOrder: number;
   /** Editable default module set of this industry. */
   defaultModules: ModuleKey[];
@@ -35,6 +40,8 @@ export type CreateIndustryInput = {
   description?: string;
   endUserNoun?: string;
   endUserNounPlural?: string;
+  branchNoun?: string;
+  branchNounPlural?: string;
   sortOrder?: number;
   isRegistrationEnabled?: boolean;
   modules?: ModuleKey[];
@@ -45,6 +52,8 @@ export type UpdateIndustryInput = {
   description?: string | null;
   endUserNoun?: string | null;
   endUserNounPlural?: string | null;
+  branchNoun?: string | null;
+  branchNounPlural?: string | null;
   sortOrder?: number;
   isRegistrationEnabled?: boolean;
 };
@@ -86,6 +95,8 @@ export class IndustryRegistryService {
       isRegistrationEnabled: row.isRegistrationEnabled,
       endUserNoun: row.endUserNoun,
       endUserNounPlural: row.endUserNounPlural,
+      branchNoun: row.branchNoun,
+      branchNounPlural: row.branchNounPlural,
       sortOrder: row.sortOrder,
       defaultModules: row.modules.map((module) => module.key as ModuleKey),
       tenantCount: row._count.tenants,
@@ -158,6 +169,8 @@ export class IndustryRegistryService {
         isRegistrationEnabled: input.isRegistrationEnabled ?? true,
         endUserNoun: input.endUserNoun?.trim() || null,
         endUserNounPlural: input.endUserNounPlural?.trim() || null,
+        branchNoun: input.branchNoun?.trim() || null,
+        branchNounPlural: input.branchNounPlural?.trim() || null,
         sortOrder: input.sortOrder ?? (maxSort._max.sortOrder ?? 0) + 10,
         modules: { createMany: { data: modules.map((moduleKey) => ({ key: moduleKey })) } },
       },
@@ -182,6 +195,10 @@ export class IndustryRegistryService {
           : {}),
         ...(input.endUserNounPlural !== undefined
           ? { endUserNounPlural: input.endUserNounPlural?.trim() || null }
+          : {}),
+        ...(input.branchNoun !== undefined ? { branchNoun: input.branchNoun?.trim() || null } : {}),
+        ...(input.branchNounPlural !== undefined
+          ? { branchNounPlural: input.branchNounPlural?.trim() || null }
           : {}),
         ...(input.sortOrder !== undefined ? { sortOrder: input.sortOrder } : {}),
         ...(input.isRegistrationEnabled !== undefined
@@ -297,6 +314,8 @@ export class IndustryRegistryService {
           sortOrder: INDUSTRY_CATEGORIES.indexOf(industry) + 1,
           endUserNoun: END_USER_NOUNS[industry] ?? null,
           endUserNounPlural: END_USER_NOUNS_PLURAL[industry] ?? null,
+          branchNoun: BRANCH_NOUNS[industry] ?? null,
+          branchNounPlural: BRANCH_NOUNS_PLURAL[industry] ?? null,
           modules: {
             createMany: {
               data: defaultModulesForIndustry(industry).map((key) => ({ key })),

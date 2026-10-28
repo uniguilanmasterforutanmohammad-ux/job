@@ -142,6 +142,8 @@ export const adminIndustryCreateSchema = z.object({
   description: z.string().trim().max(300).optional(),
   endUserNoun: z.string().trim().max(40).optional(),
   endUserNounPlural: z.string().trim().max(40).optional(),
+  branchNoun: z.string().trim().max(40).optional(),
+  branchNounPlural: z.string().trim().max(40).optional(),
   sortOrder: z.coerce.number().int().min(1).max(9999).optional(),
   isRegistrationEnabled: z.boolean().default(true),
   modules: z.array(z.enum(MODULE_KEYS)).optional(),

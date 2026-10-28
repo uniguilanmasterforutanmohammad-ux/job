@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { hash } from 'argon2';
 import {
+  DEFAULT_BRANCH_NOUN,
   defaultModulesForIndustry,
   resolveModuleDependencies,
   type ModuleKey,
@@ -143,6 +144,9 @@ export class AdminTenantService {
     const modules = dto.withDependencies
       ? resolveModuleDependencies(requestedModules)
       : requestedModules;
+    // Default location name follows the industry («آموزشگاه مرکزی»/«شعبه مرکزی»).
+    const industry = await this.industries.get(dto.industry);
+    const branchNoun = industry.branchNoun ?? DEFAULT_BRANCH_NOUN;
 
     if (dto.slug) {
       const taken = await this.prisma.client.tenant.findUnique({
@@ -186,7 +190,7 @@ export class AdminTenantService {
       });
 
       const branch = await tx.branch.create({
-        data: { tenantId: tenant.id, code: 'MAIN', name: 'شعبه مرکزی' },
+        data: { tenantId: tenant.id, code: 'MAIN', name: `${branchNoun} مرکزی` },
       });
 
       const owner = await tx.member.create({

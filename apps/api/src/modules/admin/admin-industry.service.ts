@@ -70,12 +70,14 @@ export class AdminIndustryService {
         before: {
           label: before.label,
           endUserNoun: before.endUserNoun,
+          branchNoun: before.branchNoun,
           sortOrder: before.sortOrder,
           isRegistrationEnabled: before.isRegistrationEnabled,
         },
         after: {
           label: after.label,
           endUserNoun: after.endUserNoun,
+          branchNoun: after.branchNoun,
           sortOrder: after.sortOrder,
           isRegistrationEnabled: after.isRegistrationEnabled,
         },

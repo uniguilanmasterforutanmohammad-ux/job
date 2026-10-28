@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { hash, verify } from 'argon2';
 import type { AuthenticatedUser } from '@repo/shared';
-import { resolveModuleDependencies } from '@repo/shared';
+import { DEFAULT_BRANCH_NOUN, resolveModuleDependencies } from '@repo/shared';
 import { DomainException } from '../../common/exceptions/domain.exception.js';
 import { uniqueTenantSlug } from '../../common/utils/slug.js';
 import { PrismaService } from '../../database/prisma.service.js';
@@ -91,6 +91,9 @@ export class AuthService {
 
     // Defaults come from the editable registry, not the static PRD map.
     const modules = resolveModuleDependencies(await this.industries.defaultModules(dto.industry));
+    // A language school starts with an «آموزشگاه», a shop with a «شعبه».
+    const industry = await this.industries.get(dto.industry);
+    const branchNoun = industry.branchNoun ?? DEFAULT_BRANCH_NOUN;
 
     const result = await this.prisma.client.$transaction(async (tx) => {
       const tenant = await tx.tenant.create({
@@ -114,7 +117,7 @@ export class AuthService {
       });
 
       const branch = await tx.branch.create({
-        data: { tenantId: tenant.id, code: 'MAIN', name: 'شعبه مرکزی' },
+        data: { tenantId: tenant.id, code: 'MAIN', name: `${branchNoun} مرکزی` },
       });
 
       const owner = await tx.member.create({
