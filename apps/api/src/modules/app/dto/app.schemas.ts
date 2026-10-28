@@ -32,6 +32,15 @@ export const appGlobalOtpVerifySchema = appGlobalOtpRequestSchema.extend({
 });
 export type AppGlobalOtpVerifyDto = z.infer<typeof appGlobalOtpVerifySchema>;
 
+// APP-01 — public directory of selectable businesses (new-user signup).
+// Only ACTIVE businesses are ever returned; suspended/archived ones must not be
+// offered to a user who is registering.
+export const appBusinessDirectorySchema = z.object({
+  search: z.string().trim().max(80).optional(),
+  industry: z.string().trim().max(40).optional(),
+});
+export type AppBusinessDirectoryDto = z.infer<typeof appBusinessDirectorySchema>;
+
 // APP-02 — booking
 export const appBookSchema = z.object({
   serviceId: z.string().uuid().optional(),

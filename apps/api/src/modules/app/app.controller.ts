@@ -12,6 +12,7 @@ import { AppService } from './app.service.js';
 import {
   appAvailabilitySchema,
   appBookSchema,
+  appBusinessDirectorySchema,
   appCancelSchema,
   appGlobalOtpRequestSchema,
   appGlobalOtpVerifySchema,
@@ -22,6 +23,7 @@ import {
   appReviewSchema,
   type AppAvailabilityDto,
   type AppBookDto,
+  type AppBusinessDirectoryDto,
   type AppCancelDto,
   type AppGlobalOtpRequestDto,
   type AppGlobalOtpVerifyDto,
@@ -75,6 +77,15 @@ export class AppController {
     @Body(new ZodValidationPipe(appGlobalOtpRequestSchema)) dto: AppGlobalOtpRequestDto,
   ) {
     return this.app.requestGlobalOtp(dto);
+  }
+
+  @Public()
+  @Get('businesses')
+  @ApiOperation({ summary: 'فهرست کسب‌وکارهای فعال برای ثبت‌نام کاربر جدید (APP-01)' })
+  listBusinesses(
+    @Query(new ZodValidationPipe(appBusinessDirectorySchema)) dto: AppBusinessDirectoryDto,
+  ) {
+    return this.app.listBusinesses(dto);
   }
 
   @Public()

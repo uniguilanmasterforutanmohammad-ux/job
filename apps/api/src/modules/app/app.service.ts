@@ -11,6 +11,7 @@ import type { CreateAbsenceRequestDto } from '../attendance/dto/attendance-extra
 import type {
   AppAvailabilityDto,
   AppBookDto,
+  AppBusinessDirectoryDto,
   AppCancelDto,
   AppGlobalOtpRequestDto,
   AppGlobalOtpVerifyDto,
@@ -57,6 +58,33 @@ export class AppService {
   async requestGlobalOtp(dto: AppGlobalOtpRequestDto) {
     await this.otp.request(dto.phone, 'LOGIN');
     return { message: 'کد یکبار مصرف ارسال شد' };
+  }
+
+  /**
+   * Public directory of businesses a new end-user can register with. Only
+   * `ACTIVE` businesses are listed: when the platform admin suspends or
+   * archives a business, its title disappears from the new-user signup flow
+   * (and `verifyOtp` below refuses a direct slug hit too).
+   */
+  async listBusinesses(filter: AppBusinessDirectoryDto) {
+    return this.prisma.client.tenant.findMany({
+      where: {
+        status: 'ACTIVE',
+        deletedAt: null,
+        ...(filter.industry ? { industry: filter.industry as never } : {}),
+        ...(filter.search
+          ? {
+              OR: [
+                { name: { contains: filter.search, mode: 'insensitive' as const } },
+                { slug: { contains: filter.search, mode: 'insensitive' as const } },
+              ],
+            }
+          : {}),
+      },
+      orderBy: { name: 'asc' },
+      take: 100,
+      select: { id: true, name: true, slug: true, industry: true, logoUrl: true },
+    });
   }
 
   async verifyGlobalOtp(dto: AppGlobalOtpVerifyDto, context: { userAgent?: string; ip?: string }) {
