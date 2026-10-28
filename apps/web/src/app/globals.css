@@ -1,0 +1,77 @@
+@import 'tailwindcss';
+
+/* ---------------------------------------------------------------------------
+   Business Platform — RTL Persian design system (PRD CORE-07)
+   Tailwind v4 theme tokens.
+--------------------------------------------------------------------------- */
+@theme {
+  --font-sans: 'Vazirmatn', 'IRANSans', 'Segoe UI', system-ui, sans-serif;
+
+  --color-brand-50: #eef4ff;
+  --color-brand-100: #d9e6ff;
+  --color-brand-200: #bcd3ff;
+  --color-brand-300: #8eb5ff;
+  --color-brand-400: #598cff;
+  --color-brand-500: #3563ff;
+  --color-brand-600: #1f42f5;
+  --color-brand-700: #1a33e1;
+  --color-brand-800: #1c2db6;
+  --color-brand-900: #1c2d8f;
+
+  --color-surface: #ffffff;
+  --color-surface-muted: #f7f8fb;
+  --color-border-soft: #e6e8ef;
+
+  --radius-xl: 0.875rem;
+  --radius-2xl: 1.125rem;
+}
+
+@layer base {
+  :root {
+    color-scheme: light;
+  }
+
+  .dark {
+    color-scheme: dark;
+  }
+
+  * {
+    border-color: var(--color-border-soft);
+  }
+
+  html {
+    font-family: var(--font-sans);
+  }
+
+  body {
+    background-color: var(--color-surface-muted);
+    color: #101828;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .dark body {
+    background-color: #0b1020;
+    color: #e6e8ef;
+  }
+
+  /* Persian digits look better with tabular figures in tables */
+  .nums {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+/* Scrollbar polish */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-thumb {
+  background: #cbd2e1;
+  border-radius: 999px;
+  border: 3px solid transparent;
+  background-clip: content-box;
+}
+.dark ::-webkit-scrollbar-thumb {
+  background: #2a3350;
+  background-clip: content-box;
+}

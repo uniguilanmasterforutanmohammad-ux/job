@@ -1,0 +1,61 @@
+# Lightweight dev stack: only infrastructure (db + redis + adminer).
+# Run the API and Web apps locally with `pnpm dev` for fast HMR.
+name: business-platform-dev
+
+services:
+  postgres:
+    image: postgres:18-alpine
+    container_name: bp_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-platform}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-platform_secret}
+      POSTGRES_DB: ${POSTGRES_DB:-business_platform}
+      PGDATA: /var/lib/postgresql/data/pgdata
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-platform} -d ${POSTGRES_DB:-business_platform}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks:
+      - bp_net
+
+  redis:
+    image: redis:8-alpine
+    container_name: bp_redis
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes", "--maxmemory-policy", "noeviction"]
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks:
+      - bp_net
+
+  adminer:
+    image: adminer:5
+    container_name: bp_adminer
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    depends_on:
+      - postgres
+    networks:
+      - bp_net
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  bp_net:
+    driver: bridge

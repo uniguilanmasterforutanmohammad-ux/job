@@ -1,0 +1,23 @@
+import { BadRequestException, type PipeTransform } from '@nestjs/common';
+import type { ZodType } from 'zod';
+
+/**
+ * Validates request payloads with Zod. Used instead of class-validator so the
+ * API can share schema definitions with the web client.
+ */
+export class ZodValidationPipe<T> implements PipeTransform<unknown, T> {
+  constructor(private readonly schema: ZodType<T>) {}
+
+  transform(value: unknown): T {
+    const result = this.schema.safeParse(value);
+    if (!result.success) {
+      throw new BadRequestException(
+        result.error.issues.map((issue) => ({
+          path: issue.path.join('.'),
+          message: issue.message,
+        })),
+      );
+    }
+    return result.data;
+  }
+}
