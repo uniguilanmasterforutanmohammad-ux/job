@@ -27,6 +27,22 @@ export const passwordLoginSchema = z.object({
 });
 export type PasswordLoginDto = z.infer<typeof passwordLoginSchema>;
 
+/**
+ * Self-service password change for a signed-in member. End-users (شاگرد/
+ * زبان‌آموز) start life without a password and log in with an OTP, so
+ * `currentPassword` is only required once a password exists.
+ */
+export const changePasswordSchema = z
+  .object({
+    currentPassword: z.string().max(128).optional(),
+    newPassword: z.string().min(8, 'رمز عبور باید حداقل ۸ کاراکتر باشد').max(128),
+  })
+  .refine((data) => data.currentPassword !== data.newPassword, {
+    message: 'رمز عبور جدید باید با رمز فعلی متفاوت باشد',
+    path: ['newPassword'],
+  });
+export type ChangePasswordDto = z.infer<typeof changePasswordSchema>;
+
 export const registerTenantSchema = z.object({
   businessName: z.string().trim().min(2).max(120),
   industry: z.string().trim().min(2).max(40),

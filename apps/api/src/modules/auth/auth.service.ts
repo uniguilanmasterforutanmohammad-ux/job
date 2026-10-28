@@ -9,6 +9,7 @@ import { IndustryRegistryService } from '../industries/industry-registry.service
 import { OtpService } from './otp.service.js';
 import { TokenService, type TokenPair } from './token.service.js';
 import type {
+  ChangePasswordDto,
   PasswordLoginDto,
   RegisterTenantDto,
   RequestOtpDto,
@@ -175,6 +176,52 @@ export class AuthService {
     return { message: 'خروج انجام شد' };
   }
 
+  /**
+   * Lets any signed-in member set or change their own password, so an end-user
+   * who joined with an OTP can later log in with a password (and a staff member
+   * can rotate theirs). The old password is only required when one exists.
+   */
+  async changePassword(memberId: string, dto: ChangePasswordDto): Promise<{ message: string }> {
+    const member = await this.prisma.client.member.findFirst({
+      where: { id: memberId, deletedAt: null },
+      select: { id: true, passwordHash: true },
+    });
+    if (!member) throw DomainException.notFound('حساب کاربری');
+
+    if (member.passwordHash) {
+      if (!dto.currentPassword) {
+        throw DomainException.badRequest(
+          'برای تغییر رمز، رمز عبور فعلی را وارد کنید',
+          'CURRENT_PASSWORD_REQUIRED',
+        );
+      }
+      if (!(await verify(member.passwordHash, dto.currentPassword))) {
+        throw DomainException.badRequest('رمز عبور فعلی نادرست است', 'INVALID_PASSWORD');
+      }
+      if (await verify(member.passwordHash, dto.newPassword)) {
+        throw DomainException.badRequest(
+          'رمز عبور جدید باید با رمز فعلی متفاوت باشد',
+          'SAME_PASSWORD',
+        );
+      }
+    }
+
+    await this.prisma.client.member.update({
+      where: { id: member.id },
+      data: { passwordHash: await hash(dto.newPassword) },
+    });
+    // Every refresh token dies with the old password; the member logs in again
+    // with the new one (access tokens are short-lived anyway).
+    await this.tokens.revokeAllForMember(member.id);
+    this.logger.log(`Password changed member=${member.id} hadPassword=${Boolean(member.passwordHash)}`);
+
+    return {
+      message: member.passwordHash
+        ? 'رمز عبور تغییر کرد؛ با رمز جدید دوباره وارد شوید'
+        : 'رمز عبور تنظیم شد؛ از این پس می‌توانید با رمز عبور وارد شوید',
+    };
+  }
+
   async me(memberId: string) {
     const member = await this.prisma.client.member.findUnique({
       where: { id: memberId },
@@ -195,6 +242,8 @@ export class AuthService {
         email: member.email,
         systemRole: member.systemRole,
         avatarUrl: member.avatarUrl,
+        /** False for members who still log in with an OTP only. */
+        hasPassword: Boolean(member.passwordHash),
       },
       tenant: {
         id: member.tenant.id,

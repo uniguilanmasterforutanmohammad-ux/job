@@ -10,11 +10,13 @@ import type { AppConfig } from '../../config/configuration.js';
 import { AuthService } from './auth.service.js';
 import { ACCESS_TOKEN_COOKIE, REFRESH_TOKEN_COOKIE } from './auth.constants.js';
 import {
+  changePasswordSchema,
   passwordLoginSchema,
   registerTenantSchema,
   requestOtpSchema,
   verifyOtpSchema,
   type PasswordLoginDto,
+  type ChangePasswordDto,
   type RegisterTenantDto,
   type RequestOtpDto,
   type VerifyOtpDto,
@@ -92,6 +94,22 @@ export class AuthController {
   async logout(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
     const cookies = (req as Request & { cookies?: Record<string, string> }).cookies ?? {};
     const result = await this.auth.logout(cookies[REFRESH_TOKEN_COOKIE]);
+    res.clearCookie(ACCESS_TOKEN_COOKIE, { path: '/' });
+    res.clearCookie(REFRESH_TOKEN_COOKIE, { path: '/' });
+    return result;
+  }
+
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
+  @Post('password')
+  @ApiOperation({ summary: 'تنظیم/تغییر رمز عبور کاربر جاری' })
+  async changePassword(
+    @CurrentUser('memberId') memberId: string,
+    @Body(new ZodValidationPipe(changePasswordSchema)) dto: ChangePasswordDto,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const result = await this.auth.changePassword(memberId, dto);
+    // Sessions were revoked, so the client must sign in again: drop the cookies
+    // too, otherwise a browser would keep sending a dead refresh token.
     res.clearCookie(ACCESS_TOKEN_COOKIE, { path: '/' });
     res.clearCookie(REFRESH_TOKEN_COOKIE, { path: '/' });
     return result;
