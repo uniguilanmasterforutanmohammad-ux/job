@@ -148,7 +148,13 @@
 | ۷۰ | کلیدگذاری کوئری‌های پنل `/me` به مجموعهٔ فعال (رفع کش مجموعهٔ قبلی در سوئیچ) | `3602adf` | `fix(web): key the portal queries by the active club`                    |
 | ۷۱ | نام واقعی کاربر از پروندهٔ مشتری/زبان‌آموز به عضو پورتال                    | `c43700f` | `fix(api): take the portal member name from the customer file`           |
 | ۷۲ | ثبت نتیجهٔ تست دو-صنفی + کامنت‌های ✅ جاافتاده در تسک‌فایل                  | `833b4e1` | `docs(taskfile): record the two-club verification test`                  |
-| ۷۳ | ثبت ردیف‌های ۷۰ تا ۷۲ + مستندات وضعیت/اکانت‌ها + ردیف‌های تست              | این کامیت | `docs(agent): log the portal query-key fix and the two-club test`        |
+| ۷۳ | ثبت ردیف‌های ۷۰ تا ۷۲ + مستندات وضعیت/اکانت‌ها + ردیف‌های تست              | `5694d66` | `docs(agent): log the portal query-key fix and the two-club test`        |
+| ۷۴ | کلید نقش و مجوزهای پیش‌فرض نقش‌های سیستمی در `@repo/shared`                | `aafebdd` | `feat(shared): give the system roles their tenant key and defaults`      |
+| ۷۵ | پیوند/ساخت ردیف نقش برای کاربر پنل (رفع کاربر بی‌مجوز)                      | `c7735f1` | `fix(api): link the tenant role of a panel member`                       |
+| ۷۶ | ستون «عملیات» و حذف کاربر با تأیید در `/customers`                         | `f944978` | `feat(web): let the manager delete a user from /customers`               |
+| ۷۷ | انتخاب نقش سفارشی در فرم افزودن کاربر `/team`                              | `71fb55f` | `feat(web): pick a custom role when adding a panel member`               |
+| ۷۸ | ثبت تسک «حذف کاربر» در تسک‌فایل + کامنت ✅                                  | `e351205` | `docs(taskfile): mark the delete-user task as done`                      |
+| ۷۹ | ثبت ردیف‌های ۷۴ تا ۷۸ + ردیف‌های تست حذف کاربر                             | این کامیت | `docs(agent): log the customer-delete task and the role-linking fix`     |
 
 > کامیت ثبت لاگ هر ردیف در اجرای بعدی در جدول ثبت می‌شود؛ چون
 > هیچ کامیتی نمی‌تواند هش خودش را درون خودش داشته باشد.
@@ -259,6 +265,11 @@
 | ۷۱ — نام عضو پورتال (زنده)   | زنده (HTTP)    | `POST /app/auth/otp/verify-global` با ۰۹۰۲۰۰۰۰۰۰۰ → `user.fullName = "زبان‌آموز نمونه"` (قبلاً «کاربر») | ✅ |
 | ۷۰/۷۱ — کل بسته‌ها           | واحد + typecheck/lint/build | `pnpm --filter @repo/api test` → ۱۶۷ پاس (۲۶ فایل)؛ `pnpm --filter @repo/api|web typecheck` ✅؛ `pnpm --filter @repo/web lint` → ۰ خطا؛ `pnpm --filter @repo/web build` ✅ | ✅ |
 | ۷۲ — تست دو-صنفی (زنده)      | زنده (HTTP)    | دو کسب‌وکار (زبان آوا/موسیقی نوا) + عضویت مشترک ۰۹۰۲۰۰۰۰۰۰۰؛ `verify-global` → ۲ مجموعه، `GET /app/clubs|overview` → اعداد تفکیک‌شده (زبان ۶۷٪/۳٬۰۰۰٬۰۰۰ مانده، موسیقی ۱۰۰٪/تسویه) | ✅ |
+| ۷۵ — نقش کاربر پنل (واحد)   | واحد           | `apps/api/src/modules/tenants/tenants-ext.service.spec.ts` → ۶ تست: پیوند نقش مدیر، نبود `crm:write` برای مربی، تقدم نقش سفارشی، شمارهٔ تکراری، تغییر مجوز با تغییر نقش، دست‌نزدن وقتی نقشی ارسال نشده | ✅ ۶/۶ |
+| ۷۴ — پیش‌فرض نقش‌ها (واحد)   | واحد           | `packages/shared/src/permissions.spec.ts` → ۳ تست: یکتایی کلید نقش‌ها، وجود پیش‌فرض برای هر نقش، `crm:write` مدیر/پذیرش و نبودش برای مربی | ✅ ۳/۳ |
+| ۷۵ — مجوز حذف (زندهٔ HTTP)   | زنده (HTTP)    | `DELETE /customers/:id` → مدیر `MANAGER` (پس از پیوند نقش) ۲۰۰ و «مربی» `STAFF` ۴۰۳ `FORBIDDEN`؛ افزودن دوبارهٔ شمارهٔ حذف‌شده → ۲۰۱؛ `deletedAt` ست و `meta.archivedPhone` پر | ✅ |
+| ۷۶/۷۷ — حذف کاربر (UI)      | زنده (Chrome/CDP) | `/tmp/cdp-verify-customer-delete.mjs` → ۱۶/۱۶: ستون «عملیات»، aria-label «حذف شاگرد»، متن تأیید داده‌محور (بایگانی + آزادشدن شماره)، انصراف بدون حذف، تأیید → ناپدیدشدن ردیف و نبودن در جست‌وجو، توست «شاگرد حذف شد»، و حذف موفق با حساب «مدیر» | ✅ ۱۶/۱۶ |
+| ۷۴/۷۵/۷۶ — کل بسته‌ها        | واحد + typecheck/lint/build | `pnpm test` → API ۱۷۳ پاس (۲۷ فایل) + shared ۲۴ پاس؛ `pnpm lint` → ۶ تسک سبز، ۰ خطا؛ `pnpm --filter @repo/web build` ✅ (۳۶ روت) | ✅ |
 
 ### نکتهٔ عملیاتی (کش Next در حالت توسعه)
 
