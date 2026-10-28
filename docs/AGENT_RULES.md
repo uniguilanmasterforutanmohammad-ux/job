@@ -84,12 +84,12 @@
 | ۶ | فایل قوانین ایجنت + ارجاع در `AGENTS.md` + کامنت تسک روی تست‌ها       | `c943115` | `docs(agent): add agent rules file with commit/test registry`          |
 | ۷ | ثبت کامیت‌ها در جدول لاگ + به‌روزرسانی `TaskForMyAgent.md`               | `27ad93f` | `chore(agent): register task commits and task-file update`             |
 | ۸ | صفحهٔ اصلی (لندینگ) + ثبت‌نام کسب‌وکار + نام‌گذاری درست پنل مشتری (۳ مرحله) | `cde87ec`، `11dc556`، `4b59393` | `refactor(naming)` → `feat(web): landing` → `feat(web): register` |
-| ۹ | به‌روزرسانی مستندات (STATUS/DEV_ACCOUNTS) و ثبت آن در این جدول           | این کامیت | `docs: status + dev accounts for landing/register/customer portal`      |
+| ۹ | به‌روزرسانی مستندات (STATUS/DEV_ACCOUNTS) و ثبت آن در این جدول           | `b85ef03` | `docs: status + dev accounts for landing/register/customer portal`      |
 | ۱۰ | شفاف‌سازی «ثبت‌نام مشتری» در پنل `/me`                                   | `a1a3fd7` | `feat(web): make consumer signup explicit in the /me portal`            |
 | ۱۱ | ثبت ردیف‌های ۹ و ۱۰ در همین جدول                                        | `3cc7e24` | `docs(agent): log landing/register commits in registry`                 |
 | ۱۲ | کامنت «✅ تکمیل شد» زیر همهٔ تسک‌های انجام‌شدهٔ `TaskForMyAgent.md`        | `6279c25` | `docs(taskfile): mark every completed task with a completion comment`   |
 | ۱۳ | قانون ثبت کامنت تکمیل در قوانین ایجنت + `AGENTS.md`                      | `d8f8137` | `docs(agent): require a completion comment under every finished task`   |
-| ۱۴ | ثبت ردیف‌های ۱۲ و ۱۳ در همین جدول                                        | این کامیت | `docs(agent): log taskfile annotation commits`                          |
+| ۱۴ | ثبت ردیف‌های ۱۲ و ۱۳ در همین جدول                                        | `257050f` | `docs(agent): log taskfile annotation commits`                          |
 | ۱۵ | ماژول پیش‌فرض صنف مشترک (`defaultModulesForIndustry`)                    | `5a9a0a6` | `feat(shared): add defaultModulesForIndustry helper`                    |
 | ۱۶ | ساخت کسب‌وکار در API ادمین + نمایش پیش‌فرض‌های صنف                       | `0374bc0` | `feat(admin): create businesses and surface industry default modules`   |
 | ۱۷ | فهرست عمومی کسب‌وکارهای فعال برای ثبت‌نام کاربر جدید                      | `0fd023e` | `feat(app): active-only business directory for new-user signup`         |
@@ -130,7 +130,8 @@
 | ۵۲ | ماژول APP برای صنف‌های آموزشی + اصلاح اسکریپت `db:deploy`                  | `c8b9903` | `fix(shared,db): give the education verticals the end-user portal`       |
 | ۵۳ | تغییر کسب‌وکار فعال کاربر نهایی + پیام کامل «عدم عضویت»                    | `8b0aaf1` | `feat(api): switch the active club of a portal user and say "no membership" clearly` |
 | ۵۴ | پنل کاربری بخش‌بندی‌شده + سوئیچ عضویت + حذف لود مداوم حاضری                 | `c7d8230` | `feat(web): turn the customer panel into a sectioned panel with club switching` |
-| ۵۵ | ثبت ردیف‌های ۴۷ تا ۵۴ + مستندات و کامنت تسک‌فایل                          | این کامیت | `docs(agent): log the password, lint and portal commits`                 |
+| ۵۵ | ثبت ردیف‌های ۴۷ تا ۵۴ + مستندات و کامنت تسک‌فایل                          | `368b504` | `docs(agent): log the password, lint and portal commits`                 |
+| ۵۶ | تکمیل هش ردیف‌های ۹، ۱۴ و ۵۵ (ردیف‌های خودارجاع «این کامیت»)              | این کامیت | `docs(agent): fill the self-referential commit rows in the registry`     |
 
 > کامیت ثبت لاگ هر ردیف در اجرای بعدی در جدول ثبت می‌شود؛ چون
 > هیچ کامیتی نمی‌تواند هش خودش را درون خودش داشته باشد.
