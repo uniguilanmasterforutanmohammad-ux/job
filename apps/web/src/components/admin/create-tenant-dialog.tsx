@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import {
   INDUSTRY_CATEGORIES,
@@ -19,7 +19,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { Modal } from '@/components/ui/modal';
-import type { AdminCreatedTenant } from '@/lib/admin-types';
+import type { AdminCreatedTenant, AdminIndustry } from '@/lib/admin-types';
 
 type FormState = {
   name: string;
@@ -60,6 +60,15 @@ export function CreateTenantDialog({
   const queryClient = useQueryClient();
   const [form, setForm] = useState<FormState>(EMPTY);
   const [modules, setModules] = useState<ModuleKey[]>(defaultModulesForIndustry('SPORTS_COACHING'));
+
+  // Defaults come from the same registry the industry console edits.
+  const industriesQuery = useQuery({
+    queryKey: ['admin-industries'],
+    queryFn: () => api.get<AdminIndustry[]>('/admin/industries', token),
+  });
+  const defaultsFor = (industry: string): ModuleKey[] =>
+    industriesQuery.data?.find((item) => item.industry === industry)?.defaultModules ??
+    defaultModulesForIndustry(industry);
 
   const set = <K extends keyof FormState>(key: K, value: FormState[K]) =>
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -129,7 +138,7 @@ export function CreateTenantDialog({
             value={form.industry}
             onChange={(event) => {
               set('industry', event.target.value);
-              setModules(defaultModulesForIndustry(event.target.value));
+              setModules(defaultsFor(event.target.value));
             }}
           >
             {INDUSTRY_CATEGORIES.map((key) => (
@@ -204,7 +213,7 @@ export function CreateTenantDialog({
             <button
               type="button"
               className="text-xs text-brand-600 hover:underline"
-              onClick={() => setModules(defaultModulesForIndustry(form.industry))}
+              onClick={() => setModules(defaultsFor(form.industry))}
             >
               بازگردانی پیش‌فرض صنف
             </button>
@@ -212,7 +221,7 @@ export function CreateTenantDialog({
           <div className="grid gap-2 sm:grid-cols-2">
             {MODULE_KEYS.map((key) => {
               const checked = modules.includes(key);
-              const isDefault = defaultModulesForIndustry(form.industry).includes(key);
+              const isDefault = defaultsFor(form.industry).includes(key);
               return (
                 <label
                   key={key}
