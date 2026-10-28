@@ -20,6 +20,7 @@ import {
 import { toast } from 'sonner';
 import { api, ApiClientError } from '@/lib/api-client';
 import { formatJalali, formatToman } from '@/lib/utils';
+import { endUserNoun, industryLabel } from '@repo/shared';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
@@ -29,16 +30,19 @@ import { EmptyState, Skeleton } from '@/components/ui/empty-state';
 import type {
   AbsenceRequest,
   PortalLoyalty,
-  StudentAttendance,
-  StudentCheckInTarget,
-  StudentClub,
-  StudentLoginResult,
+  CustomerAttendance,
+  CustomerCheckInTarget,
+  CustomerClub,
+  CustomerLoginResult,
 } from '@/lib/types-extra';
 
-const STUDENT_TOKEN_KEY = 'bp_student_token';
-const STUDENT_USER_KEY = 'bp_student_user';
+const CUSTOMER_TOKEN_KEY = 'bp_customer_token';
+const CUSTOMER_USER_KEY = 'bp_customer_user';
+/** Pre-rename keys — read once so an open session keeps working. */
+const LEGACY_TOKEN_KEY = 'bp_student_token';
+const LEGACY_USER_KEY = 'bp_student_user';
 
-type StudentSession = {
+type CustomerSession = {
   accessToken: string;
   fullName: string;
   phone: string | null;
@@ -59,27 +63,6 @@ type Invoice = {
   total: string;
   paidTotal: string;
   status: string;
-};
-
-const CLUB_INDUSTRY_LABELS: Record<string, string> = {
-  SPORTS_COACHING: 'ورزشی',
-  LANGUAGE_SCHOOL: 'آموزش زبان',
-  BEAUTY: 'زیبایی',
-  HEALTHCARE: 'سلامت',
-  ART_MUSIC: 'هنر و موسیقی',
-  EARLY_CHILD: 'کودک',
-  PSYCHOLOGY: 'روان‌شناسی',
-  LEGAL: 'حقوقی',
-  MEDIA_PHOTO: 'رسانه و عکاسی',
-  TECHNOLOGY: 'فناوری',
-  RESTAURANT_CAFE: 'رستوران و کافه',
-  RETAIL: 'فروشگاهی',
-  TECHNICAL_SERVICES: 'خدمات فنی',
-  REAL_ESTATE: 'املاک',
-  TRANSPORT: 'حمل‌ونقل',
-  TOURISM: 'گردشگری',
-  BUSINESS_CONSULTING: 'مشاوره کسب‌وکار',
-  OTHER: 'سایر',
 };
 
 const ATTENDANCE_STATUS_LABELS: Record<string, string> = {
@@ -106,35 +89,38 @@ const ABSENCE_STATUS_TONES: Record<string, 'warning' | 'success' | 'danger' | 'n
 
 const ABSENCE_REASONS = ['بیماری', 'مسافرت', 'شرایط شخصی', 'بدون اطلاع قبلی', 'سایر'];
 
-function useStudentSession() {
-  const [session, setSession] = useState<StudentSession | null>(null);
+function useCustomerSession() {
+  const [session, setSession] = useState<CustomerSession | null>(null);
   const [ready, setReady] = useState(false);
   useEffect(() => {
-    const raw = localStorage.getItem(STUDENT_USER_KEY);
+    // Fall back to the pre-rename key so an open session is not dropped.
+    const raw = localStorage.getItem(CUSTOMER_USER_KEY) ?? localStorage.getItem(LEGACY_USER_KEY);
+    const token = localStorage.getItem(CUSTOMER_TOKEN_KEY) ?? localStorage.getItem(LEGACY_TOKEN_KEY);
     if (raw) {
       try {
-        setSession(JSON.parse(raw) as StudentSession);
+        const parsed = JSON.parse(raw) as CustomerSession;
+        setSession(token ? { ...parsed, accessToken: token } : parsed);
       } catch {
-        localStorage.removeItem(STUDENT_USER_KEY);
+        localStorage.removeItem(CUSTOMER_USER_KEY);
       }
     }
     setReady(true);
   }, []);
-  const save = (value: StudentSession) => {
-    localStorage.setItem(STUDENT_TOKEN_KEY, value.accessToken);
-    localStorage.setItem(STUDENT_USER_KEY, JSON.stringify(value));
+  const save = (value: CustomerSession) => {
+    localStorage.setItem(CUSTOMER_TOKEN_KEY, value.accessToken);
+    localStorage.setItem(CUSTOMER_USER_KEY, JSON.stringify(value));
     setSession(value);
   };
   const clear = () => {
-    localStorage.removeItem(STUDENT_TOKEN_KEY);
-    localStorage.removeItem(STUDENT_USER_KEY);
+    localStorage.removeItem(CUSTOMER_TOKEN_KEY);
+    localStorage.removeItem(CUSTOMER_USER_KEY);
     setSession(null);
   };
   return { session, ready, save, clear };
 }
 
-export default function StudentPage() {
-  const { session, ready, save, clear } = useStudentSession();
+export default function CustomerPortalPage() {
+  const { session, ready, save, clear } = useCustomerSession();
 
   if (!ready) return null;
 
@@ -146,7 +132,7 @@ export default function StudentPage() {
           <p className="text-sm text-white/80">
             {session
               ? `${session.fullName} • ${session.tenantName}`
-              : 'باشگاه‌ها، حاضری، نوبت و پرداخت'}
+              : `مراکزی که در آن‌ها عضو هستید، حضور، نوبت و پرداخت`}
           </p>
         </div>
         {session && (
@@ -158,15 +144,15 @@ export default function StudentPage() {
       </header>
 
       {session ? (
-        <StudentDashboard session={session} onLogout={clear} />
+        <CustomerDashboard session={session} onLogout={clear} />
       ) : (
-        <StudentLogin onSuccess={save} />
+        <CustomerLoginPanel onSuccess={save} />
       )}
     </div>
   );
 }
 
-function StudentLogin({ onSuccess }: { onSuccess: (s: StudentSession) => void }) {
+function CustomerLoginPanel({ onSuccess }: { onSuccess: (s: CustomerSession) => void }) {
   const [phone, setPhone] = useState('');
   const [code, setCode] = useState('');
   const [step, setStep] = useState<'phone' | 'code'>('phone');
@@ -181,7 +167,7 @@ function StudentLogin({ onSuccess }: { onSuccess: (s: StudentSession) => void })
   });
 
   const verifyOtp = useMutation({
-    mutationFn: () => api.post<StudentLoginResult>('/app/auth/otp/verify-global', { phone, code }),
+    mutationFn: () => api.post<CustomerLoginResult>('/app/auth/otp/verify-global', { phone, code }),
     onSuccess: (result) => {
       onSuccess({
         accessToken: result.tokens.accessToken,
@@ -199,7 +185,7 @@ function StudentLogin({ onSuccess }: { onSuccess: (s: StudentSession) => void })
     <Card>
       <CardHeader
         title="ورود با موبایل"
-        description="با شماره موبایل وارد شوید؛ همه باشگاه‌های شما یک‌جا نمایش داده می‌شوند"
+        description="با شماره موبایل وارد شوید؛ همهٔ کسب‌وکارهایی که در آن‌ها عضو هستید یک‌جا نمایش داده می‌شوند"
       />
       <CardBody className="space-y-4">
         <Input
@@ -251,11 +237,11 @@ function StudentLogin({ onSuccess }: { onSuccess: (s: StudentSession) => void })
   );
 }
 
-function StudentDashboard({
+function CustomerDashboard({
   session,
   onLogout,
 }: {
-  session: StudentSession;
+  session: CustomerSession;
   onLogout: () => void;
 }) {
   const token = session.accessToken;
@@ -274,32 +260,32 @@ function StudentDashboard({
   );
 
   const clubsQuery = useQuery({
-    queryKey: ['student-clubs'],
-    queryFn: () => apiGet<StudentClub[]>('/app/clubs'),
+    queryKey: ['customer-clubs'],
+    queryFn: () => apiGet<CustomerClub[]>('/app/clubs'),
   });
   const attendanceQuery = useQuery({
-    queryKey: ['student-attendance'],
-    queryFn: () => apiGet<StudentAttendance>('/app/attendance'),
+    queryKey: ['customer-attendance'],
+    queryFn: () => apiGet<CustomerAttendance>('/app/attendance'),
   });
   const targetsQuery = useQuery({
-    queryKey: ['student-checkin-targets'],
-    queryFn: () => apiGet<StudentCheckInTarget[]>('/app/attendance/targets'),
+    queryKey: ['customer-checkin-targets'],
+    queryFn: () => apiGet<CustomerCheckInTarget[]>('/app/attendance/targets'),
     refetchInterval: 15_000,
   });
   const appointmentsQuery = useQuery({
-    queryKey: ['student-appointments'],
+    queryKey: ['customer-appointments'],
     queryFn: () => apiGet<Appointment[]>('/app/appointments'),
   });
   const invoicesQuery = useQuery({
-    queryKey: ['student-invoices'],
+    queryKey: ['customer-invoices'],
     queryFn: () => apiGet<Invoice[]>('/app/invoices'),
   });
   const loyaltyQuery = useQuery({
-    queryKey: ['student-loyalty'],
+    queryKey: ['customer-loyalty'],
     queryFn: () => apiGet<PortalLoyalty>('/app/loyalty'),
   });
   const absenceQuery = useQuery({
-    queryKey: ['student-absence-requests'],
+    queryKey: ['customer-absence-requests'],
     queryFn: () => apiGet<AbsenceRequest[]>('/app/absence-requests'),
   });
 
@@ -328,8 +314,8 @@ function StudentDashboard({
       }),
     onSuccess: (result) => {
       toast.success(result.alreadyCheckedIn ? 'قبلاً حاضری ثبت شده است' : 'حاضری شما ثبت شد');
-      void queryClient.invalidateQueries({ queryKey: ['student-attendance'] });
-      void queryClient.invalidateQueries({ queryKey: ['student-checkin-targets'] });
+      void queryClient.invalidateQueries({ queryKey: ['customer-attendance'] });
+      void queryClient.invalidateQueries({ queryKey: ['customer-checkin-targets'] });
     },
     onError: (e) => toast.error(e instanceof ApiClientError ? e.message : 'ثبت حاضری ناموفق بود'),
   });
@@ -339,7 +325,7 @@ function StudentDashboard({
       apiPost<{ redirectUrl: string }>('/app/payments', { invoiceId }),
     onSuccess: (result) => {
       if (result.redirectUrl) window.location.href = result.redirectUrl;
-      void queryClient.invalidateQueries({ queryKey: ['student-invoices'] });
+      void queryClient.invalidateQueries({ queryKey: ['customer-invoices'] });
     },
     onError: (e) => toast.error(e instanceof ApiClientError ? e.message : 'خطا در پرداخت'),
   });
@@ -348,7 +334,7 @@ function StudentDashboard({
     mutationFn: (id: string) => apiPost(`/app/appointments/${id}/cancel`),
     onSuccess: () => {
       toast.success('نوبت لغو شد');
-      void queryClient.invalidateQueries({ queryKey: ['student-appointments'] });
+      void queryClient.invalidateQueries({ queryKey: ['customer-appointments'] });
     },
   });
 
@@ -366,7 +352,7 @@ function StudentDashboard({
       toast.success('درخواست غیبت ثبت شد و برای بررسی به مربی ارسال گردید');
       setAbsenceDate('');
       setAbsenceNote('');
-      void queryClient.invalidateQueries({ queryKey: ['student-absence-requests'] });
+      void queryClient.invalidateQueries({ queryKey: ['customer-absence-requests'] });
     },
     onError: (e) => toast.error(e instanceof ApiClientError ? e.message : 'ثبت درخواست ناموفق بود'),
   });
@@ -406,11 +392,11 @@ function StudentDashboard({
         </Card>
       </div>
 
-      {/* Active attendance sessions the student can self check in to */}
+      {/* Open attendance sessions the customer can self check in to */}
       <Card>
         <CardHeader
           title="ثبت حاضری"
-          description="جلسه‌های باز باشگاه شما — بدون نیاز به اسکن QR"
+          description="جلسه‌های بازِ مراکز شما — بدون نیاز به اسکن QR"
         />
         <CardBody className="space-y-2">
           {targetsQuery.isLoading ? (
@@ -444,7 +430,7 @@ function StudentDashboard({
             <EmptyState
               icon={QrCode}
               title="جلسه حاضری بازی وجود ندارد"
-              description="اگر مربی لینک حاضری فرستاده، می‌توانید آن را باز کنید."
+              description="اگر مدیر یا مربی لینک حاضری فرستاده، می‌توانید آن را باز کنید."
             />
           )}
           <p className="flex items-center gap-1.5 text-xs text-slate-400">
@@ -456,9 +442,12 @@ function StudentDashboard({
         </CardBody>
       </Card>
 
-      {/* Clubs the student belongs to */}
+      {/* Businesses the customer belongs to */}
       <Card>
-        <CardHeader title="باشگاه‌های من" description="مجموعه‌هایی که در آن‌ها عضو هستید" />
+        <CardHeader
+          title="عضویت‌های من"
+          description="کسب‌وکارهایی که در آن‌ها عضو هستید"
+        />
         <CardBody className="space-y-2">
           {clubsQuery.isLoading ? (
             <Skeleton className="h-20 w-full" />
@@ -476,8 +465,9 @@ function StudentDashboard({
                     <p className="text-sm font-medium">{club.tenantName}</p>
                     <p className="mt-0.5 flex flex-wrap items-center gap-2 text-xs text-slate-500">
                       <Badge tone="neutral">
-                        {CLUB_INDUSTRY_LABELS[club.industry] ?? club.industry}
+                        {industryLabel(club.industry)}
                       </Badge>
+                      <span>{endUserNoun(club.industry)} این مجموعه</span>
                       {club.branch?.name && (
                         <span className="flex items-center gap-1">
                           <MapPin className="h-3 w-3" />
@@ -494,7 +484,11 @@ function StudentDashboard({
               </div>
             ))
           ) : (
-            <EmptyState icon={Building2} title="هنوز در باشگاهی عضو نیستید" />
+            <EmptyState
+              icon={Building2}
+              title="هنوز در هیچ کسب‌وکاری عضو نیستید"
+              description="با باز کردن لینک یا QR دعوت هر کسب‌وکار، عضویت شما ثبت می‌شود."
+            />
           )}
         </CardBody>
       </Card>
@@ -697,8 +691,9 @@ function StudentDashboard({
       </Card>
 
       <div className="rounded-2xl border border-slate-200 p-4 text-sm text-slate-500 dark:border-slate-800">
-        اگر مربی لینک یا QR حاضری فرستاده، آن را باز کنید؛ می‌توانید حاضری را همان‌جا با کد تأیید
-        موبایل ثبت کنید. برای جلسه‌های باز باشگاه، از دکمهٔ «حاضرم» بالای همین صفحه استفاده کنید.
+        اگر مدیر یا مربی لینک یا QR حاضری فرستاده، آن را باز کنید؛ می‌توانید حاضری را همان‌جا با
+        کد تأیید موبایل ثبت کنید. برای جلسه‌های باز، از دکمهٔ «حاضرم» بالای همین صفحه استفاده
+        کنید.
       </div>
 
       <Button variant="outline" className="w-full" onClick={onLogout}>

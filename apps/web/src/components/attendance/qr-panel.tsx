@@ -5,8 +5,9 @@ import Image from 'next/image';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Copy, QrCode, RefreshCw, Square, Users } from 'lucide-react';
 import { toast } from 'sonner';
+import { endUserNoun } from '@repo/shared';
 import { api, ApiClientError } from '@/lib/api-client';
-import { getAccessToken } from '@/lib/auth';
+import { getAccessToken, useAuth } from '@/lib/auth';
 import { formatJalali } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -50,6 +51,8 @@ const STATUS_LABELS: Record<QrSession['status'], string> = {
 
 export function QrAttendancePanel({ branches }: { branches: Branch[] }) {
   const token = getAccessToken();
+  const { me } = useAuth();
+  const nounPlural = endUserNoun(me?.tenant.industry, true);
   const queryClient = useQueryClient();
   const [createOpen, setCreateOpen] = useState(false);
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -123,7 +126,7 @@ export function QrAttendancePanel({ branches }: { branches: Branch[] }) {
     <Card>
       <CardHeader
         title="حاضری با QR"
-        description="یک QR بساز و روی صفحه نمایش بده؛ شاگردان با اسکن و کد تأیید حاضری می‌زنند."
+        description={`یک QR یا لینک بساز و روی صفحه نمایش بده؛ ${nounPlural} با اسکن و کد تأیید موبایل حاضری می‌زنند.`}
         action={
           <Button onClick={() => setCreateOpen(true)}>
             <QrCode className="h-4 w-4" />

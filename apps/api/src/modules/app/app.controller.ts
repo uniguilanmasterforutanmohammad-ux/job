@@ -70,7 +70,7 @@ export class AppController {
   @Public()
   @Post('auth/otp/request-global')
   @Throttle({ default: { limit: 5, ttl: 60_000 } })
-  @ApiOperation({ summary: 'درخواست کد ورود سراسری شاگرد (بدون انتخاب کسب‌وکار)' })
+  @ApiOperation({ summary: 'درخواست کد ورود سراسری مشتری (بدون انتخاب کسب‌وکار)' })
   requestGlobalOtp(
     @Body(new ZodValidationPipe(appGlobalOtpRequestSchema)) dto: AppGlobalOtpRequestDto,
   ) {
@@ -80,7 +80,7 @@ export class AppController {
   @Public()
   @Post('auth/otp/verify-global')
   @Throttle({ default: { limit: 10, ttl: 60_000 } })
-  @ApiOperation({ summary: 'ورود سراسری شاگرد و دریافت فهرست باشگاه‌ها (APP-01)' })
+  @ApiOperation({ summary: 'ورود سراسری مشتری و دریافت فهرست کسب‌وکارها (APP-01)' })
   verifyGlobalOtp(
     @Body(new ZodValidationPipe(appGlobalOtpVerifySchema)) dto: AppGlobalOtpVerifyDto,
     @Req() req: Request,
@@ -108,7 +108,7 @@ export class AppController {
   @Get('clubs')
   @RequireModule('APP')
   @RequirePermissions('app:read')
-  @ApiOperation({ summary: 'باشگاه‌هایی که شاگرد در آن‌ها عضو است (APP-01)' })
+  @ApiOperation({ summary: 'کسب‌وکارهایی که مشتری در آن‌ها عضو است (APP-01)' })
   myClubs(@CurrentUser('memberId') memberId: string) {
     return this.app.myClubs(memberId);
   }
@@ -186,7 +186,7 @@ export class AppController {
 
   @Get('attendance')
   @RequirePermissions('app:read')
-  @ApiOperation({ summary: 'سوابق حضور و غیاب شاگرد در باشگاه (ATT-06)' })
+  @ApiOperation({ summary: 'سوابق حضور و غیاب مشتری در کسب‌وکار (ATT-06)' })
   attendance(@CurrentUser('memberId') memberId: string) {
     return this.app.myAttendance(memberId);
   }
@@ -201,7 +201,7 @@ export class AppController {
   @Post('attendance/check-in')
   @RequirePermissions('app:write')
   @Throttle({ default: { limit: 20, ttl: 60_000 } })
-  @ApiOperation({ summary: 'ثبت حاضری از پنل کاربری شاگرد (بدون کد تأیید) (ATT-01)' })
+  @ApiOperation({ summary: 'ثبت حاضری از پنل کاربری مشتری (بدون کد تأیید) (ATT-01)' })
   panelCheckIn(
     @CurrentUser('memberId') memberId: string,
     @Body(new ZodValidationPipe(appCheckInSchema)) dto: AppCheckInDto,

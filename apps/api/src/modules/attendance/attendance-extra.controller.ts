@@ -84,7 +84,7 @@ export class AttendanceExtraController {
 
   @Get('absence-requests')
   @RequirePermissions(PERMISSIONS.ATT_READ)
-  @ApiOperation({ summary: 'فهرست درخواست‌های غیبت موجه شاگردان (ATT-03)' })
+  @ApiOperation({ summary: 'فهرست درخواست‌های غیبت موجه مشتریان (ATT-03)' })
   listAbsenceRequests(
     @CurrentUser('tenantId') tenantId: string,
     @Query(new ZodValidationPipe(listAbsenceRequestsSchema)) dto: ListAbsenceRequestsDto,

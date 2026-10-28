@@ -122,9 +122,16 @@ export default function LoginPage() {
         </p>
 
         <p className="mt-3 text-center text-sm text-slate-500">
-          شاگرد یا مشتری هستید؟{' '}
-          <Link href="/student" className="text-brand-600 hover:underline">
-            ورود به پنل کاربری
+          مشتری، شاگرد، بیمار یا مراجع یک کسب‌وکار هستید؟{' '}
+          <Link href="/me" className="text-brand-600 hover:underline">
+            ورود به پنل کاربری من
+          </Link>
+        </p>
+
+        <p className="mt-2 text-center text-sm text-slate-500">
+          کسب‌وکار خود را دارید؟{' '}
+          <Link href="/register" className="text-brand-600 hover:underline">
+            ثبت‌نام و ساخت کسب‌وکار
           </Link>
         </p>
       </div>

@@ -4,8 +4,9 @@ import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { CheckCircle2, Clock, XCircle } from 'lucide-react';
 import { toast } from 'sonner';
+import { endUserNoun } from '@repo/shared';
 import { api, ApiClientError } from '@/lib/api-client';
-import { getAccessToken } from '@/lib/auth';
+import { getAccessToken, useAuth } from '@/lib/auth';
 import { formatJalali } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -31,6 +32,10 @@ const STATUS_TONES: Record<string, 'warning' | 'success' | 'danger' | 'neutral'>
 
 export function AbsenceRequestsPanel() {
   const token = getAccessToken();
+  const { me } = useAuth();
+  // A sports club says «شاگرد», a clinic «بیمار», a law office «موکل» …
+  const noun = endUserNoun(me?.tenant.industry);
+  const nounPlural = endUserNoun(me?.tenant.industry, true);
   const queryClient = useQueryClient();
   const [reviewing, setReviewing] = useState<AbsenceRequest | null>(null);
   const [decision, setDecision] = useState<'APPROVED' | 'REJECTED'>('APPROVED');
@@ -65,7 +70,7 @@ export function AbsenceRequestsPanel() {
     <Card>
       <CardHeader
         title="درخواست‌های غیبت موجه"
-        description="درخواست‌های شاگردان برای موجه کردن عدم حضور"
+        description={`درخواست‌های ${nounPlural} برای موجه کردن عدم حضور`}
         action={pending > 0 ? <Badge tone="warning">{pending} در انتظار</Badge> : undefined}
       />
       <CardBody className="space-y-2">
@@ -81,7 +86,7 @@ export function AbsenceRequestsPanel() {
             >
               <div className="min-w-0">
                 <p className="text-sm font-medium text-slate-900 dark:text-slate-100">
-                  {request.customer?.fullName ?? 'شاگرد'}
+                  {request.customer?.fullName ?? noun}
                 </p>
                 <p className="mt-0.5 text-xs text-slate-500">
                   <span className="nums">{formatJalali(request.absenceDate)}</span> —{' '}
@@ -136,7 +141,7 @@ export function AbsenceRequestsPanel() {
       >
         <div className="space-y-4">
           <div className="rounded-xl bg-slate-50 p-3 text-sm dark:bg-slate-800/50">
-            <p className="font-medium">{reviewing?.customer?.fullName ?? 'شاگرد'}</p>
+            <p className="font-medium">{reviewing?.customer?.fullName ?? noun}</p>
             <p className="mt-1 text-xs text-slate-500 nums">
               {reviewing ? formatJalali(reviewing.absenceDate) : ''} — {reviewing?.reason}
             </p>
@@ -163,7 +168,7 @@ export function AbsenceRequestsPanel() {
           </div>
 
           <Input
-            label="توضیح برای شاگرد (اختیاری)"
+            label={`توضیح برای ${noun} (اختیاری)`}
             value={reviewNote}
             onChange={(e) => setReviewNote(e.target.value)}
           />

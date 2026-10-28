@@ -138,7 +138,7 @@ export type PortalLoyalty = { walletBalance: number; points: number; tier: strin
 
 // ----- End-user (student) dashboard -----
 
-export type StudentClub = {
+export type CustomerClub = {
   tenantId: string;
   tenantName: string;
   tenantSlug: string;
@@ -152,9 +152,9 @@ export type StudentClub = {
   primaryLinked: boolean;
 };
 
-export type StudentLoginResult = {
+export type CustomerLoginResult = {
   tokens: { accessToken: string; refreshToken: string; expiresIn: number };
-  clubs: StudentClub[];
+  clubs: CustomerClub[];
   user: {
     memberId: string;
     customerId: string;
@@ -166,7 +166,7 @@ export type StudentLoginResult = {
   };
 };
 
-export type StudentAttendanceRecord = {
+export type CustomerAttendanceRecord = {
   id: string;
   status: 'PRESENT' | 'ABSENT' | 'LATE' | 'EXCUSED' | 'CANCELED';
   method: string;
@@ -175,14 +175,14 @@ export type StudentAttendanceRecord = {
   note: string | null;
 };
 
-export type StudentAttendance = {
+export type CustomerAttendance = {
   present: number;
   total: number;
   ratio: number;
-  records: StudentAttendanceRecord[];
+  records: CustomerAttendanceRecord[];
 };
 
-export type StudentCheckInTarget = {
+export type CustomerCheckInTarget = {
   id: string;
   code: string;
   label: string | null;

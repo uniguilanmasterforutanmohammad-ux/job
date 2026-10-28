@@ -88,7 +88,7 @@ export class AttendanceQrPublicController {
   @Public()
   @Post('check-in')
   @Throttle({ default: { limit: 12, ttl: 60_000 } })
-  @ApiOperation({ summary: 'ثبت حاضری شاگرد با QR چرخشی/لینک + کد تأیید (ATT-01)' })
+  @ApiOperation({ summary: 'ثبت حاضری مشتری با QR چرخشی/لینک + کد تأیید (ATT-01)' })
   checkIn(@Body(new ZodValidationPipe(qrCheckInSchema)) dto: QrCheckInDto) {
     return this.qr.checkIn(dto);
   }
