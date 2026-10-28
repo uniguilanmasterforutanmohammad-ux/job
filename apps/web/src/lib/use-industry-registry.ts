@@ -7,6 +7,7 @@ import {
   type ModuleKey,
 } from '@repo/shared';
 import { api } from './api-client';
+import { useAuth } from './auth';
 
 /** One row of the public industry registry (`GET /industries`). */
 export type IndustryRegistryEntry = {
@@ -41,5 +42,24 @@ export function useIndustryRegistry() {
       const value = plural ? row?.endUserNounPlural : row?.endUserNoun;
       return value || fallbackEndUserNoun(key, plural);
     },
+  };
+}
+
+/**
+ * What the current business calls its end-users, e.g. «شاگرد / شاگردان» for a
+ * sports club, «زبان‌آموز / زبان‌آموزان» for a language school and
+ * «بیمار / بیماران» for a clinic. Reads the authenticated tenant's industry.
+ */
+export function useEndUserNoun() {
+  const { me } = useAuth();
+  const registry = useIndustryRegistry();
+  const industry = me?.tenant.industry;
+
+  return {
+    /** Singular: «زبان‌آموز» */
+    noun: registry.noun(industry),
+    /** Plural: «زبان‌آموزان» */
+    plural: registry.noun(industry, true),
+    industry,
   };
 }

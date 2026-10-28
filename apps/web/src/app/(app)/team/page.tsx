@@ -6,6 +6,7 @@ import { Plus, ShieldCheck } from 'lucide-react';
 import { toast } from 'sonner';
 import { api, ApiClientError } from '@/lib/api-client';
 import { getAccessToken } from '@/lib/auth';
+import { useEndUserNoun } from '@/lib/use-industry-registry';
 import { formatJalali } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -27,9 +28,9 @@ const ROLE_LABELS: Record<string, string> = {
   END_USER: 'کاربر نهایی',
 };
 
-const PERMISSION_OPTIONS = [
-  { key: 'crm:read', label: 'مشاهده مشتریان' },
-  { key: 'crm:write', label: 'ویرایش مشتریان' },
+const permissionOptions = (customers: string) => [
+  { key: 'crm:read', label: `مشاهده ${customers}` },
+  { key: 'crm:write', label: `ویرایش ${customers}` },
   { key: 'sch:read', label: 'مشاهده نوبت‌ها' },
   { key: 'sch:write', label: 'ویرایش نوبت‌ها' },
   { key: 'fin:read', label: 'مشاهده مالی' },
@@ -41,6 +42,7 @@ const PERMISSION_OPTIONS = [
 
 export default function TeamPage() {
   const token = getAccessToken();
+  const { plural } = useEndUserNoun();
   const queryClient = useQueryClient();
   const [memberOpen, setMemberOpen] = useState(false);
   const [roleOpen, setRoleOpen] = useState(false);
@@ -273,7 +275,7 @@ export default function TeamPage() {
           <div className="space-y-2">
             <span className="block text-sm font-medium text-slate-700 dark:text-slate-300">مجوزها</span>
             <div className="grid grid-cols-2 gap-2">
-              {PERMISSION_OPTIONS.map((perm) => (
+              {permissionOptions(plural).map((perm) => (
                 <label
                   key={perm.key}
                   className="flex cursor-pointer items-center gap-2 rounded-lg border border-slate-200 p-2 text-sm dark:border-slate-700"

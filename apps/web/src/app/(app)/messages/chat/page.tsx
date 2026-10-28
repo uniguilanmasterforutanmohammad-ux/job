@@ -6,6 +6,7 @@ import { Paperclip, Send } from 'lucide-react';
 import { toast } from 'sonner';
 import { api, API_BASE } from '@/lib/api-client';
 import { getAccessToken } from '@/lib/auth';
+import { useEndUserNoun } from '@/lib/use-industry-registry';
 import { cn, formatJalali } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Card, CardBody } from '@/components/ui/card';
@@ -15,6 +16,7 @@ import type { ChatMessage, ChatThread } from '@/lib/types-extra';
 
 export default function ChatPage() {
   const token = getAccessToken();
+  const { noun } = useEndUserNoun();
   const queryClient = useQueryClient();
   const [activeId, setActiveId] = useState<string | null>(null);
   const [body, setBody] = useState('');
@@ -69,7 +71,10 @@ export default function ChatPage() {
 
   return (
     <div className="space-y-5">
-      <PageHeader title="گفتگوی فردی" description="پیام داخلی با مشتری و اشتراک فایل (MSG-05)" />
+      <PageHeader
+        title="گفتگوی فردی"
+        description={`پیام داخلی با ${noun} و اشتراک فایل (MSG-05)`}
+      />
       <div className="grid gap-5 lg:grid-cols-[20rem_1fr]">
         <Card className="overflow-hidden">
           <CardBody className="max-h-[32rem] space-y-1 overflow-y-auto p-2">
@@ -156,7 +161,10 @@ export default function ChatPage() {
             </>
           ) : (
             <CardBody>
-              <EmptyState title="یک گفتگو را انتخاب کنید" description="از فهرست مشتری را انتخاب کنید." />
+              <EmptyState
+                title="یک گفتگو را انتخاب کنید"
+                description={`از فهرست ${noun} را انتخاب کنید.`}
+              />
             </CardBody>
           )}
         </Card>

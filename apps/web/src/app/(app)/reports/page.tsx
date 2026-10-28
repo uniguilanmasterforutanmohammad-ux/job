@@ -13,6 +13,7 @@ import {
 } from 'recharts';
 import { api } from '@/lib/api-client';
 import { getAccessToken } from '@/lib/auth';
+import { useEndUserNoun } from '@/lib/use-industry-registry';
 import { formatNumber, formatToman } from '@/lib/utils';
 import { Card, CardBody, CardHeader } from '@/components/ui/card';
 import { EmptyState, Skeleton } from '@/components/ui/empty-state';
@@ -21,6 +22,7 @@ type RevenuePoint = { date: string; amount: number };
 
 export default function ReportsPage() {
   const token = getAccessToken();
+  const { plural } = useEndUserNoun();
 
   const { data: revenue, isLoading } = useQuery({
     queryKey: ['reports', 'revenue'],
@@ -40,26 +42,26 @@ export default function ReportsPage() {
     <div className="space-y-5">
       <div>
         <h1 className="text-xl font-bold text-slate-900 dark:text-slate-100">گزارش‌ها</h1>
-        <p className="mt-1 text-sm text-slate-500">تحلیل درآمد، مشتریان و عملکرد</p>
+        <p className="mt-1 text-sm text-slate-500">تحلیل درآمد، {plural} و عملکرد</p>
       </div>
 
       {customers && (
         <div className="grid gap-4 sm:grid-cols-3">
           <Card>
             <CardBody>
-              <p className="text-xs text-slate-500">مشتریان کل</p>
+              <p className="text-xs text-slate-500">{plural} کل</p>
               <p className="mt-1 text-lg font-bold nums">{formatNumber(customers.totalCustomers)}</p>
             </CardBody>
           </Card>
           <Card>
             <CardBody>
-              <p className="text-xs text-slate-500">مشتریان جدید (۳۰ روز)</p>
+              <p className="text-xs text-slate-500">{plural} جدید (۳۰ روز)</p>
               <p className="mt-1 text-lg font-bold nums">{formatNumber(customers.newCustomers)}</p>
             </CardBody>
           </Card>
           <Card>
             <CardBody>
-              <p className="text-xs text-slate-500">مشتریان فعال (۳۰ روز)</p>
+              <p className="text-xs text-slate-500">{plural} فعال (۳۰ روز)</p>
               <p className="mt-1 text-lg font-bold nums">{formatNumber(customers.activeCustomers)}</p>
             </CardBody>
           </Card>

@@ -6,9 +6,11 @@ import { Skeleton } from '@/components/ui/empty-state';
 import { Sidebar } from '@/components/layout/sidebar';
 import { Topbar } from '@/components/layout/topbar';
 import { useAuth } from '@/lib/auth';
+import { useEndUserNoun } from '@/lib/use-industry-registry';
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const { user, me, loading } = useAuth();
+  const { plural } = useEndUserNoun();
   const router = useRouter();
   const pathname = usePathname();
 
@@ -32,7 +34,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="flex min-h-screen">
-      <Sidebar enabledModules={me?.enabledModules ?? []} />
+      <Sidebar enabledModules={me?.enabledModules ?? []} customersLabel={plural} />
       <div className="flex min-w-0 flex-1 flex-col">
         <Topbar />
         <main className="flex-1 p-5 lg:p-7">{children}</main>

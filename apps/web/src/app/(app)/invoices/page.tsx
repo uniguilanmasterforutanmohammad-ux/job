@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { FileText } from 'lucide-react';
 import { api } from '@/lib/api-client';
 import { getAccessToken } from '@/lib/auth';
+import { useEndUserNoun } from '@/lib/use-industry-registry';
 import { formatJalali, formatToman } from '@/lib/utils';
 import { Card, CardBody, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -14,6 +15,7 @@ import type { Invoice, Paginated } from '@/lib/types';
 
 export default function InvoicesPage() {
   const token = getAccessToken();
+  const { noun } = useEndUserNoun();
   const { data, isLoading } = useQuery({
     queryKey: ['invoices'],
     queryFn: () => api.get<Paginated<Invoice>>('/invoices?pageSize=50', token),
@@ -40,7 +42,7 @@ export default function InvoicesPage() {
               <thead>
                 <tr>
                   <Th>شماره</Th>
-                  <Th>مشتری</Th>
+                  <Th>{noun}</Th>
                   <Th>مبلغ کل</Th>
                   <Th>پرداخت‌شده</Th>
                   <Th>وضعیت</Th>

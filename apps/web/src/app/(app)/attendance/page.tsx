@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { UserCheck } from 'lucide-react';
 import { api } from '@/lib/api-client';
 import { getAccessToken } from '@/lib/auth';
+import { useEndUserNoun } from '@/lib/use-industry-registry';
 import { formatJalali } from '@/lib/utils';
 import { Card, CardBody, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -33,6 +34,7 @@ const STATUS_LABELS: Record<AttendanceRow['status'], string> = {
 
 export default function AttendancePage() {
   const token = getAccessToken();
+  const { plural } = useEndUserNoun();
   const { data, isLoading } = useQuery({
     queryKey: ['attendance'],
     queryFn: () => api.get<AttendanceRow[]>('/attendance', token),
@@ -46,7 +48,7 @@ export default function AttendancePage() {
     <div className="space-y-5">
       <div>
         <h1 className="text-xl font-bold text-slate-900 dark:text-slate-100">حضور و غیاب</h1>
-        <p className="mt-1 text-sm text-slate-500">ثبت و پیگیری حضور مشتریان و کارکنان</p>
+        <p className="mt-1 text-sm text-slate-500">ثبت و پیگیری حضور {plural} و کارکنان</p>
       </div>
 
       <QrAttendancePanel branches={branchesQuery.data ?? []} />

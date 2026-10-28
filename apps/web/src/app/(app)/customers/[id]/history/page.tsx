@@ -6,6 +6,7 @@ import { useQuery } from '@tanstack/react-query';
 import { ArrowRight, CalendarDays, FileText, MessageSquare, Receipt, Wallet } from 'lucide-react';
 import { api } from '@/lib/api-client';
 import { getAccessToken } from '@/lib/auth';
+import { useEndUserNoun } from '@/lib/use-industry-registry';
 import { formatJalali, formatToman } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Card, CardBody, CardHeader } from '@/components/ui/card';
@@ -34,6 +35,7 @@ const TYPE_LABELS: Record<string, string> = {
 export default function CustomerHistoryPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const token = getAccessToken();
+  const { noun } = useEndUserNoun();
 
   const historyQuery = useQuery({
     queryKey: ['customer-history', id],
@@ -117,7 +119,7 @@ export default function CustomerHistoryPage({ params }: { params: Promise<{ id: 
           </Card>
         </>
       ) : (
-        <EmptyState title="مشتری یافت نشد" />
+        <EmptyState title={`${noun} یافت نشد`} />
       )}
     </div>
   );

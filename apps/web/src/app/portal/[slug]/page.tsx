@@ -20,6 +20,7 @@ import { Card, CardBody, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { EmptyState, Skeleton } from '@/components/ui/empty-state';
 import type { PortalLoyalty, PortalProfile } from '@/lib/types-extra';
+import { useIndustryRegistry } from '@/lib/use-industry-registry';
 
 const PORTAL_TOKEN_KEY = 'bp_portal_token';
 const PORTAL_CUSTOMER_KEY = 'bp_portal_customer';
@@ -70,6 +71,7 @@ export default function PortalPage() {
   const params = useParams<{ slug: string }>();
   const slug = params.slug;
   const { session, ready, save, clear } = usePortalSession();
+  const registry = useIndustryRegistry();
 
   const profileQuery = useQuery({
     queryKey: ['portal-profile', slug],
@@ -78,14 +80,16 @@ export default function PortalPage() {
 
   if (!ready) return null;
 
-  const tenantName = profileQuery.data?.tenant.name ?? 'پورتال مشتریان';
+  const industry = profileQuery.data?.tenant.industry;
+  const customers = registry.noun(industry, true);
+  const tenantName = profileQuery.data?.tenant.name ?? `پورتال ${customers}`;
 
   return (
     <div className="mx-auto min-h-screen max-w-3xl space-y-5 p-4 pb-16">
       <header className="flex items-center justify-between rounded-2xl bg-brand-600 p-5 text-white">
         <div>
           <h1 className="text-lg font-bold">{tenantName}</h1>
-          <p className="text-sm text-white/80">پورتال مشتریان — رزرو، پرداخت و پیگیری</p>
+          <p className="text-sm text-white/80">پورتال {customers} — رزرو، پرداخت و پیگیری</p>
         </div>
         {session && (
           <Button variant="ghost" className="text-white" onClick={clear}>

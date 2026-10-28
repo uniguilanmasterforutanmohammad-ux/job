@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { api } from '@/lib/api-client';
 import { getAccessToken } from '@/lib/auth';
+import { useEndUserNoun } from '@/lib/use-industry-registry';
 import { formatNumber, formatToman } from '@/lib/utils';
 import { Card, CardBody, CardHeader } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/empty-state';
@@ -22,6 +23,7 @@ import { APPOINTMENT_STATUS_LABELS, APPOINTMENT_STATUS_TONES } from '@/lib/statu
 
 export default function DashboardPage() {
   const token = getAccessToken();
+  const { plural } = useEndUserNoun();
 
   const { data, isLoading } = useQuery({
     queryKey: ['dashboard'],
@@ -48,8 +50,8 @@ export default function DashboardPage() {
     { label: 'درآمد این ماه', value: formatToman(data.revenueMonth), icon: Wallet, tone: 'success' },
     { label: 'نوبت‌های امروز', value: formatNumber(data.appointmentsToday), icon: CalendarCheck, tone: 'info' },
     { label: 'نوبت‌های فردا', value: formatNumber(data.appointmentsTomorrow), icon: CalendarClock, tone: 'warning' },
-    { label: 'مشتریان کل', value: formatNumber(data.totalCustomers), icon: Users, tone: 'neutral' },
-    { label: 'مشتریان جدید این ماه', value: formatNumber(data.newCustomersMonth), icon: UserPlus, tone: 'brand' },
+    { label: `${plural} کل`, value: formatNumber(data.totalCustomers), icon: Users, tone: 'neutral' },
+    { label: `${plural} جدید این ماه`, value: formatNumber(data.newCustomersMonth), icon: UserPlus, tone: 'brand' },
     { label: 'مطالبات معوق', value: formatToman(data.outstanding), icon: Wallet, tone: 'danger' },
   ];
 

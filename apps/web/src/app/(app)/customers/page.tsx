@@ -6,6 +6,7 @@ import { Plus, Users } from 'lucide-react';
 import { toast } from 'sonner';
 import { api, ApiClientError } from '@/lib/api-client';
 import { getAccessToken } from '@/lib/auth';
+import { useEndUserNoun } from '@/lib/use-industry-registry';
 import { formatJalali } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -19,6 +20,9 @@ import type { Customer, Paginated } from '@/lib/types';
 
 export default function CustomersPage() {
   const token = getAccessToken();
+  // «مشتری/مشتریان» برای آموزشگاه «زبان‌آموز/زبان‌آموزان»، برای کلینیک
+  // «بیمار/بیماران» و … — از رجیستری صنف خوانده می‌شود.
+  const { noun, plural } = useEndUserNoun();
   const queryClient = useQueryClient();
   const [search, setSearch] = useState('');
   const [open, setOpen] = useState(false);
@@ -35,33 +39,39 @@ export default function CustomersPage() {
 
   const createMutation = useMutation({
     mutationFn: () =>
-      api.post('/customers', { fullName: form.fullName, phone: form.phone || undefined, city: form.city || undefined }, token),
+      api.post(
+        '/customers',
+        { fullName: form.fullName, phone: form.phone || undefined, city: form.city || undefined },
+        token,
+      ),
     onSuccess: () => {
-      toast.success('مشتری ثبت شد');
+      toast.success(`${noun} ثبت شد`);
       setOpen(false);
       setForm({ fullName: '', phone: '', city: '' });
       void queryClient.invalidateQueries({ queryKey: ['customers'] });
     },
     onError: (error) =>
-      toast.error(error instanceof ApiClientError ? error.message : 'خطا در ثبت مشتری'),
+      toast.error(error instanceof ApiClientError ? error.message : `خطا در ثبت ${noun}`),
   });
 
   return (
     <div className="space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-xl font-bold text-slate-900 dark:text-slate-100">مشتریان</h1>
-          <p className="mt-1 text-sm text-slate-500">مدیریت پرونده مشتریان و سرنخ‌ها</p>
+          <h1 className="text-xl font-bold text-slate-900 dark:text-slate-100">{plural}</h1>
+          <p className="mt-1 text-sm text-slate-500">
+            مدیریت پرونده {plural} و سرنخ‌ها
+          </p>
         </div>
         <Button onClick={() => setOpen(true)}>
           <Plus className="h-4 w-4" />
-          مشتری جدید
+          {noun} جدید
         </Button>
       </div>
 
       <Card>
         <CardHeader
-          title="فهرست مشتریان"
+          title={`فهرست ${plural}`}
           action={
             <div className="w-56">
               <Input
@@ -123,12 +133,12 @@ export default function CustomersPage() {
           ) : (
             <EmptyState
               icon={Users}
-              title="مشتری‌ای ثبت نشده است"
-              description="برای شروع، اولین مشتری خود را اضافه کنید."
+              title={`هنوز ${noun}ی ثبت نشده است`}
+              description={`برای شروع، اولین ${noun} خود را اضافه کنید.`}
               action={
                 <Button onClick={() => setOpen(true)}>
                   <Plus className="h-4 w-4" />
-                  مشتری جدید
+                  {noun} جدید
                 </Button>
               }
             />
@@ -139,7 +149,7 @@ export default function CustomersPage() {
       <Modal
         open={open}
         onClose={() => setOpen(false)}
-        title="ثبت مشتری جدید"
+        title={`ثبت ${noun} جدید`}
         footer={
           <>
             <Button variant="outline" onClick={() => setOpen(false)}>

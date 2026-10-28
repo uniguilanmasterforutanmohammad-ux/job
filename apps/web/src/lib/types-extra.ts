@@ -121,6 +121,8 @@ export type PortalProfile = {
   tenant: {
     slug: string;
     name: string;
+    /** Industry key — used to name the portal after the industry's end-users. */
+    industry: string;
     logoUrl: string | null;
     address: string | null;
     phone: string | null;

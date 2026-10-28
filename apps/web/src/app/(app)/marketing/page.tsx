@@ -6,6 +6,7 @@ import { Gift, Plus, Sparkles, Star } from 'lucide-react';
 import { toast } from 'sonner';
 import { api, ApiClientError } from '@/lib/api-client';
 import { getAccessToken } from '@/lib/auth';
+import { useEndUserNoun } from '@/lib/use-industry-registry';
 import { formatJalali, formatToman } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -19,6 +20,7 @@ import { GIFT_CARD_STATUS_LABELS } from '@/lib/status';
 import type { GiftCard, Paginated, Review } from '@/lib/types';
 
 export default function MarketingPage() {
+  const { plural } = useEndUserNoun();
   const token = getAccessToken();
   const queryClient = useQueryClient();
   const [giftOpen, setGiftOpen] = useState(false);
@@ -60,7 +62,7 @@ export default function MarketingPage() {
     <div className="space-y-5">
       <PageHeader
         title="وفاداری و بازاریابی"
-        description="باشگاه مشتری، کارت هدیه، معرفی دوست و نظرات"
+        description={`باشگاه ${plural}، کارت هدیه، معرفی دوست و نظرات`}
         action={
           <Button onClick={() => setGiftOpen(true)}>
             <Plus className="h-4 w-4" />
@@ -150,7 +152,7 @@ export default function MarketingPage() {
       </Card>
 
       <Card>
-        <CardHeader title="نظرات مشتریان" />
+        <CardHeader title={`نظرات ${plural}`} />
         <CardBody className="p-0">
           {reviewsQuery.data && reviewsQuery.data.data.length > 0 ? (
             <Table>

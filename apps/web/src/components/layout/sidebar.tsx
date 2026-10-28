@@ -56,9 +56,22 @@ const NAV_ITEMS: NavItem[] = [
   { href: '/settings', label: 'تنظیمات', icon: Settings },
 ];
 
-export function Sidebar({ enabledModules }: { enabledModules: ModuleKey[] }) {
+export function Sidebar({
+  enabledModules,
+  customersLabel = 'مشتریان',
+}: {
+  enabledModules: ModuleKey[];
+  /** Industry-specific plural of the business's end-users («زبان‌آموزان»…). */
+  customersLabel?: string;
+}) {
   const pathname = usePathname();
-  const items = NAV_ITEMS.filter((item) => !item.module || enabledModules.includes(item.module));
+  const items = NAV_ITEMS.filter(
+    (item) => !item.module || enabledModules.includes(item.module),
+  ).map((item) => {
+    if (item.href === '/customers') return { ...item, label: customersLabel };
+    if (item.href === '/messages/chat') return { ...item, label: `گفتگوی ${customersLabel}` };
+    return item;
+  });
 
   return (
     <aside className="hidden w-64 shrink-0 border-l border-slate-200 bg-white lg:block dark:border-slate-800 dark:bg-slate-900">

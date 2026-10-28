@@ -6,6 +6,7 @@ import { Receipt, Wallet } from 'lucide-react';
 import { toast } from 'sonner';
 import { api, ApiClientError } from '@/lib/api-client';
 import { getAccessToken } from '@/lib/auth';
+import { useEndUserNoun } from '@/lib/use-industry-registry';
 import { formatJalali, formatToman } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -28,6 +29,7 @@ type ProfitLoss = {
 
 export default function FinancePage() {
   const token = getAccessToken();
+  const { plural } = useEndUserNoun();
   const queryClient = useQueryClient();
   const [expenseOpen, setExpenseOpen] = useState(false);
   const [cashOpen, setCashOpen] = useState(false);
@@ -100,7 +102,7 @@ export default function FinancePage() {
     <div className="space-y-5">
       <PageHeader
         title="مالی — اقساط، هزینه و صندوق"
-        description="سود و زیان، اقساط مشتریان، هزینه‌ها و مغایرت صندوق"
+        description={`سود و زیان، اقساط ${plural}، هزینه‌ها و مغایرت صندوق`}
         action={
           <div className="flex gap-2">
             {openCash ? (

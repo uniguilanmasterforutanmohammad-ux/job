@@ -7,6 +7,7 @@ import { ArrowRight, BadgePercent, Link2, RotateCcw, Wallet } from 'lucide-react
 import { toast } from 'sonner';
 import { api, ApiClientError } from '@/lib/api-client';
 import { getAccessToken } from '@/lib/auth';
+import { useEndUserNoun } from '@/lib/use-industry-registry';
 import { formatJalali, formatToman } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -33,6 +34,7 @@ const REFUND_STATUS_LABELS: Record<Refund['status'], string> = {
 
 export default function FinanceAdvancedPage() {
   const token = getAccessToken();
+  const { noun } = useEndUserNoun();
   const queryClient = useQueryClient();
   const [customerId, setCustomerId] = useState('');
   const [discountOpen, setDiscountOpen] = useState(false);
@@ -154,7 +156,7 @@ export default function FinanceAdvancedPage() {
       <div className="grid gap-5 lg:grid-cols-2">
         <Card>
           <CardHeader
-            title="کیف پول مشتری"
+            title={`کیف پول ${noun}`}
             description="شارژ، مصرف و گردش اعتبار"
             action={
               <Button size="sm" variant="outline" onClick={() => adjustWallet.mutate(100000)} disabled={!customerId}>
@@ -168,7 +170,7 @@ export default function FinanceAdvancedPage() {
               value={customerId}
               onChange={(e) => setCustomerId(e.target.value)}
             >
-              <option value="">انتخاب مشتری…</option>
+              <option value="">انتخاب {noun}…</option>
               {customersQuery.data?.data.map((c) => (
                 <option key={c.id} value={c.id}>
                   {c.fullName} — {c.phone ?? '—'}
@@ -222,7 +224,10 @@ export default function FinanceAdvancedPage() {
       </div>
 
       <Card>
-        <CardHeader title="لینک‌های پرداخت (FIN-13)" description="لینک پیامکی/QR برای پرداخت مشتری" />
+        <CardHeader
+          title="لینک‌های پرداخت (FIN-13)"
+          description={`لینک پیامکی/QR برای پرداخت ${noun}`}
+        />
         <CardBody>
           {linksQuery.isLoading ? (
             <Skeleton className="h-24 w-full" />
@@ -315,7 +320,7 @@ export default function FinanceAdvancedPage() {
               <Table>
                 <thead>
                   <tr>
-                    <Th>مشتری</Th>
+                    <Th>{noun}</Th>
                     <Th>بدهی</Th>
                     <Th>فاکتور</Th>
                   </tr>
@@ -419,7 +424,7 @@ export default function FinanceAdvancedPage() {
               checked={refundForm.toWallet}
               onChange={(e) => setRefundForm({ ...refundForm, toWallet: e.target.checked })}
             />
-            واریز به کیف پول مشتری
+            واریز به کیف پول {noun}
           </label>
         </div>
       </Modal>
