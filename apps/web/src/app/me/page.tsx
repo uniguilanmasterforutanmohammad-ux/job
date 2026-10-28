@@ -5,6 +5,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   ArrowLeftRight,
   BadgeCheck,
+  Bell,
   Building2,
   CalendarDays,
   CalendarClock,
@@ -42,6 +43,9 @@ import type {
   CustomerClub,
   CustomerBusinessOption,
   CustomerLoginResult,
+  CustomerNotice,
+  CustomerOverview,
+  CustomerOverviewClub,
 } from '@/lib/types-extra';
 
 const CUSTOMER_TOKEN_KEY = 'bp_customer_token';
@@ -59,6 +63,7 @@ const LEGACY_USER_KEY = 'bp_student_user';
 type PortalTab =
   | 'home'
   | 'clubs'
+  | 'notices'
   | 'attendance'
   | 'appointments'
   | 'finance'
@@ -68,6 +73,7 @@ type PortalTab =
 const PORTAL_TABS: { key: PortalTab; label: string; icon: typeof LayoutDashboard }[] = [
   { key: 'home', label: 'خانه', icon: LayoutDashboard },
   { key: 'clubs', label: 'صنف‌ها و مجموعه‌ها', icon: Building2 },
+  { key: 'notices', label: 'اطلاعیه‌ها', icon: Bell },
   { key: 'attendance', label: 'حضور و غیاب', icon: UserCheck },
   { key: 'appointments', label: 'نوبت‌های من', icon: CalendarClock },
   { key: 'finance', label: 'مالی و کیف پول', icon: CreditCard },
@@ -485,15 +491,19 @@ function ClubRow({
   active,
   switching,
   onSwitch,
+  stats,
 }: {
   club: CustomerClub;
   active: boolean;
   switching: boolean;
   onSwitch: (tenantId: string) => void;
+  /** Same club with its own numbers (`GET /app/overview`). */
+  stats?: CustomerOverviewClub;
 }) {
   const registry = useIndustryRegistry();
   return (
-    <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-100 p-3 dark:border-slate-800">
+    <div className="space-y-3 rounded-xl border border-slate-100 p-3 dark:border-slate-800">
+    <div className="flex flex-wrap items-center justify-between gap-3">
       <div className="flex items-center gap-3">
         <div className="rounded-xl bg-brand-50 p-2 text-brand-600 dark:bg-brand-900/30">
           <Building2 className="h-5 w-5" />
@@ -535,6 +545,94 @@ function ClubRow({
           </Button>
         )}
       </div>
+    </div>
+    {stats && <ClubStats club={stats} />}
+    </div>
+  );
+}
+
+/** One number of a club (حضور، شهریه، اطلاعیه، نوبت) — with its icon. */
+function ClubStat({
+  icon: Icon,
+  label,
+  value,
+  hint,
+  tone,
+}: {
+  icon: typeof LayoutDashboard;
+  label: string;
+  value: string;
+  hint?: string;
+  tone?: 'warning' | 'success' | 'brand';
+}) {
+  return (
+    <div className="flex items-center gap-2 rounded-xl bg-slate-50 px-3 py-2 dark:bg-slate-800/60">
+      <Icon
+        className={cn(
+          'h-4 w-4 shrink-0',
+          tone === 'warning' ? 'text-amber-500' : tone === 'brand' ? 'text-brand-600' : 'text-slate-400',
+        )}
+      />
+      <div className="min-w-0">
+        <p className="text-[0.7rem] text-slate-500">{label}</p>
+        <p className="truncate text-sm font-semibold nums">{value}</p>
+        {hint && <p className="truncate text-[0.7rem] text-slate-400">{hint}</p>}
+      </div>
+    </div>
+  );
+}
+
+/**
+ * What one club has for me: my attendance there, what I still owe it, its
+ * unread notices and my next appointment with it.
+ */
+function ClubStats({ club }: { club: CustomerOverviewClub }) {
+  return (
+    <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+      <ClubStat
+        icon={UserCheck}
+        label="حضور من"
+        value={`${formatNumber(club.attendance.ratio)}٪`}
+        hint={`${formatNumber(club.attendance.present)} از ${formatNumber(club.attendance.total)} جلسه`}
+      />
+      <ClubStat
+        icon={CreditCard}
+        label="مانده شهریه"
+        value={club.finance.outstanding > 0 ? formatToman(club.finance.outstanding) : 'تسویه‌شده'}
+        hint={
+          club.finance.nextDueDate
+            ? `سررسید بعدی ${formatJalali(club.finance.nextDueDate)}`
+            : club.finance.invoices || club.finance.installments
+              ? `${formatNumber(club.finance.invoices + club.finance.installments)} مورد`
+              : 'موردی نیست'
+        }
+        tone={club.finance.outstanding > 0 ? 'warning' : 'success'}
+      />
+      <ClubStat
+        icon={Bell}
+        label="اطلاعیه‌ها"
+        value={
+          club.notices.unread
+            ? `${formatNumber(club.notices.unread)} خوانده‌نشده`
+            : `${formatNumber(club.notices.total)} پیام`
+        }
+        hint={club.notices.latest?.subject ?? club.notices.latest?.body ?? 'اطلاعیه‌ای ثبت نشده'}
+        tone={club.notices.unread ? 'brand' : undefined}
+      />
+      <ClubStat
+        icon={CalendarClock}
+        label="نوبت بعدی من"
+        value={
+          club.appointments.nextStartsAt
+            ? formatJalali(club.appointments.nextStartsAt)
+            : 'نوبتی نیست'
+        }
+        hint={
+          club.appointments.upcoming
+            ? `${formatNumber(club.appointments.upcoming)} نوبت پیش‌رو`
+            : undefined
+        }
+      />
     </div>
   );
 }
@@ -669,6 +767,29 @@ function CustomerDashboard({
   const clubsQuery = useQuery({
     queryKey: ['customer-clubs'],
     queryFn: () => apiGet<CustomerClub[]>('/app/clubs'),
+  });
+  /**
+   * The cross-club home: what each club has for me (attendance, tuition,
+   * notices, next appointment). Only loaded for the two sections that show it.
+   */
+  const overviewQuery = useQuery({
+    queryKey: ['customer-overview'],
+    queryFn: () => apiGet<CustomerOverview>('/app/overview'),
+    enabled: tab === 'home' || tab === 'clubs',
+  });
+  const noticesQuery = useQuery({
+    queryKey: ['customer-notices'],
+    queryFn: () => apiGet<CustomerNotice[]>('/app/notifications'),
+    enabled: tab === 'notices',
+  });
+  const readNotice = useMutation({
+    mutationFn: (messageId: string) =>
+      api.patch<CustomerNotice>('/app/notifications/read', { messageId }, token),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['customer-notices'] });
+      void queryClient.invalidateQueries({ queryKey: ['customer-overview'] });
+    },
+    onError: (e) => toast.error(e instanceof ApiClientError ? e.message : 'ثبت خوانده‌شدن ناموفق بود'),
   });
   const attendanceQuery = useQuery({
     queryKey: ['customer-attendance'],
@@ -814,6 +935,11 @@ function CustomerDashboard({
   const clubGroups = groupClubsByIndustry(clubsQuery.data ?? []);
   const busyTenantId = switchClub.isPending ? (switchClub.variables ?? null) : null;
   const activeClub = (clubsQuery.data ?? []).find((club) => club.tenantId === session.tenantId);
+  const overviewClubs = overviewQuery.data?.clubs ?? [];
+  const overviewByTenant = new Map(overviewClubs.map((club) => [club.tenantId, club]));
+  const unreadNotices = (noticesQuery.data ?? []).filter((notice) => !notice.readAt).length;
+  /** Section titles say which club's data is on screen (a student may have several). */
+  const clubSuffix = session.tenantName ? ` — ${session.tenantName}` : '';
 
   return (
     <div className="space-y-5">
@@ -893,12 +1019,87 @@ function CustomerDashboard({
         </>
       )}
 
+      {tab === 'notices' && (
+        <>
+      {/* اطلاعیه‌ها/پیام‌های همین مجموعه برای من (MSG) */}
+      <Card>
+        <CardHeader
+          title={`اطلاعیه‌ها${session.tenantName ? ` — ${session.tenantName}` : ''}`}
+          description="پیام‌ها و یادآوری‌هایی که این مجموعه برای شما فرستاده است"
+          action={
+            noticesQuery.data?.length ? (
+              <Badge tone={unreadNotices ? 'info' : 'neutral'}>
+                {unreadNotices
+                  ? `${formatNumber(unreadNotices)} خوانده‌نشده`
+                  : `${formatNumber(noticesQuery.data.length)} پیام`}
+              </Badge>
+            ) : undefined
+          }
+        />
+        <CardBody className="space-y-2">
+          {noticesQuery.isLoading ? (
+            <Skeleton className="h-20 w-full" />
+          ) : noticesQuery.data?.length ? (
+            noticesQuery.data.map((notice) => (
+              <div
+                key={notice.id}
+                className={cn(
+                  'rounded-xl border p-3',
+                  notice.readAt
+                    ? 'border-slate-100 dark:border-slate-800'
+                    : 'border-brand-200 bg-brand-50/50 dark:border-brand-900 dark:bg-brand-950/20',
+                )}
+              >
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <Bell
+                      className={cn('h-4 w-4', notice.readAt ? 'text-slate-400' : 'text-brand-600')}
+                    />
+                    <span className="text-sm font-medium">
+                      {notice.subject ?? 'اطلاعیه'}
+                    </span>
+                    <Badge tone="neutral">{notice.channel}</Badge>
+                    {!notice.readAt && <Badge tone="info">جدید</Badge>}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-slate-400 nums">
+                      {formatJalali(notice.createdAt, true)}
+                    </span>
+                    {!notice.readAt && (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        loading={readNotice.isPending}
+                        onClick={() => readNotice.mutate(notice.id)}
+                      >
+                        خوانده شد
+                      </Button>
+                    )}
+                  </div>
+                </div>
+                <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
+                  {notice.body}
+                </p>
+              </div>
+            ))
+          ) : (
+            <EmptyState
+              icon={Bell}
+              title="اطلاعیه‌ای ندارید"
+              description="وقتی این مجموعه برای شما پیام یا یادآوری بفرستد، همین‌جا نشان داده می‌شود."
+            />
+          )}
+        </CardBody>
+      </Card>
+        </>
+      )}
+
       {tab === 'attendance' && (
         <>
       {/* Open attendance sessions the customer can self check in to */}
       <Card>
         <CardHeader
-          title="ثبت حاضری"
+          title={`ثبت حاضری${clubSuffix}`}
           description="جلسه‌های بازِ مراکز شما — بدون نیاز به اسکن QR"
         />
         <CardBody className="space-y-2">
@@ -976,6 +1177,7 @@ function CustomerDashboard({
                     active={club.tenantId === session.tenantId}
                     switching={busyTenantId === club.tenantId}
                     onSwitch={(tenantId) => switchClub.mutate(tenantId)}
+                    stats={overviewByTenant.get(club.tenantId)}
                   />
                 ))}
               </div>
@@ -994,53 +1196,84 @@ function CustomerDashboard({
 
       {tab === 'home' && (
         <>
-      {/* Compact summary: the industries themselves live in the strip above and
-          in «صنف‌ها و مجموعه‌ها». */}
-      <Card>
-        <CardHeader
-          title="عضویت‌های من"
-          description="یک شمارهٔ موبایل می‌تواند هم‌زمان در چند صنف و کسب‌وکار (مثلاً یک آموزشگاه زبان و یک باشگاه ورزشی) عضو باشد."
-          action={
-            clubsQuery.data?.length ? (
-              <Button size="sm" variant="outline" onClick={() => setTab('clubs')}>
-                <Layers className="h-4 w-4" />
-                مشاهدهٔ فهرست کامل
-              </Button>
-            ) : undefined
-          }
-        />
-        <CardBody className="space-y-3">
-          {clubsQuery.isLoading ? (
-            <Skeleton className="h-16 w-full" />
-          ) : clubsQuery.data?.length ? (
-            <>
-              <p className="text-sm text-slate-500">
-                شما در {formatNumber(clubGroups.length)} صنف و{' '}
-                {formatNumber(clubsQuery.data.length)} مجموعه عضو هستید. مجموعهٔ فعال:{' '}
-                <span className="font-medium text-slate-700 dark:text-slate-200">
-                  {session.tenantName}
-                </span>
-              </p>
-              <div className="flex flex-wrap gap-2">
-                {clubGroups.map((group) => {
-                  const active = group.clubs.some((club) => club.tenantId === session.tenantId);
-                  return (
-                    <Badge key={group.industry} tone={active ? 'brand' : 'neutral'}>
-                      {registry.label(group.industry)} • {formatNumber(group.clubs.length)}
-                    </Badge>
-                  );
-                })}
-              </div>
-            </>
-          ) : (
+      {/* کلاس‌ها/مجموعه‌هایی که در آن‌ها ثبت‌نام شده‌ام — هر کدام با حضور و
+          غیاب، شهریه و اطلاعیهٔ خودش (یک کارت برای هر مجموعه). */}
+      {overviewQuery.isLoading ? (
+        <Skeleton className="h-32 w-full" />
+      ) : overviewClubs.length ? (
+        <div className="space-y-3">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <h2 className="font-semibold text-slate-700 dark:text-slate-200">
+              مجموعه‌هایی که در آن‌ها ثبت‌نام کرده‌اید
+            </h2>
+            <Badge tone="neutral">
+              {formatNumber(overviewQuery.data?.totals.industries ?? 0)} صنف •{' '}
+              {formatNumber(overviewQuery.data?.totals.clubs ?? 0)} مجموعه
+            </Badge>
+          </div>
+          {overviewClubs.map((club) => {
+            const active = club.tenantId === session.tenantId;
+            return (
+              <Card key={club.tenantId}>
+                <CardHeader
+                  title={club.tenantName}
+                  description={`${registry.label(club.industry)} • شما ${registry.noun(club.industry)} این مجموعه هستید`}
+                  action={
+                    active ? (
+                      <Badge tone="brand">مجموعهٔ فعال پنل</Badge>
+                    ) : (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        loading={busyTenantId === club.tenantId}
+                        disabled={!club.isActive}
+                        onClick={() => switchClub.mutate(club.tenantId)}
+                      >
+                        <ArrowLeftRight className="h-4 w-4" />
+                        ورود به این مجموعه
+                      </Button>
+                    )
+                  }
+                />
+                <CardBody className="space-y-3">
+                  <ClubStats club={club} />
+                  {active ? (
+                    <div className="flex flex-wrap gap-2">
+                      <Button size="sm" variant="ghost" onClick={() => setTab('attendance')}>
+                        <UserCheck className="h-4 w-4" />
+                        حضور و غیاب
+                      </Button>
+                      <Button size="sm" variant="ghost" onClick={() => setTab('finance')}>
+                        <CreditCard className="h-4 w-4" />
+                        شهریه و پرداخت
+                      </Button>
+                      <Button size="sm" variant="ghost" onClick={() => setTab('notices')}>
+                        <Bell className="h-4 w-4" />
+                        اطلاعیه‌ها
+                      </Button>
+                    </div>
+                  ) : (
+                    <p className="text-xs text-slate-500">
+                      برای دیدن حضور، شهریه و اطلاعیه‌های این مجموعه، اول با «ورود به این مجموعه»
+                      آن را به‌عنوان مجموعهٔ فعال انتخاب کنید.
+                    </p>
+                  )}
+                </CardBody>
+              </Card>
+            );
+          })}
+        </div>
+      ) : (
+        <Card>
+          <CardBody>
             <EmptyState
               icon={Building2}
               title="هنوز در هیچ کسب‌وکاری عضو نیستید"
               description="حساب شما با همین شمارهٔ موبایل ساخته می‌شود و می‌تواند هم‌زمان در چند کسب‌وکار باشد. برای شروع: ۱) لینک یا QR دعوت همان مجموعه را باز کنید، ۲) از فهرست کسب‌وکارهای فعال در صفحهٔ ورود یکی را انتخاب کنید تا حساب شما همان لحظه ساخته شود، یا ۳) از مدیر مجموعه بخواهید شمارهٔ شما را در فهرست کاربرانش ثبت کند."
             />
-          )}
-        </CardBody>
-      </Card>
+          </CardBody>
+        </Card>
+      )}
         </>
       )}
 
@@ -1048,7 +1281,7 @@ function CustomerDashboard({
         <>
       {/* Attendance history */}
       <Card>
-        <CardHeader title="سوابق حضور و غیاب" description="آخرین جلسات ثبت‌شده" />
+        <CardHeader title={`سوابق حضور و غیاب${clubSuffix}`} description="آخرین جلسات ثبت‌شده در همین مجموعه" />
         <CardBody className="space-y-2">
           {attendanceQuery.isLoading ? (
             <Skeleton className="h-20 w-full" />
@@ -1099,7 +1332,7 @@ function CustomerDashboard({
         <>
       <Card>
         <CardHeader
-          title="درخواست غیبت / عدم حضور یک جلسه"
+          title={`درخواست غیبت / عدم حضور یک جلسه${clubSuffix}`}
           description="اگر نمی‌توانید در جلسه‌ای شرکت کنید، علت را ثبت کنید تا مربی بررسی کند"
           action={
             <Badge tone="info">
@@ -1181,7 +1414,7 @@ function CustomerDashboard({
       {tab === 'appointments' && (
         <>
       <Card>
-        <CardHeader title="نوبت‌های من" />
+        <CardHeader title={`نوبت‌های من${clubSuffix}`} />
         <CardBody className="space-y-2">
           {appointmentsQuery.isLoading ? (
             <Skeleton className="h-20 w-full" />
@@ -1223,7 +1456,7 @@ function CustomerDashboard({
       {tab === 'finance' && (
         <>
       <Card>
-        <CardHeader title="فاکتورها و پرداخت" />
+        <CardHeader title={`فاکتورها و پرداخت${clubSuffix}`} />
         <CardBody className="space-y-2">
           {invoicesQuery.data?.length ? (
             invoicesQuery.data.slice(0, 10).map((invoice) => {

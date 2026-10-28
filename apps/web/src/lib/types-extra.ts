@@ -165,6 +165,52 @@ export type CustomerClub = {
   joinedAt?: string;
 };
 
+/** One club of the portal user, with that club's own numbers (`GET /app/overview`). */
+export type CustomerOverviewClub = CustomerClub & {
+  attendance: { present: number; total: number; ratio: number };
+  finance: {
+    outstanding: number;
+    invoices: number;
+    installments: number;
+    nextDueDate: string | null;
+  };
+  notices: {
+    total: number;
+    unread: number;
+    latest: {
+      id: string;
+      subject: string | null;
+      body: string;
+      channel: string;
+      createdAt: string;
+      readAt: string | null;
+    } | null;
+  };
+  appointments: { upcoming: number; nextStartsAt: string | null };
+};
+
+export type CustomerOverview = {
+  totals: {
+    clubs: number;
+    industries: number;
+    outstanding: number;
+    unreadNotices: number;
+    upcomingAppointments: number;
+  };
+  clubs: CustomerOverviewClub[];
+};
+
+/** A message a business sent this end-user (portal «اطلاعیه‌ها»). */
+export type CustomerNotice = {
+  id: string;
+  subject: string | null;
+  body: string;
+  channel: string;
+  status: string;
+  createdAt: string;
+  readAt: string | null;
+};
+
 export type CustomerLoginResult = {
   tokens: { accessToken: string; refreshToken: string; expiresIn: number };
   clubs: CustomerClub[];
