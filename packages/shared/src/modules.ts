@@ -101,3 +101,16 @@ export const INDUSTRY_DEFAULT_MODULES: Record<string, ModuleKey[]> = {
   REAL_ESTATE: ['CRM', 'SCH', 'FIN', 'DOC', 'RPT'],
   TOURISM: ['CRM', 'SCH', 'FIN', 'DOC', 'RPT', 'APP'],
 };
+
+/** Module set used for industries without an explicit default (PRD §17). */
+export const FALLBACK_DEFAULT_MODULES: ModuleKey[] = ['CRM', 'SCH', 'FIN', 'RPT'];
+
+/**
+ * Default modules for a business of the given industry. Used both by the
+ * self-service signup flow and the platform admin console so a new tenant
+ * always starts from the same industry baseline.
+ */
+export function defaultModulesForIndustry(industry?: string | null): ModuleKey[] {
+  const defaults = industry ? INDUSTRY_DEFAULT_MODULES[industry] : undefined;
+  return [...(defaults ?? FALLBACK_DEFAULT_MODULES)];
+}

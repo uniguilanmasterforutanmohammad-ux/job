@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { hash, verify } from 'argon2';
 import type { AuthenticatedUser } from '@repo/shared';
-import { resolveModuleDependencies, type ModuleKey } from '@repo/shared';
+import { defaultModulesForIndustry, resolveModuleDependencies } from '@repo/shared';
 import { DomainException } from '../../common/exceptions/domain.exception.js';
 import { PrismaService } from '../../database/prisma.service.js';
 import { OtpService } from './otp.service.js';
@@ -83,18 +83,7 @@ export class AuthService {
 
     const slug = await this.uniqueSlug(dto.businessName);
 
-    const industryModuleMap: Record<string, ModuleKey[]> = {
-      SPORTS_COACHING: ['CRM', 'SCH', 'FIN', 'ATT', 'MSG', 'SUB', 'RPT', 'APP'],
-      BEAUTY: ['CRM', 'SCH', 'FIN', 'MSG', 'MKT', 'RPT'],
-      HEALTHCARE: ['CRM', 'SCH', 'FIN', 'MSG', 'DOC', 'RPT', 'APP'],
-      RESTAURANT_CAFE: ['CRM', 'SCH', 'FIN', 'INV', 'SHOP', 'RPT'],
-      RETAIL: ['CRM', 'FIN', 'INV', 'SHOP', 'RPT'],
-      REAL_ESTATE: ['CRM', 'SCH', 'FIN', 'DOC', 'RPT'],
-      TOURISM: ['CRM', 'SCH', 'FIN', 'DOC', 'RPT', 'APP'],
-    };
-    const modules = resolveModuleDependencies(
-      industryModuleMap[dto.industry] ?? ['CRM', 'SCH', 'FIN', 'RPT'],
-    );
+    const modules = resolveModuleDependencies(defaultModulesForIndustry(dto.industry));
 
     const result = await this.prisma.client.$transaction(async (tx) => {
       const tenant = await tx.tenant.create({

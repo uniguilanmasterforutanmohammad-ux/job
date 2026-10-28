@@ -1,9 +1,12 @@
+// TaskForMyAgent — پنل ادمین: ماژول‌های پیش‌فرض هر کسب‌وکار (defaultModulesForIndustry)
 import { describe, expect, it } from 'vitest';
 import {
+  FALLBACK_DEFAULT_MODULES,
   INDUSTRY_DEFAULT_MODULES,
   MODULE_DEPENDENCIES,
   MODULE_KEYS,
   MODULE_LABELS,
+  defaultModulesForIndustry,
   resolveModuleDependencies,
   type ModuleKey,
 } from './modules.js';
@@ -27,6 +30,24 @@ describe('module registry', () => {
     for (const modules of Object.values(INDUSTRY_DEFAULT_MODULES)) {
       for (const key of modules) expect(known.has(key)).toBe(true);
     }
+  });
+
+  it('returns the industry default set when one is defined', () => {
+    expect(defaultModulesForIndustry('SPORTS_COACHING')).toEqual(
+      INDUSTRY_DEFAULT_MODULES.SPORTS_COACHING,
+    );
+  });
+
+  it('falls back for unknown or missing industries', () => {
+    expect(defaultModulesForIndustry('NOT_A_VERTICAL')).toEqual(FALLBACK_DEFAULT_MODULES);
+    expect(defaultModulesForIndustry(null)).toEqual(FALLBACK_DEFAULT_MODULES);
+    expect(defaultModulesForIndustry(undefined)).toEqual(FALLBACK_DEFAULT_MODULES);
+  });
+
+  it('returns a copy so callers cannot mutate the registry', () => {
+    const first = defaultModulesForIndustry('BEAUTY');
+    first.push('HR');
+    expect(defaultModulesForIndustry('BEAUTY')).toEqual(INDUSTRY_DEFAULT_MODULES.BEAUTY);
   });
 });
 
