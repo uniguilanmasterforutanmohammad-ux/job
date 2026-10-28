@@ -64,8 +64,11 @@ export class CrmExtService {
     const results = { created: 0, skipped: 0, duplicates: 0 };
     for (const row of dto.rows) {
       if (row.phone) {
-        const existing = await this.prisma.client.customer.findUnique({
-          where: { tenantId_phone: { tenantId, phone: row.phone } },
+        // Duplicate detection only against visible files: a soft-deleted
+        // customer releases its phone (see CustomersService.remove).
+        const existing = await this.prisma.client.customer.findFirst({
+          where: { tenantId, phone: row.phone, deletedAt: null },
+          select: { id: true },
         });
         if (existing) {
           results.duplicates += 1;
@@ -123,7 +126,11 @@ export class CrmExtService {
       });
     }
     return {
-      pipeline: Object.entries(stages).map(([stage, items]) => ({ stage, count: items.length, items })),
+      pipeline: Object.entries(stages).map(([stage, items]) => ({
+        stage,
+        count: items.length,
+        items,
+      })),
     };
   }
 
@@ -140,8 +147,9 @@ export class CrmExtService {
 
   /** CRM-07 — public online form that registers directly into the CRM. */
   async submitOnlineForm(tenantId: string, dto: OnlineFormDto) {
-    const existing = await this.prisma.client.customer.findUnique({
-      where: { tenantId_phone: { tenantId, phone: dto.phone } },
+    const existing = await this.prisma.client.customer.findFirst({
+      where: { tenantId, phone: dto.phone, deletedAt: null },
+      select: { id: true, notes: true, source: true },
     });
     if (existing) {
       return this.prisma.client.customer.update({

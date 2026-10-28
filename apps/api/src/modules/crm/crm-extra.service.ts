@@ -22,39 +22,40 @@ export class CrmExtraService {
     });
     if (!customer) throw DomainException.notFound('مشتری');
 
-    const [appointments, invoices, payments, messages, documents, chats] = await this.prisma.client.$transaction([
-      this.prisma.client.appointment.findMany({
-        where: { tenantId, customerId },
-        include: { service: { select: { name: true } } },
-        orderBy: { startsAt: 'desc' },
-        take: dto.limit,
-      }),
-      this.prisma.client.invoice.findMany({
-        where: { tenantId, customerId, deletedAt: null },
-        orderBy: { createdAt: 'desc' },
-        take: dto.limit,
-      }),
-      this.prisma.client.payment.findMany({
-        where: { tenantId, customerId },
-        orderBy: { createdAt: 'desc' },
-        take: dto.limit,
-      }),
-      this.prisma.client.message.findMany({
-        where: { tenantId, customerId },
-        orderBy: { createdAt: 'desc' },
-        take: dto.limit,
-      }),
-      this.prisma.client.document.findMany({
-        where: { tenantId, customerId },
-        orderBy: { createdAt: 'desc' },
-        take: dto.limit,
-      }),
-      this.prisma.client.chatMessage.findMany({
-        where: { tenantId, customerId },
-        orderBy: { createdAt: 'desc' },
-        take: dto.limit,
-      }),
-    ]);
+    const [appointments, invoices, payments, messages, documents, chats] =
+      await this.prisma.client.$transaction([
+        this.prisma.client.appointment.findMany({
+          where: { tenantId, customerId },
+          include: { service: { select: { name: true } } },
+          orderBy: { startsAt: 'desc' },
+          take: dto.limit,
+        }),
+        this.prisma.client.invoice.findMany({
+          where: { tenantId, customerId, deletedAt: null },
+          orderBy: { createdAt: 'desc' },
+          take: dto.limit,
+        }),
+        this.prisma.client.payment.findMany({
+          where: { tenantId, customerId },
+          orderBy: { createdAt: 'desc' },
+          take: dto.limit,
+        }),
+        this.prisma.client.message.findMany({
+          where: { tenantId, customerId },
+          orderBy: { createdAt: 'desc' },
+          take: dto.limit,
+        }),
+        this.prisma.client.document.findMany({
+          where: { tenantId, customerId },
+          orderBy: { createdAt: 'desc' },
+          take: dto.limit,
+        }),
+        this.prisma.client.chatMessage.findMany({
+          where: { tenantId, customerId },
+          orderBy: { createdAt: 'desc' },
+          take: dto.limit,
+        }),
+      ]);
 
     const timeline = [
       ...appointments.map((a) => ({
@@ -101,7 +102,10 @@ export class CrmExtraService {
       })),
     ].sort((a, b) => new Date(b.at).getTime() - new Date(a.at).getTime());
 
-    const paid = payments.reduce((s, p) => (p.status === 'SUCCEEDED' ? s + Number(p.amount) : s), 0);
+    const paid = payments.reduce(
+      (s, p) => (p.status === 'SUCCEEDED' ? s + Number(p.amount) : s),
+      0,
+    );
     const owed = invoices.reduce((s, i) => s + (Number(i.total) - Number(i.paidTotal)), 0);
 
     return {
@@ -109,7 +113,11 @@ export class CrmExtraService {
         ...customer,
         wallet: customer.wallet ? { balance: Number(customer.wallet.balance) } : null,
       },
-      summary: { totalPaid: paid, outstanding: Math.max(0, owed), appointments: appointments.length },
+      summary: {
+        totalPaid: paid,
+        outstanding: Math.max(0, owed),
+        appointments: appointments.length,
+      },
       timeline,
     };
   }
@@ -136,7 +144,11 @@ export class CrmExtraService {
       for (const [field, column] of Object.entries(mapping)) {
         const raw = record[column];
         if (!raw) continue;
-        if (field === 'tags') mapped.tags = raw.split(/[|،,]/).map((t) => t.trim()).filter(Boolean);
+        if (field === 'tags')
+          mapped.tags = raw
+            .split(/[|،,]/)
+            .map((t) => t.trim())
+            .filter(Boolean);
         else mapped[field] = raw;
       }
       if (!mapped.fullName) continue;
@@ -162,8 +174,9 @@ export class CrmExtraService {
     });
     if (!tenant) throw DomainException.notFound('کسب‌وکار');
 
-    const existing = await this.prisma.client.customer.findUnique({
-      where: { tenantId_phone: { tenantId, phone: dto.phone } },
+    const existing = await this.prisma.client.customer.findFirst({
+      where: { tenantId, phone: dto.phone, deletedAt: null },
+      select: { id: true, notes: true },
     });
     if (existing) {
       return this.prisma.client.customer.update({
@@ -189,7 +202,10 @@ export class CrmExtraService {
 /** Minimal RFC-4180-ish CSV parser (quotes + comma/semicolon). */
 function parseCsv(input: string): string[][] {
   const text = input.replace(/\r\n?/g, '\n').trim();
-  const delimiter = (text.split('\n')[0].match(/;/g)?.length ?? 0) > (text.split('\n')[0].match(/,/g)?.length ?? 0) ? ';' : ',';
+  const delimiter =
+    (text.split('\n')[0].match(/;/g)?.length ?? 0) > (text.split('\n')[0].match(/,/g)?.length ?? 0)
+      ? ';'
+      : ',';
   const rows: string[][] = [];
   let row: string[] = [];
   let field = '';
@@ -227,21 +243,21 @@ function parseCsv(input: string): string[][] {
 
 const FIELD_ALIASES: Record<string, string> = {
   name: 'fullName',
-  'نام': 'fullName',
+  نام: 'fullName',
   fullname: 'fullName',
   'full name': 'fullName',
   phone: 'phone',
   mobile: 'phone',
-  'موبایل': 'phone',
-  'تلفن': 'phone',
+  موبایل: 'phone',
+  تلفن: 'phone',
   email: 'email',
-  'ایمیل': 'email',
+  ایمیل: 'email',
   city: 'city',
-  'شهر': 'city',
+  شهر: 'city',
   tags: 'tags',
-  'برچسب': 'tags',
+  برچسب: 'tags',
   notes: 'notes',
-  'یادداشت': 'notes',
+  یادداشت: 'notes',
 };
 
 function autoMap(header: string[]): Record<string, string> {

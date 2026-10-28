@@ -14,8 +14,11 @@ export class CustomersService {
 
   async create(tenantId: string, dto: CreateCustomerDto) {
     if (dto.phone) {
-      const existing = await this.prisma.client.customer.findUnique({
-        where: { tenantId_phone: { tenantId, phone: dto.phone } },
+      // Only visible (not soft-deleted) files occupy the phone number: a
+      // deleted customer releases it, so the same person can be re-added.
+      const existing = await this.prisma.client.customer.findFirst({
+        where: { tenantId, phone: dto.phone, deletedAt: null },
+        select: { id: true },
       });
       if (existing) {
         throw DomainException.conflict('مشتری با این شماره تماس قبلاً ثبت شده است');
@@ -109,12 +112,27 @@ export class CustomersService {
     });
   }
 
-  /** Soft delete keeps history for invoices and audit (CORE-05). */
+  /**
+   * Soft delete keeps history for invoices and audit (CORE-05) but releases the
+   * phone number: `(tenantId, phone)` is unique, so keeping it on a deleted row
+   * would block re-adding the same person. The number is archived in `meta`.
+   */
   async remove(tenantId: string, id: string) {
-    await this.assertExists(tenantId, id);
+    const customer = await this.prisma.client.customer.findFirst({
+      where: { id, tenantId, deletedAt: null },
+      select: { id: true, phone: true, meta: true },
+    });
+    if (!customer) throw DomainException.notFound('مشتری');
+
+    const meta = (customer.meta ?? {}) as Record<string, unknown>;
     await this.prisma.client.customer.update({
       where: { id },
-      data: { deletedAt: new Date(), isActive: false },
+      data: {
+        deletedAt: new Date(),
+        isActive: false,
+        phone: null,
+        meta: { ...meta, archivedPhone: customer.phone ?? null } as never,
+      },
     });
     return { message: 'مشتری حذف شد' };
   }

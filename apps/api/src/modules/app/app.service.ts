@@ -185,7 +185,9 @@ export class AppService {
       where: { tenantId, phone, deletedAt: null },
       include: { customer: true },
     });
-    if (existingMember?.customer) {
+    // A soft-deleted file (deletedAt set) is revived below instead of being
+    // reused: the portal user is joining again and `memberId` is unique.
+    if (existingMember?.customer && !existingMember.customer.deletedAt) {
       return { member: existingMember, customer: existingMember.customer };
     }
 
@@ -221,17 +223,42 @@ export class AppService {
         });
       }
 
-      const customer = await tx.customer.upsert({
-        where: { tenantId_phone: { tenantId, phone } },
-        update: { memberId: member.id },
-        create: {
-          tenantId,
-          memberId: member.id,
-          fullName: fullName ?? 'کاربر',
-          phone,
-          source: 'portal',
-        },
+      const linked = await tx.customer.findFirst({
+        where: { tenantId, memberId: member.id },
+        select: { id: true, fullName: true },
       });
+      let customer: { id: string };
+      if (linked) {
+        // The archived file released its phone on delete; only reclaim it when
+        // nobody else holds it now, otherwise stay phone-less instead of
+        // tripping the `(tenantId, phone)` unique constraint.
+        const phoneTaken = await tx.customer.findFirst({
+          where: { tenantId, phone, deletedAt: null, id: { not: linked.id } },
+          select: { id: true },
+        });
+        customer = await tx.customer.update({
+          where: { id: linked.id },
+          data: {
+            memberId: member.id,
+            deletedAt: null,
+            isActive: true,
+            fullName: fullName ?? linked.fullName,
+            ...(phoneTaken ? {} : { phone }),
+          },
+        });
+      } else {
+        customer = await tx.customer.upsert({
+          where: { tenantId_phone: { tenantId, phone } },
+          update: { memberId: member.id, deletedAt: null, isActive: true },
+          create: {
+            tenantId,
+            memberId: member.id,
+            fullName: fullName ?? 'کاربر',
+            phone,
+            source: 'portal',
+          },
+        });
+      }
       return { member: { ...member, fullName: member.fullName }, customer: { id: customer.id } };
     });
   }
