@@ -101,6 +101,7 @@
 | ۲۳ | صفحهٔ `/admin/industries` (سوییچ ثبت‌نام + ویرایش ماژول‌های پیش‌فرض)        | `78a6c8d` | `feat(web-admin): industry console — registration gate + default module editor` |
 | ۲۴ | صفحهٔ `/register` متصل به رجیستری صنف‌ها                                  | `783adb6` | `feat(web): register page reads the industry registry`                  |
 | ۲۵ | ثبت ردیف‌های ۲۱ تا ۲۴ + مستندات وضعیت و کامنت‌های تسک‌فایل                | `02e94c3` | `docs(agent): log industry-registry commits, status and taskfile notes`  |
+| ۲۶ | پیش‌انتخاب پیش‌فرض‌های رجیستری در دیالوگ «کسب‌وکار جدید»                  | `c498352` | `fix(web-admin): preselect the registry defaults in the create-business dialog` |
 
 > کامیت ثبت لاگ هر ردیف در اجرای بعدی در جدول ثبت می‌شود؛ چون
 > هیچ کامیتی نمی‌تواند هش خودش را درون خودش داشته باشد.
