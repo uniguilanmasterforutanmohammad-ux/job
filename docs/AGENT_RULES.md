@@ -139,7 +139,12 @@
 | ۶۱ | افزودن `joinedAt` (تاریخ عضویت) به فهرست عضویت‌های کاربر نهایی            | `681a6a3` | `feat(api): expose when each of the portal user's memberships started`   |
 | ۶۲ | بخش «پروفایل من» با اطلاعات تماس + انتقال کارت رمز به آن                 | `0b0fa9b` | `feat(web): add a profile section with contact details to the portal`    |
 | ۶۳ | کامنت «✅ تکمیل شد» زیر تسک پروفایل در `TaskForMyAgent.md`              | `f7bc8ed` | `docs(taskfile): mark the portal profile-page task as done`              |
-| ۶۴ | ثبت ردیف‌های ۶۱ تا ۶۳ + مستندات وضعیت + ردیف‌های تست پروفایل              | این کامیت | `docs(agent): log the portal profile section and membership date`        |
+| ۶۴ | ثبت ردیف‌های ۶۱ تا ۶۳ + مستندات وضعیت + ردیف‌های تست پروفایل              | `1d2e4cc` | `docs(agent): log the portal profile section and membership date`        |
+| ۶۵ | `GET /app/overview`: خلاصهٔ حضور/شهریه/اطلاعیه/نوبت هر مجموعهٔ کاربر      | `77bc3db` | `feat(api): summarise every club of a portal user with its own numbers`  |
+| ۶۶ | هم‌گام‌کردن پیش‌فرض‌های صنف‌های آموزشی (کلید گم‌شدهٔ `MSG`)               | `ed7e78b` | `fix(db): re-sync the education verticals' default modules (MSG was missing)` |
+| ۶۷ | کارت هر مجموعه با اعداد خودش + بخش «اطلاعیه‌ها» + نام مجموعه در عنوان‌ها  | `edb8edc` | `feat(web): show every club's own attendance, tuition and notices in the portal` |
+| ۶۸ | کامنت «✅ تکمیل شد» زیر تسک «هر مجموعه با دادهٔ خودش»                      | `81f1696` | `docs(taskfile): mark the per-club portal task as done`                  |
+| ۶۹ | ثبت ردیف‌های ۶۵ تا ۶۸ + مستندات وضعیت/اکانت‌ها + ردیف‌های تست              | این کامیت | `docs(agent): log the per-club portal commits and demo data`             |
 
 > کامیت ثبت لاگ هر ردیف در اجرای بعدی در جدول ثبت می‌شود؛ چون
 > هیچ کامیتی نمی‌تواند هش خودش را درون خودش داشته باشد.
@@ -238,6 +243,12 @@
 | ۶۲ — بخش پروفایل (UI)       | زنده (Chrome/CDP) | `/tmp/cdp-verify-me-profile.mjs` → ۱۵/۱۵: نوار ۷ بخشی با «پروفایل من»، کارت «اطلاعات من» (نام، شمارهٔ موبایل، صنف، مجموعهٔ فعال، تاریخ شمسی عضویت، وضعیت ورود)، انتقال کارت رمز به پروفایل و نبودش در خانه، «عضو از …» در ردیف‌های عضویت، پیروی کارت از مجموعهٔ فعال پس از سوئیچ | ✅ ۱۵/۱۵ |
 | ۵۸/۶۲ — رگرسیون صنف‌ها      | زنده (Chrome/CDP) | `/tmp/cdp-verify-my-industries.mjs` دوباره پس از افزودن بخش پروفایل → ۲۱/۲۱ | ✅ ۲۱/۲۱ |
 | ۶۱/۶۲ — کل بسته‌ها          | واحد + typecheck/build | `pnpm test` → API ۱۶۲ پاس (۲۵ فایل) + `@repo/shared` ۲۱ پاس (۳ فایل)؛ `pnpm --filter @repo/web build` ✅ (۳۶ روت) | ✅ |
+| ۶۵ — خلاصهٔ مجموعه‌ها (واحد) | واحد           | `apps/api/src/modules/app/app-overview.service.spec.ts` (۳ تست: تفکیک اعداد دو مجموعه، عضویت بدون پروندهٔ مشتری، شمارهٔ بدون عضویت) | ✅ ۳/۳ |
+| ۶۵ — خلاصهٔ مجموعه‌ها (زنده) | زنده (HTTP)    | `GET /app/overview` برای حساب سه‌صنفی: آموزش زبان (حضور ۶۷٪، مانده ۱٬۵۰۰٬۰۰۰، ۱ اطلاعیهٔ نخوانده، نوبت بعدی) جدا از باشگاه (۱۰۰٪، تسویه، اطلاعیهٔ دیگر) و موسیقی (۰) | ✅ |
+| ۶۶ — رفع drift پیش‌فرض‌ها    | مهاجرت + psql  | `pnpm --filter @repo/db run deploy` (۱۹ مهاجرت)؛ مقایسهٔ `industry_default_modules` با ثابت `INDUSTRY_DEFAULT_MODULES` → پیش از رفع ۳ صنف با کلید گم‌شدهٔ `MSG`، پس از رفع `drift = 0` | ✅ |
+| ۶۷ — پنل چند-مجموعه‌ای (UI)  | زنده (Chrome/CDP) | `/tmp/cdp-verify-me-clubs.mjs` → ۲۴/۲۴: کارت جدا برای هر مجموعه با اعداد خودش، میان‌بُرهای مجموعهٔ فعال، بخش تازهٔ «اطلاعیه‌ها» با «جدید» و «خوانده شد»، پاک شدن شمارندهٔ خانه، نام مجموعه در عنوان بخش‌ها و پیروی اطلاعیه‌ها از مجموعهٔ فعال | ✅ ۲۴/۲۴ |
+| ۶۵/۶۷ — رگرسیون پنل         | زنده (Chrome/CDP) | `/tmp/cdp-verify-my-industries.mjs` → ۲۱/۲۱ (اکنون با حساب سه‌صنفی) و `/tmp/cdp-verify-me-profile.mjs` → ۱۵/۱۵ | ✅ |
+| ۶۵/۶۷ — کل بسته‌ها          | واحد + typecheck/build | `pnpm --filter @repo/api test` → ۱۶۵ پاس (۲۶ فایل)؛ `pnpm test` → `@repo/shared` ۲۱ پاس؛ `pnpm --filter @repo/web typecheck|lint|build` ✅ | ✅ |
 
 ### نکتهٔ عملیاتی (کش Next در حالت توسعه)
 
