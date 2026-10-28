@@ -41,6 +41,15 @@ export const appBusinessDirectorySchema = z.object({
 });
 export type AppBusinessDirectoryDto = z.infer<typeof appBusinessDirectorySchema>;
 
+// APP-01 — a mobile number can be a member of several businesses (e.g. a
+// language school *and* a gym). The session is scoped to one club at a time, so
+// the portal can re-issue the token for another club the phone already belongs
+// to — no new OTP, nothing to re-enter.
+export const appSwitchClubSchema = z.object({
+  tenantId: z.string().trim().min(1).max(64),
+});
+export type AppSwitchClubDto = z.infer<typeof appSwitchClubSchema>;
+
 // APP-02 — booking
 export const appBookSchema = z.object({
   serviceId: z.string().uuid().optional(),

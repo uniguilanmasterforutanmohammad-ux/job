@@ -21,6 +21,7 @@ import {
   appPaySchema,
   appReadNotificationSchema,
   appReviewSchema,
+  appSwitchClubSchema,
   type AppAvailabilityDto,
   type AppBookDto,
   type AppBusinessDirectoryDto,
@@ -32,6 +33,7 @@ import {
   type AppPayDto,
   type AppReadNotificationDto,
   type AppReviewDto,
+  type AppSwitchClubDto,
 } from './dto/app.schemas.js';
 import { appCheckInSchema, type AppCheckInDto } from '../attendance/dto/attendance-qr.schemas.js';
 import {
@@ -122,6 +124,22 @@ export class AppController {
   @ApiOperation({ summary: 'کسب‌وکارهایی که مشتری در آن‌ها عضو است (APP-01)' })
   myClubs(@CurrentUser('memberId') memberId: string) {
     return this.app.myClubs(memberId);
+  }
+
+  @Post('auth/switch-club')
+  @RequireModule('APP')
+  @RequirePermissions('app:read')
+  @Throttle({ default: { limit: 30, ttl: 60_000 } })
+  @ApiOperation({ summary: 'تغییر کسب‌وکار فعال کاربر نهایی بین عضویت‌هایش (APP-01)' })
+  switchClub(
+    @CurrentUser('memberId') memberId: string,
+    @Body(new ZodValidationPipe(appSwitchClubSchema)) dto: AppSwitchClubDto,
+    @Req() req: Request,
+  ) {
+    return this.app.switchClub(memberId, dto, {
+      userAgent: req.headers['user-agent'],
+      ip: req.ip,
+    });
   }
 
   // ----- APP-02 booking -----

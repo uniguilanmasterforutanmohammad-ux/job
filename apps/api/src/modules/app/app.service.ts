@@ -19,6 +19,7 @@ import type {
   AppOtpVerifyDto,
   AppPayDto,
   AppReviewDto,
+  AppSwitchClubDto,
 } from './dto/app.schemas.js';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -92,7 +93,12 @@ export class AppService {
 
     const clubs = await this.membershipsForPhone(dto.phone);
     if (clubs.length === 0) {
-      throw DomainException.notFound('شما در هیچ باشگاهی ثبت نشده‌اید');
+      // 404 with a *complete* sentence (the `notFound()` helper appends
+      // «یافت نشد», which read badly here) and the three ways to join.
+      throw DomainException.notFoundMessage(
+        'این شماره هنوز در هیچ کسب‌وکاری عضو نیست. برای شروع: ۱) لینک یا QR دعوت همان کسب‌وکار را باز کنید، ۲) از فهرست کسب‌وکارهای فعال یکی را انتخاب کنید تا حساب شما همان لحظه ساخته شود، یا ۳) از مدیر مجموعه بخواهید شمارهٔ شما را در فهرست کاربران ثبت کند.',
+        'NO_MEMBERSHIP',
+      );
     }
 
     const primary = clubs.find((club) => club.primaryLinked) ?? clubs[0];
@@ -169,6 +175,62 @@ export class AppService {
         tenantName: tenant.name,
         tenantSlug: tenant.slug,
         tenantId: tenant.id,
+      },
+    };
+  }
+
+  /**
+   * Switches the active club of a signed-in end-user. A mobile number can be a
+   * member of several businesses (a language school *and* a gym, say), but a
+   * token is scoped to exactly one tenant at a time — this re-issues it for
+   * another club the same phone already belongs to, without a new OTP.
+   */
+  async switchClub(memberId: string, dto: AppSwitchClubDto, context: { userAgent?: string; ip?: string }) {
+    const current = await this.prisma.client.member.findFirst({
+      where: { id: memberId, deletedAt: null },
+      select: { phone: true },
+    });
+    if (!current?.phone) throw DomainException.notFound('شمارهٔ کاربری');
+
+    const clubs = await this.membershipsForPhone(current.phone);
+    const club = clubs.find((item) => item.tenantId === dto.tenantId);
+    if (!club) {
+      throw DomainException.forbidden(
+        'این شماره در کسب‌وکار انتخابی عضو نیست؛ ابتدا با لینک دعوت همان کسب‌وکار عضو شوید',
+        'NOT_A_MEMBER',
+      );
+    }
+
+    const { member, customer } = await this.resolveOrCreatePortalUser(
+      club.tenantId,
+      current.phone,
+      club.fullName,
+    );
+    const tokens = await this.tokens.issue(
+      {
+        memberId: member.id,
+        tenantId: club.tenantId,
+        branchId: member.branchId,
+        systemRole: 'END_USER',
+        permissions: END_USER_PERMISSIONS,
+        fullName: member.fullName,
+        phone: member.phone,
+      },
+      context,
+    );
+    this.logger.log(`Portal club switched member=${member.id} tenant=${club.tenantId}`);
+
+    return {
+      tokens,
+      clubs,
+      user: {
+        memberId: member.id,
+        customerId: customer.id,
+        fullName: member.fullName,
+        phone: member.phone,
+        tenantId: club.tenantId,
+        tenantName: club.tenantName,
+        tenantSlug: club.tenantSlug,
       },
     };
   }

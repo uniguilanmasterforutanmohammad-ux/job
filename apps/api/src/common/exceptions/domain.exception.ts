@@ -9,6 +9,15 @@ export class DomainException extends HttpException {
     return new DomainException(`${entity} یافت نشد`, HttpStatus.NOT_FOUND, 'NOT_FOUND');
   }
 
+  /**
+   * A 404 whose message is already a full sentence — unlike `notFound()`, no
+   * «… یافت نشد» is appended (used for "state" answers such as "this mobile is
+   * not a member of any business yet").
+   */
+  static notFoundMessage(message: string, code = 'NOT_FOUND') {
+    return new DomainException(message, HttpStatus.NOT_FOUND, code);
+  }
+
   static conflict(message: string) {
     return new DomainException(message, HttpStatus.CONFLICT, 'CONFLICT');
   }
