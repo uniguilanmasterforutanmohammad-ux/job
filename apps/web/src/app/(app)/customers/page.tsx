@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Plus, Users } from 'lucide-react';
+import { Plus, Trash2, Users } from 'lucide-react';
 import { toast } from 'sonner';
 import { api, ApiClientError } from '@/lib/api-client';
 import { getAccessToken } from '@/lib/auth';
@@ -67,6 +67,31 @@ export default function CustomersPage() {
       toast.error(error instanceof ApiClientError ? error.message : `خطا در ثبت ${noun}`),
   });
 
+  /**
+   * حذف «نرم» است (پرونده بایگانی می‌شود و شمارهٔ موبایلش آزاد می‌گردد) و
+   * فقط مدیر/مالک (`crm:write`) اجازهٔ آن را دارد؛ با تأیید صریح انجام می‌شود.
+   */
+  const removeMutation = useMutation({
+    mutationFn: (customer: Customer) => api.delete(`/customers/${customer.id}`, token),
+    onSuccess: () => {
+      toast.success(`${noun} حذف شد`);
+      void queryClient.invalidateQueries({ queryKey: ['customers'] });
+    },
+    onError: (error) =>
+      toast.error(error instanceof ApiClientError ? error.message : `خطا در حذف ${noun}`),
+  });
+
+  const confirmRemove = (customer: Customer) => {
+    const phone = customer.phone ? ` و شمارهٔ ${customer.phone} آزاد می‌شود` : '';
+    if (
+      window.confirm(
+        `${noun} «${customer.fullName}» حذف شود؟ پرونده بایگانی می‌شود${phone}؛ اگر خودش با کد یکبار مصرف دوباره وارد شود، پرونده‌اش زنده می‌شود.`,
+      )
+    ) {
+      removeMutation.mutate(customer);
+    }
+  };
+
   return (
     <div className="space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -111,6 +136,7 @@ export default function CustomersPage() {
                   <Th>وضعیت</Th>
                   <Th>برچسب‌ها</Th>
                   <Th>تاریخ ثبت</Th>
+                  <Th>عملیات</Th>
                 </tr>
               </thead>
               <tbody>
@@ -137,6 +163,18 @@ export default function CustomersPage() {
                       </div>
                     </Td>
                     <Td className="nums">{formatJalali(customer.createdAt)}</Td>
+                    <Td>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        loading={removeMutation.isPending && removeMutation.variables?.id === customer.id}
+                        disabled={removeMutation.isPending}
+                        onClick={() => confirmRemove(customer)}
+                        aria-label={`حذف ${noun}`}
+                      >
+                        <Trash2 className="h-4 w-4 text-rose-500" />
+                      </Button>
+                    </Td>
                   </tr>
                 ))}
               </tbody>
