@@ -3,23 +3,27 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
+  ArrowLeftRight,
   BadgeCheck,
   Building2,
   CalendarDays,
+  CalendarClock,
   CheckCircle2,
   CreditCard,
   Gift,
+  LayoutDashboard,
   LogOut,
   MapPin,
   Phone,
   QrCode,
+  CalendarX2,
   ShieldCheck,
   Star,
   UserCheck,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { api, ApiClientError } from '@/lib/api-client';
-import { formatJalali, formatToman } from '@/lib/utils';
+import { cn, formatJalali, formatToman } from '@/lib/utils';
 import { useIndustryRegistry } from '@/lib/use-industry-registry';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -43,6 +47,22 @@ const CUSTOMER_USER_KEY = 'bp_customer_user';
 /** Pre-rename keys — read once so an open session keeps working. */
 const LEGACY_TOKEN_KEY = 'bp_student_token';
 const LEGACY_USER_KEY = 'bp_student_user';
+
+/**
+ * The portal is a *panel*, not one long scrolling page (same idea as the
+ * business panel): each area gets its own section and only the open one talks
+ * to the server. That also stops the check-in list from polling while the
+ * شاگرد is reading something else.
+ */
+type PortalTab = 'home' | 'attendance' | 'appointments' | 'finance' | 'absence';
+
+const PORTAL_TABS: { key: PortalTab; label: string; icon: typeof LayoutDashboard }[] = [
+  { key: 'home', label: 'خانه', icon: LayoutDashboard },
+  { key: 'attendance', label: 'حضور و غیاب', icon: UserCheck },
+  { key: 'appointments', label: 'نوبت‌های من', icon: CalendarClock },
+  { key: 'finance', label: 'مالی و کیف پول', icon: CreditCard },
+  { key: 'absence', label: 'درخواست غیبت', icon: CalendarX2 },
+];
 
 /** `POST /auth/login` — same session shape the OTP portal login returns. */
 type PasswordLoginResult = {
@@ -157,7 +177,7 @@ export default function CustomerPortalPage() {
       </header>
 
       {session ? (
-        <CustomerDashboard session={session} onLogout={clear} />
+        <CustomerDashboard session={session} onLogout={clear} onSwitch={save} />
       ) : (
         <CustomerLoginPanel onSuccess={save} />
       )}
@@ -428,13 +448,17 @@ function CustomerLoginPanel({ onSuccess }: { onSuccess: (s: CustomerSession) => 
 function CustomerDashboard({
   session,
   onLogout,
+  onSwitch,
 }: {
   session: CustomerSession;
   onLogout: () => void;
+  /** Replaces the stored session after switching the active club. */
+  onSwitch: (session: CustomerSession) => void;
 }) {
   const registry = useIndustryRegistry();
   const token = session.accessToken;
   const queryClient = useQueryClient();
+  const [tab, setTab] = useState<PortalTab>('home');
   const apiGet = useMemo(
     () =>
       <T,>(p: string) =>
@@ -459,15 +483,19 @@ function CustomerDashboard({
   const targetsQuery = useQuery({
     queryKey: ['customer-checkin-targets'],
     queryFn: () => apiGet<CustomerCheckInTarget[]>('/app/attendance/targets'),
-    refetchInterval: 15_000,
+    // Only poll while the شاگرد is actually looking at the check-in section.
+    enabled: tab === 'attendance',
+    refetchInterval: tab === 'attendance' ? 15_000 : false,
   });
   const appointmentsQuery = useQuery({
     queryKey: ['customer-appointments'],
     queryFn: () => apiGet<Appointment[]>('/app/appointments'),
+    enabled: tab === 'appointments',
   });
   const invoicesQuery = useQuery({
     queryKey: ['customer-invoices'],
     queryFn: () => apiGet<Invoice[]>('/app/invoices'),
+    enabled: tab === 'finance',
   });
   const loyaltyQuery = useQuery({
     queryKey: ['customer-loyalty'],
@@ -476,6 +504,7 @@ function CustomerDashboard({
   const absenceQuery = useQuery({
     queryKey: ['customer-absence-requests'],
     queryFn: () => apiGet<AbsenceRequest[]>('/app/absence-requests'),
+    enabled: tab === 'absence',
   });
   // Tells the password card whether to ask for the current password.
   const meQuery = useQuery({
@@ -532,6 +561,31 @@ function CustomerDashboard({
     },
   });
 
+  /**
+   * A mobile number can belong to several businesses (a language school *and*
+   * a gym); the token is scoped to one at a time, so switching re-issues it.
+   */
+  const switchClub = useMutation({
+    mutationFn: (tenantId: string) =>
+      apiPost<{
+        tokens: { accessToken: string };
+        user: { fullName: string; phone: string | null; tenantId: string; tenantName: string };
+      }>('/app/auth/switch-club', { tenantId }),
+    onSuccess: (result) => {
+      onSwitch({
+        accessToken: result.tokens.accessToken,
+        fullName: result.user.fullName,
+        phone: result.user.phone,
+        tenantId: result.user.tenantId,
+        tenantName: result.user.tenantName,
+      });
+      toast.success(`به ${result.user.tenantName} منتقل شدید`);
+      void queryClient.invalidateQueries();
+    },
+    onError: (e) =>
+      toast.error(e instanceof ApiClientError ? e.message : 'تغییر کسب‌وکار ناموفق بود'),
+  });
+
   const [absenceDate, setAbsenceDate] = useState('');
   const [absenceReason, setAbsenceReason] = useState(ABSENCE_REASONS[0]);
   const [absenceNote, setAbsenceNote] = useState('');
@@ -555,7 +609,39 @@ function CustomerDashboard({
   const attendance = attendanceQuery.data;
 
   return (
-    <div className="space-y-5">
+    <div className="grid gap-5 lg:grid-cols-[13rem_minmax(0,1fr)]">
+      {/* Sections instead of one endless page: the portal now reads like the
+          business panel, and each tab only loads what it needs. */}
+      <nav
+        aria-label="بخش‌های پنل کاربری"
+        className="flex gap-2 overflow-x-auto rounded-2xl border border-slate-200 bg-white p-2 shadow-sm dark:border-slate-800 dark:bg-slate-900 lg:sticky lg:top-4 lg:h-fit lg:flex-col lg:overflow-visible"
+      >
+        {PORTAL_TABS.map((item) => {
+          const Icon = item.icon;
+          const active = tab === item.key;
+          return (
+            <button
+              key={item.key}
+              type="button"
+              aria-current={active ? 'page' : undefined}
+              onClick={() => setTab(item.key)}
+              className={cn(
+                'flex items-center gap-2 whitespace-nowrap rounded-xl px-3 py-2 text-sm transition-colors',
+                active
+                  ? 'bg-brand-50 font-semibold text-brand-700 dark:bg-brand-900/30 dark:text-brand-200'
+                  : 'text-slate-600 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-800',
+              )}
+            >
+              <Icon className="h-4 w-4" />
+              {item.label}
+            </button>
+          );
+        })}
+      </nav>
+
+      <div className="space-y-5">
+      {tab === 'home' && (
+        <>
       <div className="grid gap-4 sm:grid-cols-3">
         <Card>
           <CardBody className="flex items-center gap-3">
@@ -585,7 +671,11 @@ function CustomerDashboard({
           </CardBody>
         </Card>
       </div>
+        </>
+      )}
 
+      {tab === 'attendance' && (
+        <>
       {/* Open attendance sessions the customer can self check in to */}
       <Card>
         <CardHeader
@@ -635,12 +725,16 @@ function CustomerDashboard({
           </p>
         </CardBody>
       </Card>
+        </>
+      )}
 
+      {tab === 'home' && (
+        <>
       {/* Businesses the customer belongs to */}
       <Card>
         <CardHeader
           title="عضویت‌های من"
-          description="کسب‌وکارهایی که در آن‌ها عضو هستید"
+          description="یک شمارهٔ موبایل می‌تواند هم‌زمان در چند کسب‌وکار (مثلاً یک آموزشگاه زبان و یک باشگاه ورزشی) عضو باشد؛ پنل در هر لحظه به یکی از آن‌ها وصل است و با دکمهٔ هر ردیف جابه‌جا می‌شود."
         />
         <CardBody className="space-y-2">
           {clubsQuery.isLoading ? (
@@ -672,21 +766,41 @@ function CustomerDashboard({
                     </p>
                   </div>
                 </div>
-                <Badge tone={club.isActive ? 'success' : 'neutral'}>
-                  {club.isActive ? 'فعال' : 'غیرفعال'}
-                </Badge>
+                <div className="flex items-center gap-2">
+                  <Badge tone={club.isActive ? 'success' : 'neutral'}>
+                    {club.isActive ? 'فعال' : 'غیرفعال'}
+                  </Badge>
+                  {club.tenantId === session.tenantId ? (
+                    <Badge tone="brand">کسب‌وکار فعال پنل</Badge>
+                  ) : (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      loading={switchClub.isPending}
+                      disabled={!club.isActive}
+                      onClick={() => switchClub.mutate(club.tenantId)}
+                    >
+                      <ArrowLeftRight className="h-4 w-4" />
+                      ورود به این مجموعه
+                    </Button>
+                  )}
+                </div>
               </div>
             ))
           ) : (
             <EmptyState
               icon={Building2}
               title="هنوز در هیچ کسب‌وکاری عضو نیستید"
-              description="با باز کردن لینک یا QR دعوت هر کسب‌وکار، عضویت شما ثبت می‌شود."
+              description="حساب شما با همین شمارهٔ موبایل ساخته می‌شود و می‌تواند هم‌زمان در چند کسب‌وکار باشد. برای شروع: ۱) لینک یا QR دعوت همان مجموعه را باز کنید، ۲) از فهرست کسب‌وکارهای فعال در صفحهٔ ورود یکی را انتخاب کنید تا حساب شما همان لحظه ساخته شود، یا ۳) از مدیر مجموعه بخواهید شمارهٔ شما را در فهرست کاربرانش ثبت کند."
             />
         )}
       </CardBody>
     </Card>
+        </>
+      )}
 
+      {tab === 'attendance' && (
+        <>
       {/* Attendance history */}
       <Card>
         <CardHeader title="سوابق حضور و غیاب" description="آخرین جلسات ثبت‌شده" />
@@ -729,6 +843,15 @@ function CustomerDashboard({
         </CardBody>
       </Card>
 
+      <div className="rounded-2xl border border-slate-200 p-4 text-sm text-slate-500 dark:border-slate-800">
+        اگر مدیر یا مربی لینک یا QR حاضری فرستاده، آن را باز کنید؛ می‌توانید حاضری را همان‌جا با
+        کد تأیید موبایل ثبت کنید. برای جلسه‌های باز، از دکمهٔ «حاضرم» همین بخش استفاده کنید.
+      </div>
+        </>
+      )}
+
+      {tab === 'absence' && (
+        <>
       <Card>
         <CardHeader
           title="درخواست غیبت / عدم حضور یک جلسه"
@@ -807,7 +930,11 @@ function CustomerDashboard({
           </div>
         </CardBody>
       </Card>
+        </>
+      )}
 
+      {tab === 'appointments' && (
+        <>
       <Card>
         <CardHeader title="نوبت‌های من" />
         <CardBody className="space-y-2">
@@ -845,7 +972,11 @@ function CustomerDashboard({
           )}
         </CardBody>
       </Card>
+        </>
+      )}
 
+      {tab === 'finance' && (
+        <>
       <Card>
         <CardHeader title="فاکتورها و پرداخت" />
         <CardBody className="space-y-2">
@@ -884,22 +1015,47 @@ function CustomerDashboard({
         </CardBody>
       </Card>
 
-      <div className="rounded-2xl border border-slate-200 p-4 text-sm text-slate-500 dark:border-slate-800">
-        اگر مدیر یا مربی لینک یا QR حاضری فرستاده، آن را باز کنید؛ می‌توانید حاضری را همان‌جا با
-        کد تأیید موبایل ثبت کنید. برای جلسه‌های باز، از دکمهٔ «حاضرم» بالای همین صفحه استفاده
-        کنید.
-      </div>
+      {/* Wallet/points live on the home KPIs too; the finance tab keeps them
+          next to the invoices they are spent on. */}
+      <Card>
+        <CardHeader title="کیف پول و امتیاز" description="اعتبار و امتیاز شما در این مجموعه" />
+        <CardBody className="grid gap-4 sm:grid-cols-2">
+          <div className="flex items-center gap-3">
+            <Gift className="h-6 w-6 text-brand-600" />
+            <div>
+              <p className="text-xs text-slate-500">کیف پول</p>
+              <p className="font-bold nums">
+                {formatToman(loyaltyQuery.data?.walletBalance ?? 0)}
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-3">
+            <Star className="h-6 w-6 text-amber-500" />
+            <div>
+              <p className="text-xs text-slate-500">امتیاز</p>
+              <p className="font-bold nums">{loyaltyQuery.data?.points ?? 0}</p>
+            </div>
+          </div>
+        </CardBody>
+      </Card>
+        </>
+      )}
 
+      {tab === 'home' && (
+        <>
       <ChangePasswordCard
         hasPassword={meQuery.data?.member.hasPassword}
         token={session.accessToken}
         onDone={onLogout}
       />
+        </>
+      )}
 
       <Button variant="outline" className="w-full" onClick={onLogout}>
         <LogOut className="h-4 w-4" />
         خروج از حساب
       </Button>
+      </div>
     </div>
   );
 }
