@@ -1,7 +1,9 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
+import Link from 'next/link';
 import {
+  Building2,
   CalendarCheck,
   CalendarClock,
   TrendingUp,
@@ -11,10 +13,11 @@ import {
 } from 'lucide-react';
 import { api } from '@/lib/api-client';
 import { getAccessToken } from '@/lib/auth';
-import { useEndUserNoun } from '@/lib/use-industry-registry';
+import { useBranchNoun, useEndUserNoun } from '@/lib/use-industry-registry';
 import { formatNumber, formatToman } from '@/lib/utils';
 import { Card, CardBody, CardHeader } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/empty-state';
+import type { BranchRow } from '@/components/settings/branches-card';
 import type { DashboardStats, Appointment } from '@/lib/types';
 import { MODULE_LABELS } from '@repo/shared';
 import { formatJalali } from '@/lib/utils';
@@ -24,10 +27,18 @@ import { APPOINTMENT_STATUS_LABELS, APPOINTMENT_STATUS_TONES } from '@/lib/statu
 export default function DashboardPage() {
   const token = getAccessToken();
   const { plural } = useEndUserNoun();
+  // «آموزشگاه» for a language school, «شعبه» for everyone else — the count is
+  // the first KPI (right-most in RTL), above the end-user cards.
+  const location = useBranchNoun();
 
   const { data, isLoading } = useQuery({
     queryKey: ['dashboard'],
     queryFn: () => api.get<DashboardStats>('/reports/dashboard', token),
+  });
+
+  const { data: branches } = useQuery({
+    queryKey: ['branches'],
+    queryFn: () => api.get<BranchRow[]>('/tenant/branches', token),
   });
 
   const { data: appointments } = useQuery({
@@ -55,6 +66,15 @@ export default function DashboardPage() {
     { label: 'مطالبات معوق', value: formatToman(data.outstanding), icon: Wallet, tone: 'danger' },
   ];
 
+  const activeBranches = (branches ?? []).filter((item) => item.isActive);
+  const branchKpi = {
+    label: location.plural,
+    value: formatNumber(activeBranches.length),
+    /** Plural of the industry's end-users, e.g. «زبان‌آموزان». */
+    hint: `${formatNumber(activeBranches.reduce((sum, item) => sum + item._count.customers, 0))} ${plural}`,
+    href: '/settings',
+  };
+
   const upcoming = (appointments ?? []).slice(0, 6);
 
   return (
@@ -65,6 +85,22 @@ export default function DashboardPage() {
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <Link key={branchKpi.label} href={branchKpi.href} className="block">
+          <Card className="h-full transition hover:border-brand-400">
+            <CardBody className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-xs text-slate-500">{branchKpi.label}</p>
+                <p className="mt-1.5 text-lg font-bold text-slate-900 dark:text-slate-100 nums">
+                  {branchKpi.value}
+                </p>
+                <p className="mt-0.5 text-xs text-slate-400 nums">{branchKpi.hint}</p>
+              </div>
+              <div className="rounded-xl bg-brand-50 p-2.5 text-brand-600 dark:bg-brand-900/30 dark:text-brand-300">
+                <Building2 className="h-5 w-5" />
+              </div>
+            </CardBody>
+          </Card>
+        </Link>
         {kpis.map((kpi) => {
           const Icon = kpi.icon;
           return (

@@ -130,7 +130,7 @@ export function BranchesCard() {
     <Card>
       <CardHeader
         title={plural}
-        description={`هر ${noun} کاربران و کارکنان خودش را دارد؛ مثلاً «${noun} یک: ۲۰ ${endUsers.plural}»`}
+        description={`این بخش «هستهٔ» پلتفرم است، نه ماژول: هر کسب‌وکاری می‌تواند چند محل داشته باشد و فقط نام محل با صنف عوض می‌شود. هر ${noun} کاربران و کارکنان خودش را دارد؛ مثلاً «${noun} یک: ۲۰ ${endUsers.plural}»`}
         action={
           <Button size="sm" onClick={startCreate}>
             <Plus className="h-4 w-4" />
