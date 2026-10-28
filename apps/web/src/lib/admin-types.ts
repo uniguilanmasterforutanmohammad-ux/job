@@ -132,6 +132,9 @@ export type AdminIndustry = {
   isRegistrationEnabled: boolean;
   endUserNoun: string | null;
   endUserNounPlural: string | null;
+  /** What this industry calls one of its locations («آموزشگاه»/«شعبه» …). */
+  branchNoun: string | null;
+  branchNounPlural: string | null;
   sortOrder: number;
   defaultModules: ModuleKey[];
   tenantCount: number;

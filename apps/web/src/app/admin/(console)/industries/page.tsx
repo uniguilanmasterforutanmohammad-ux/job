@@ -165,6 +165,11 @@ export default function AdminIndustriesPage() {
                     کاربران نهایی این صنف: <span className="font-medium">{industry.endUserNoun}</span>
                   </span>
                 )}
+                {industry.branchNoun && (
+                  <span>
+                    شعبه‌های این صنف: <span className="font-medium">{industry.branchNoun}</span>
+                  </span>
+                )}
               </div>
 
               <div className="space-y-1.5">
@@ -324,6 +329,8 @@ type FormState = {
   description: string;
   endUserNoun: string;
   endUserNounPlural: string;
+  branchNoun: string;
+  branchNounPlural: string;
   sortOrder: string;
   isRegistrationEnabled: boolean;
   modules: ModuleKey[];
@@ -350,6 +357,8 @@ function IndustryFormDialog({
     description: industry?.description ?? '',
     endUserNoun: industry?.endUserNoun ?? '',
     endUserNounPlural: industry?.endUserNounPlural ?? '',
+    branchNoun: industry?.branchNoun ?? '',
+    branchNounPlural: industry?.branchNounPlural ?? '',
     sortOrder: industry ? String(industry.sortOrder) : '',
     isRegistrationEnabled: industry?.isRegistrationEnabled ?? true,
     modules: industry?.defaultModules ?? ['CRM'],
@@ -365,6 +374,8 @@ function IndustryFormDialog({
         description: form.description.trim() || undefined,
         endUserNoun: form.endUserNoun.trim() || undefined,
         endUserNounPlural: form.endUserNounPlural.trim() || undefined,
+        branchNoun: form.branchNoun.trim() || undefined,
+        branchNounPlural: form.branchNounPlural.trim() || undefined,
       };
       if (form.sortOrder.trim()) payload.sortOrder = Number(form.sortOrder);
 
@@ -460,6 +471,19 @@ function IndustryFormDialog({
             placeholder="مشتریان"
             value={form.endUserNounPlural}
             onChange={(event) => set('endUserNounPlural', event.target.value)}
+          />
+          <Input
+            label="نام شعبه"
+            hint="مثلاً آموزشگاه / مطب"
+            placeholder="شعبه"
+            value={form.branchNoun}
+            onChange={(event) => set('branchNoun', event.target.value)}
+          />
+          <Input
+            label="جمع شعبه"
+            placeholder="شعبه‌ها"
+            value={form.branchNounPlural}
+            onChange={(event) => set('branchNounPlural', event.target.value)}
           />
           <Input
             label="ترتیب نمایش"

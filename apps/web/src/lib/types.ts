@@ -327,3 +327,11 @@ export type Forecast = {
   expectedBookings: number;
   forecast: number;
 };
+
+/** One location of the business (`GET /tenant/branches`) — «آموزشگاه»/«شعبه». */
+export type BranchOption = {
+  id: string;
+  name: string;
+  isActive: boolean;
+  _count?: { members: number; customers: number };
+};

@@ -6,7 +6,7 @@ import { Plus, Users } from 'lucide-react';
 import { toast } from 'sonner';
 import { api, ApiClientError } from '@/lib/api-client';
 import { getAccessToken } from '@/lib/auth';
-import { useEndUserNoun } from '@/lib/use-industry-registry';
+import { useBranchNoun, useEndUserNoun } from '@/lib/use-industry-registry';
 import { formatJalali } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -14,19 +14,28 @@ import { Card, CardBody, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Table, Td, Th } from '@/components/ui/table';
 import { Modal } from '@/components/ui/modal';
+import { Select } from '@/components/ui/select';
 import { EmptyState, Skeleton } from '@/components/ui/empty-state';
 import { LEAD_STAGE_LABELS } from '@/lib/status';
-import type { Customer, Paginated } from '@/lib/types';
+import type { BranchOption, Customer, Paginated } from '@/lib/types';
 
 export default function CustomersPage() {
   const token = getAccessToken();
   // «مشتری/مشتریان» برای آموزشگاه «زبان‌آموز/زبان‌آموزان»، برای کلینیک
   // «بیمار/بیماران» و … — از رجیستری صنف خوانده می‌شود.
   const { noun, plural } = useEndUserNoun();
+  const branches = useBranchNoun();
   const queryClient = useQueryClient();
   const [search, setSearch] = useState('');
   const [open, setOpen] = useState(false);
-  const [form, setForm] = useState({ fullName: '', phone: '' });
+  const [form, setForm] = useState({ fullName: '', phone: '', branchId: '' });
+
+  const branchesQuery = useQuery({
+    queryKey: ['branches'],
+    queryFn: () => api.get<BranchOption[]>('/tenant/branches', token),
+  });
+
+  const activeBranches = (branchesQuery.data ?? []).filter((branch) => branch.isActive);
 
   const { data, isLoading } = useQuery({
     queryKey: ['customers', search],
@@ -39,11 +48,19 @@ export default function CustomersPage() {
 
   const createMutation = useMutation({
     mutationFn: () =>
-      api.post('/customers', { fullName: form.fullName, phone: form.phone || undefined }, token),
+      api.post(
+        '/customers',
+        {
+          fullName: form.fullName,
+          phone: form.phone || undefined,
+          branchId: form.branchId || undefined,
+        },
+        token,
+      ),
     onSuccess: () => {
       toast.success(`${noun} ثبت شد`);
       setOpen(false);
-      setForm({ fullName: '', phone: '' });
+      setForm({ fullName: '', phone: '', branchId: '' });
       void queryClient.invalidateQueries({ queryKey: ['customers'] });
     },
     onError: (error) =>
@@ -175,6 +192,20 @@ export default function CustomersPage() {
               setForm({ ...form, phone: event.target.value.replace(/\D/g, '').slice(0, 11) })
             }
           />
+          {activeBranches.length > 0 && (
+            <Select
+              label={`${branches.noun} (اختیاری)`}
+              value={form.branchId}
+              onChange={(event) => setForm({ ...form, branchId: event.target.value })}
+            >
+              <option value="">— انتخاب {branches.noun} —</option>
+              {activeBranches.map((branch) => (
+                <option key={branch.id} value={branch.id}>
+                  {branch.name}
+                </option>
+              ))}
+            </Select>
+          )}
         </div>
       </Modal>
     </div>

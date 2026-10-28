@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Building2, DatabaseBackup, Layers, Save, ShieldCheck } from 'lucide-react';
+import { DatabaseBackup, Layers, Save, ShieldCheck } from 'lucide-react';
 import { toast } from 'sonner';
 import { MODULE_LABELS, type ModuleKey } from '@repo/shared';
 import { api, ApiClientError } from '@/lib/api-client';
@@ -14,6 +14,8 @@ import { Select } from '@/components/ui/select';
 import { Card, CardBody, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Table, Td, Th } from '@/components/ui/table';
+import { BranchesCard } from '@/components/settings/branches-card';
+import { useBranchNoun } from '@/lib/use-industry-registry';
 import type { BackupRecord, Paginated } from '@/lib/types';
 
 type TenantDetail = {
@@ -33,6 +35,7 @@ type TenantDetail = {
 
 export default function SettingsPage() {
   const token = getAccessToken();
+  const branch = useBranchNoun();
   const { refresh } = useAuth();
   const queryClient = useQueryClient();
 
@@ -107,7 +110,9 @@ export default function SettingsPage() {
     <div className="space-y-5">
       <div>
         <h1 className="text-xl font-bold text-slate-900 dark:text-slate-100">تنظیمات</h1>
-        <p className="mt-1 text-sm text-slate-500">پیکربندی کسب‌وکار، ماژول‌ها و شعبه‌ها</p>
+        <p className="mt-1 text-sm text-slate-500">
+          پیکربندی کسب‌وکار، ماژول‌ها و {branch.plural}
+        </p>
       </div>
 
       <Card>
@@ -198,25 +203,7 @@ export default function SettingsPage() {
           </CardBody>
         </Card>
 
-        <Card>
-          <CardHeader title="شعبه‌ها" description="شعبه‌های ثبت‌شده" />
-          <CardBody className="space-y-3">
-            {merged.branches?.map((branch) => (
-              <div
-                key={branch.id}
-                className="flex items-center justify-between rounded-xl border border-slate-100 p-3 dark:border-slate-800"
-              >
-                <div className="flex items-center gap-2">
-                  <Building2 className="h-4 w-4 text-brand-600" />
-                  <span className="text-sm font-medium text-slate-800 dark:text-slate-200">
-                    {branch.name}
-                  </span>
-                </div>
-                <span className="text-xs text-slate-500">{branch.city ?? '—'}</span>
-              </div>
-            ))}
-          </CardBody>
-        </Card>
+        <BranchesCard />
       </div>
 
       <div className="grid gap-5 lg:grid-cols-2">

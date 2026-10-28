@@ -2,6 +2,7 @@
 
 import { useQuery } from '@tanstack/react-query';
 import {
+  branchNoun as fallbackBranchNoun,
   endUserNoun as fallbackEndUserNoun,
   industryLabel as fallbackIndustryLabel,
   type ModuleKey,
@@ -16,6 +17,8 @@ export type IndustryRegistryEntry = {
   description: string | null;
   endUserNoun: string | null;
   endUserNounPlural: string | null;
+  branchNoun: string | null;
+  branchNounPlural: string | null;
   isRegistrationEnabled: boolean;
   defaultModules: ModuleKey[];
 };
@@ -42,6 +45,11 @@ export function useIndustryRegistry() {
       const value = plural ? row?.endUserNounPlural : row?.endUserNoun;
       return value || fallbackEndUserNoun(key, plural);
     },
+    branchNoun: (key?: string | null, plural = false) => {
+      const row = key ? byKey.get(key) : undefined;
+      const value = plural ? row?.branchNounPlural : row?.branchNoun;
+      return value || fallbackBranchNoun(key, plural);
+    },
   };
 }
 
@@ -60,6 +68,25 @@ export function useEndUserNoun() {
     noun: registry.noun(industry),
     /** Plural: «زبان‌آموزان» */
     plural: registry.noun(industry, true),
+    industry,
+  };
+}
+
+/**
+ * What the current business calls one of its locations: «آموزشگاه» for a
+ * language/music school, «مهدکودک» for a kindergarten and «شعبه» for everyone
+ * else. Reads the authenticated tenant's industry.
+ */
+export function useBranchNoun() {
+  const { me } = useAuth();
+  const registry = useIndustryRegistry();
+  const industry = me?.tenant.industry;
+
+  return {
+    /** Singular: «آموزشگاه» */
+    noun: registry.branchNoun(industry),
+    /** Plural: «آموزشگاه‌ها» */
+    plural: registry.branchNoun(industry, true),
     industry,
   };
 }
