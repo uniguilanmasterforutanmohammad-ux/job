@@ -111,7 +111,9 @@
 | ۳۳ | نام کاربران نهایی هر صنف در کل پنل کسب‌وکار (زبان‌آموز/زبان‌آموزان …)      | `b98b629` | `feat(web): name end-users after their industry across the business panel` |
 | ۳۴ | حذف فیلد «شهر» از فرم مشتری جدید                                       | `635655a` | `feat(web-crm): remove the city field from the new-customer form`       |
 | ۳۵ | ثبت ردیف‌های ۳۳ و ۳۴ + مستندات وضعیت و کامنت‌های تسک‌فایل                   | `c6565da` | `docs(agent): log industry-naming and customer-form commits`            |
-| ۳۶ | ثبت ردیف ۳۵ در همین جدول                                              | این کامیت | `docs(agent): register the industry-naming log commit`                  |
+| ۳۶ | ثبت ردیف ۳۵ در همین جدول                                              | `6e9bdc4` | `docs(agent): register the industry-naming log commit`                  |
+| ۳۷ | ورود با رمز عبور در کنار کد یکبار مصرف در صفحهٔ `/login`                 | `2f1b83f` | `feat(web): password login next to OTP in the business-panel login page` |
+| ۳۸ | ثبت ردیف ۳۷ + مستندات وضعیت/اکانت‌ها و کامنت تسک‌فایل                       | این کامیت | `docs(agent): log the password-login commit`                            |
 
 > کامیت ثبت لاگ هر ردیف در اجرای بعدی در جدول ثبت می‌شود؛ چون
 > هیچ کامیتی نمی‌تواند هش خودش را درون خودش داشته باشد.
@@ -168,6 +170,9 @@
 | ۳۳ — نام‌گذاری در پنل‌های دیگر | زنده (Chrome/CDP) | ۷/۷ بررسی: زیرعنوان حضور و غیاب، مالی، بازاریابی، گزارش‌ها و پورتال عمومی `/portal/[slug]` («پورتال زبان‌آموزان») | ✅ ۷/۷ |
 | ۳۴ — فرم مشتری جدید      | زنده (Chrome/CDP) | فرم فقط «نام و نام خانوادگی» + «شماره موبایل»؛ جدول بدون ستون «شهر»؛ ثبت بدون شهر → ۲۰۰ و نمایش در فهرست | ✅ |
 | ۳۳/۳۴ — تایپ و بیلد      | typecheck/build | `pnpm typecheck` (۶/۶)، `pnpm test`، `pnpm build`                                             | ✅ |
+| ۳۷ — ورود با رمز عبور (API) | زنده (HTTP)    | `/auth/login` → رمز درست: ۲۰۰ (OWNER)؛ رمز غلط: ۴۰۰ `INVALID_PASSWORD`؛ بدون رمز: ۴۰۰ `NO_PASSWORD` | ✅ |
+| ۳۷ — ورود با رمز عبور (UI) | زنده (Chrome/CDP) | ۱۰/۱۰ بررسی: تب رمز، ورود موفق → `/dashboard`، ذخیرهٔ توکن، خطای رمز غلط، پیام `NO_PASSWORD`     | ✅ ۱۰/۱۰ |
+| ۳۷ — تایپ و بیلد         | typecheck/build | `pnpm typecheck` (۶/۶)، `pnpm test`، `pnpm build`                                             | ✅ |
 
 ### نکتهٔ عملیاتی (کش Next در حالت توسعه)
 
