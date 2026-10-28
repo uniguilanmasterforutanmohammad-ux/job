@@ -121,6 +121,15 @@ export type AdminTenantModules = {
 
 export type AdminCreatedTenant = AdminTenantDetail;
 
+/** One row of the PRD §17 industry registry (`GET /admin/industries`). */
+export type AdminIndustry = {
+  industry: string;
+  label: string;
+  isRegistrationEnabled: boolean;
+  defaultModules: ModuleKey[];
+  updatedAt: string;
+};
+
 export type AdminMember = {
   id: string;
   tenantId: string;
