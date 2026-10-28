@@ -24,6 +24,8 @@ import type {
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const END_USER_PERMISSIONS = ['app:read', 'app:write'];
+/** Last-resort name for a portal member nobody has named yet. */
+const PORTAL_NAME_PLACEHOLDER = 'کاربر';
 
 /**
  * End-user (customer) portal — PRD §4.14 (APP-01..07). Reuses the CORE auth
@@ -250,8 +252,32 @@ export class AppService {
     // A soft-deleted file (deletedAt set) is revived below instead of being
     // reused: the portal user is joining again and `memberId` is unique.
     if (existingMember?.customer && !existingMember.customer.deletedAt) {
+      // The member was born from the invite-link flow, so it may still carry
+      // the «کاربر» placeholder although the business already knows this
+      // person's name — adopt the real name instead of greeting «کاربر».
+      const displayName = this.portalDisplayName(
+        fullName,
+        existingMember.fullName,
+        existingMember.customer.fullName,
+      );
+      if (displayName !== existingMember.fullName) {
+        await this.prisma.client.member.update({
+          where: { id: existingMember.id },
+          data: { fullName: displayName },
+        });
+        return { member: { ...existingMember, fullName: displayName }, customer: existingMember.customer };
+      }
       return { member: existingMember, customer: existingMember.customer };
     }
+
+    // Staff usually record the person in «زبان‌آموزان/شاگردان» before the first
+    // portal login, so a brand-new member inherits that name (the placeholder
+    // «کاربر» is only the last resort).
+    const file = await this.prisma.client.customer.findFirst({
+      where: { tenantId, phone, deletedAt: null },
+      select: { fullName: true },
+    });
+    const displayName = this.portalDisplayName(fullName, PORTAL_NAME_PLACEHOLDER, file?.fullName);
 
     return this.prisma.client.$transaction(async (tx) => {
       const role = await tx.role.upsert({
@@ -273,7 +299,7 @@ export class AppService {
             tenantId,
             roleId: role.id,
             systemRole: 'END_USER',
-            fullName: fullName ?? 'کاربر',
+            fullName: displayName,
             phone,
             phoneVerified: true,
           },
@@ -315,7 +341,7 @@ export class AppService {
           create: {
             tenantId,
             memberId: member.id,
-            fullName: fullName ?? 'کاربر',
+            fullName: displayName,
             phone,
             source: 'portal',
           },
@@ -329,6 +355,24 @@ export class AppService {
     const customer = await this.prisma.client.customer.findUnique({ where: { memberId } });
     if (!customer) throw DomainException.notFound('پرونده مشتری');
     return customer;
+  }
+
+  /**
+   * The portal member is the *login* identity and the customer file is the
+   * business-side record; whichever of them holds a real name wins over the
+   * generic «کاربر» placeholder, so the panel never greets a known person as
+   * «کاربر». The name typed at login wins first, then the staff-side file.
+   */
+  private portalDisplayName(
+    fromLogin: string | undefined,
+    memberName: string,
+    customerName: string | null | undefined,
+  ): string {
+    const real = (value: string | null | undefined): string | undefined => {
+      const trimmed = value?.trim();
+      return trimmed && trimmed !== PORTAL_NAME_PLACEHOLDER ? trimmed : undefined;
+    };
+    return real(fromLogin) ?? real(customerName) ?? memberName;
   }
 
   /**

@@ -43,7 +43,13 @@ function build() {
   const prisma = {
     client: {
       tenant: { findFirst: vi.fn().mockResolvedValue(TENANT) },
-      member: { findFirst: vi.fn().mockResolvedValue(null) },
+      member: {
+        findFirst: vi.fn().mockResolvedValue(null),
+        update: vi.fn().mockResolvedValue({ id: 'm-1' }),
+      },
+      // The staff-side file: when it already holds a real name, the portal
+      // member must be born with it (see «inherits the name …» below).
+      customer: { findFirst: vi.fn().mockResolvedValue(null) },
       $transaction: vi.fn().mockImplementation((cb: (t: unknown) => unknown) => cb(tx)),
     },
   };
@@ -143,5 +149,50 @@ describe('AppService.verifyOtp — portal member provisioning', () => {
     expect(tx.member.create).toHaveBeenCalledOnce();
     expect(tx.customer.upsert).toHaveBeenCalledOnce();
     expect(result.user).toMatchObject({ memberId: 'm-new', customerId: 'c-new' });
+  });
+
+  it('inherits the name the business recorded before the first portal login', async () => {
+    const { service, prisma, tx } = build();
+    // The staff side registered «زبان‌آموز نمونه» with this phone, but nobody
+    // has an END_USER member or a linked file yet.
+    prisma.client.customer.findFirst.mockResolvedValue({ fullName: 'زبان‌آموز نمونه' });
+    tx.customer.findFirst.mockResolvedValue(null);
+    tx.member.create.mockResolvedValue({
+      id: 'm-new',
+      fullName: 'زبان‌آموز نمونه',
+      phone: DTO.phone,
+      branchId: null,
+    });
+
+    const result = await service.verifyOtp(DTO, CONTEXT);
+
+    expect(tx.member.create).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ fullName: 'زبان‌آموز نمونه' }) }),
+    );
+    expect(tx.customer.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        create: expect.objectContaining({ fullName: 'زبان‌آموز نمونه' }),
+      }),
+    );
+    expect(result.user.fullName).toBe('زبان‌آموز نمونه');
+  });
+
+  it('upgrades a placeholder member name to the real file name on login', async () => {
+    const { service, prisma } = build();
+    prisma.client.member.findFirst.mockResolvedValue({
+      id: 'm-1',
+      fullName: 'کاربر',
+      phone: DTO.phone,
+      branchId: null,
+      customer: { id: 'c-active', fullName: 'بیتا', deletedAt: null },
+    });
+
+    const result = await service.verifyOtp(DTO, CONTEXT);
+
+    expect(prisma.client.member.update).toHaveBeenCalledWith({
+      where: { id: 'm-1' },
+      data: { fullName: 'بیتا' },
+    });
+    expect(result.user).toMatchObject({ memberId: 'm-1', fullName: 'بیتا' });
   });
 });
