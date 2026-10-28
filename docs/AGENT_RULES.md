@@ -95,6 +95,7 @@
 | ۱۷ | فهرست عمومی کسب‌وکارهای فعال برای ثبت‌نام کاربر جدید                      | `0fd023e` | `feat(app): active-only business directory for new-user signup`         |
 | ۱۸ | UI کنسول ادمین: ساخت کسب‌وکار، ماژول‌ها، فعال/غیرفعال‌سازی                | `1a3b16d` | `feat(web-admin): business creation, module defaults and status toggle` |
 | ۱۹ | انتخاب کسب‌وکار از فهرست فعال در پنل مشتری `/me`                          | `b414c6f` | `feat(web-me): pick a business from the active directory on signup`     |
+| ۲۰ | ثبت ردیف‌های ۱۵ تا ۱۹ + مستندات وضعیت و کامنت‌های تسک‌فایل                | `44525fe` | `docs(agent): log admin-console commits, status and taskfile completion notes` |
 
 > کامیت ثبت لاگ هر ردیف در اجرای بعدی در جدول ثبت می‌شود؛ چون
 > هیچ کامیتی نمی‌تواند هش خودش را درون خودش داشته باشد.
