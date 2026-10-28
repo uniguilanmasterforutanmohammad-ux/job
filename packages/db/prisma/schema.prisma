@@ -173,6 +173,7 @@ model Branch {
 
   tenant      Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   members     Member[]
+  customers   Customer[]
   appointments Appointment[]
   attendances Attendance[]
   invoices    Invoice[]
@@ -421,6 +422,7 @@ model Customer {
   id           String       @id @default(uuid()) @db.Uuid
   tenantId     String       @db.Uuid
   memberId     String?      @unique @db.Uuid // linked end-user account (APP module)
+  branchId     String?      @db.Uuid // location this end-user belongs to (آموزشگاه/شعبه)
   type         CustomerType @default(INDIVIDUAL)
   fullName     String
   phone        String?
@@ -444,6 +446,7 @@ model Customer {
 
   tenant       Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   member       Member?      @relation(fields: [memberId], references: [id], onDelete: SetNull)
+  branch       Branch?      @relation(fields: [branchId], references: [id])
   appointments Appointment[]
   invoices     Invoice[]
   attendances  Attendance[]
@@ -458,6 +461,7 @@ model Customer {
   @@unique([tenantId, phone])
   @@index([tenantId])
   @@index([tenantId, leadStage])
+  @@index([tenantId, branchId])
   @@map("customers")
 }
 
@@ -1983,6 +1987,9 @@ model Industry {
   /// What this industry calls its end-users (شاگرد/بیمار/هنرجو …).
   endUserNoun           String?
   endUserNounPlural     String?
+  /// What this industry calls one of its locations (شعبه/آموزشگاه/مهدکودک …).
+  branchNoun            String?
+  branchNounPlural      String?
   /// Ascending order in the admin console and the signup selector.
   sortOrder             Int     @default(100)
   createdAt             DateTime @default(now())

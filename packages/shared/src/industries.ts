@@ -96,6 +96,45 @@ export const END_USER_NOUNS_PLURAL: Record<IndustryCategory, string> = {
 export const DEFAULT_END_USER_NOUN = 'مشتری';
 
 /**
+ * What each industry calls one of its locations (شعبه/آموزشگاه/مهدکودک …).
+ * A language school or a music school runs «آموزشگاه»ها, while most other
+ * businesses just have «شعبه». Fallback = {@link DEFAULT_BRANCH_NOUN}.
+ */
+export const BRANCH_NOUNS: Partial<Record<IndustryCategory, string>> = {
+  LANGUAGE_SCHOOL: 'آموزشگاه',
+  ART_MUSIC: 'آموزشگاه',
+  EARLY_CHILD: 'مهدکودک',
+};
+
+/** Plural form of {@link BRANCH_NOUNS}, e.g. «آموزشگاه‌ها». */
+export const BRANCH_NOUNS_PLURAL: Partial<Record<IndustryCategory, string>> = {
+  LANGUAGE_SCHOOL: 'آموزشگاه‌ها',
+  ART_MUSIC: 'آموزشگاه‌ها',
+  EARLY_CHILD: 'مهدکودک‌ها',
+};
+
+/** Generic fallback used when the industry has no location noun of its own. */
+export const DEFAULT_BRANCH_NOUN = 'شعبه';
+
+/** Plural of {@link DEFAULT_BRANCH_NOUN} (ZWNJ spelled out, not concatenated). */
+export const DEFAULT_BRANCH_NOUN_PLURAL = 'شعبه‌ها';
+
+/**
+ * Name of one business location for a given industry.
+ *
+ * ```ts
+ * branchNoun('LANGUAGE_SCHOOL');        // «آموزشگاه»
+ * branchNoun('RETAIL', true);           // «شعبه‌ها»
+ * branchNoun(null);                     // «شعبه»
+ * ```
+ */
+export function branchNoun(industry?: string | null, plural = false): string {
+  const table = plural ? BRANCH_NOUNS_PLURAL : BRANCH_NOUNS;
+  const noun = industry ? table[industry as IndustryCategory] : undefined;
+  return noun ?? (plural ? DEFAULT_BRANCH_NOUN_PLURAL : DEFAULT_BRANCH_NOUN);
+}
+
+/**
  * Name of the business's end users for a given industry.
  *
  * ```ts
