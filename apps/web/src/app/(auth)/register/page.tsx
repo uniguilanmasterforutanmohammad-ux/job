@@ -13,15 +13,8 @@ import { Select } from '@/components/ui/select';
 import { Card, CardBody, CardHeader } from '@/components/ui/card';
 import { api, ApiClientError } from '@/lib/api-client';
 import { useAuth } from '@/lib/auth';
+import type { IndustryRegistryEntry } from '@/lib/use-industry-registry';
 import type { LoginResult } from '@/lib/types';
-
-/** One row of the public industry registry (`GET /industries`). */
-type PublicIndustry = {
-  industry: string;
-  label: string;
-  isRegistrationEnabled: boolean;
-  defaultModules: ModuleKey[];
-};
 
 /** Registration of a new business (tenant) — PRD §2 onboarding. */
 export default function RegisterPage() {
@@ -43,7 +36,7 @@ export default function RegisterPage() {
   // registration was switched off there must not be offered here.
   const industriesQuery = useQuery({
     queryKey: ['public-industries'],
-    queryFn: () => api.get<PublicIndustry[]>('/industries'),
+    queryFn: () => api.get<IndustryRegistryEntry[]>('/industries'),
   });
   const availableIndustries = (industriesQuery.data ?? []).filter(
     (item) => item.isRegistrationEnabled,
@@ -169,6 +162,9 @@ export default function RegisterPage() {
                 ))
               )}
             </Select>
+            {selectedIndustry?.description && (
+              <p className="text-xs leading-6 text-slate-500">{selectedIndustry.description}</p>
+            )}
             {noIndustryAvailable && (
               <p className="flex items-center gap-1.5 text-xs text-amber-700">
                 <TriangleAlert className="h-3.5 w-3.5" />

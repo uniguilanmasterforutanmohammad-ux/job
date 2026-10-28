@@ -5,9 +5,9 @@ import Image from 'next/image';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Copy, QrCode, RefreshCw, Square, Users } from 'lucide-react';
 import { toast } from 'sonner';
-import { endUserNoun } from '@repo/shared';
 import { api, ApiClientError } from '@/lib/api-client';
 import { getAccessToken, useAuth } from '@/lib/auth';
+import { useIndustryRegistry } from '@/lib/use-industry-registry';
 import { formatJalali } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -52,7 +52,8 @@ const STATUS_LABELS: Record<QrSession['status'], string> = {
 export function QrAttendancePanel({ branches }: { branches: Branch[] }) {
   const token = getAccessToken();
   const { me } = useAuth();
-  const nounPlural = endUserNoun(me?.tenant.industry, true);
+  const registry = useIndustryRegistry();
+  const nounPlural = registry.noun(me?.tenant.industry, true);
   const queryClient = useQueryClient();
   const [createOpen, setCreateOpen] = useState(false);
   const [activeId, setActiveId] = useState<string | null>(null);

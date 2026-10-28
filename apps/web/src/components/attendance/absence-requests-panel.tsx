@@ -4,9 +4,9 @@ import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { CheckCircle2, Clock, XCircle } from 'lucide-react';
 import { toast } from 'sonner';
-import { endUserNoun } from '@repo/shared';
 import { api, ApiClientError } from '@/lib/api-client';
 import { getAccessToken, useAuth } from '@/lib/auth';
+import { useIndustryRegistry } from '@/lib/use-industry-registry';
 import { formatJalali } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -33,9 +33,10 @@ const STATUS_TONES: Record<string, 'warning' | 'success' | 'danger' | 'neutral'>
 export function AbsenceRequestsPanel() {
   const token = getAccessToken();
   const { me } = useAuth();
+  const registry = useIndustryRegistry();
   // A sports club says «شاگرد», a clinic «بیمار», a law office «موکل» …
-  const noun = endUserNoun(me?.tenant.industry);
-  const nounPlural = endUserNoun(me?.tenant.industry, true);
+  const noun = registry.noun(me?.tenant.industry);
+  const nounPlural = registry.noun(me?.tenant.industry, true);
   const queryClient = useQueryClient();
   const [reviewing, setReviewing] = useState<AbsenceRequest | null>(null);
   const [decision, setDecision] = useState<'APPROVED' | 'REJECTED'>('APPROVED');

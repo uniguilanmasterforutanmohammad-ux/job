@@ -20,7 +20,7 @@ import {
 import { toast } from 'sonner';
 import { api, ApiClientError } from '@/lib/api-client';
 import { formatJalali, formatToman } from '@/lib/utils';
-import { endUserNoun, industryLabel } from '@repo/shared';
+import { useIndustryRegistry } from '@/lib/use-industry-registry';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
@@ -154,6 +154,7 @@ export default function CustomerPortalPage() {
 }
 
 function CustomerLoginPanel({ onSuccess }: { onSuccess: (s: CustomerSession) => void }) {
+  const registry = useIndustryRegistry();
   const [phone, setPhone] = useState('');
   const [code, setCode] = useState('');
   const [step, setStep] = useState<'phone' | 'code'>('phone');
@@ -324,7 +325,7 @@ function CustomerLoginPanel({ onSuccess }: { onSuccess: (s: CustomerSession) => 
                     <span className="font-medium text-slate-800 dark:text-slate-100">
                       {business.name}
                     </span>
-                    <Badge tone="neutral">{industryLabel(business.industry)}</Badge>
+                    <Badge tone="neutral">{registry.label(business.industry)}</Badge>
                   </button>
                 ))}
               </div>
@@ -347,6 +348,7 @@ function CustomerDashboard({
   session: CustomerSession;
   onLogout: () => void;
 }) {
+  const registry = useIndustryRegistry();
   const token = session.accessToken;
   const queryClient = useQueryClient();
   const apiGet = useMemo(
@@ -568,9 +570,9 @@ function CustomerDashboard({
                     <p className="text-sm font-medium">{club.tenantName}</p>
                     <p className="mt-0.5 flex flex-wrap items-center gap-2 text-xs text-slate-500">
                       <Badge tone="neutral">
-                        {industryLabel(club.industry)}
+                        {registry.label(club.industry)}
                       </Badge>
-                      <span>{endUserNoun(club.industry)} این مجموعه</span>
+                      <span>{registry.noun(club.industry)} این مجموعه</span>
                       {club.branch?.name && (
                         <span className="flex items-center gap-1">
                           <MapPin className="h-3 w-3" />

@@ -5,6 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Building2, Users, Activity, Layers, ShoppingBag, Boxes } from 'lucide-react';
 import { api } from '@/lib/api-client';
 import { getAdminToken } from '@/lib/admin-auth';
+import { industryLabel } from '@repo/shared';
 import { Card, CardBody, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { StatusBadge } from '@/components/admin/status-badge';
@@ -12,31 +13,17 @@ import { PageHeader } from '@/components/ui/page-header';
 import { Skeleton } from '@/components/ui/empty-state';
 import { Table, Td, Th } from '@/components/ui/table';
 import { formatJalali, formatNumber } from '@/lib/utils';
-import type { AdminStats } from '@/lib/admin-types';
-
-const INDUSTRY_LABELS: Record<string, string> = {
-  SPORTS_COACHING: 'ورزشی',
-  LANGUAGE_SCHOOL: 'آموزش زبان',
-  BEAUTY: 'زیبایی',
-  HEALTHCARE: 'سلامت',
-  ART_MUSIC: 'هنر و موسیقی',
-  EARLY_CHILD: 'کودک',
-  PSYCHOLOGY: 'روانشناسی',
-  LEGAL: 'حقوقی',
-  MEDIA_PHOTO: 'رسانه',
-  TECHNOLOGY: 'فناوری',
-  RESTAURANT_CAFE: 'کافه و رستوران',
-  RETAIL: 'خرده‌فروشی',
-  TECHNICAL_SERVICES: 'خدمات فنی',
-  REAL_ESTATE: 'املاک',
-  TRANSPORT: 'حمل‌ونقل',
-  TOURISM: 'گردشگری',
-  BUSINESS_CONSULTING: 'مشاوره',
-  OTHER: 'سایر',
-};
+import type { AdminIndustry, AdminStats } from '@/lib/admin-types';
 
 export default function AdminDashboardPage() {
   const token = getAdminToken();
+  const industriesQuery = useQuery({
+    queryKey: ['admin-industries'],
+    queryFn: () => api.get<AdminIndustry[]>('/admin/industries', token),
+  });
+  const industryLabels = new Map(
+    (industriesQuery.data ?? []).map((item) => [item.key, item.label]),
+  );
   const statsQuery = useQuery({
     queryKey: ['admin-stats'],
     queryFn: () => api.get<AdminStats>('/admin/stats', token),
@@ -95,7 +82,7 @@ export default function AdminDashboardPage() {
                   <div key={row.industry}>
                     <div className="mb-1 flex items-center justify-between text-sm">
                       <span className="text-slate-600 dark:text-slate-300">
-                        {INDUSTRY_LABELS[row.industry] ?? row.industry}
+                        {industryLabels.get(row.industry) ?? industryLabel(row.industry)}
                       </span>
                       <span className="text-slate-500 nums">
                         {formatNumber(row.count)} ({percent}٪)
