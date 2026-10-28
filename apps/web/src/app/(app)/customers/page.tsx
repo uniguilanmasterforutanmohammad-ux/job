@@ -26,7 +26,7 @@ export default function CustomersPage() {
   const queryClient = useQueryClient();
   const [search, setSearch] = useState('');
   const [open, setOpen] = useState(false);
-  const [form, setForm] = useState({ fullName: '', phone: '', city: '' });
+  const [form, setForm] = useState({ fullName: '', phone: '' });
 
   const { data, isLoading } = useQuery({
     queryKey: ['customers', search],
@@ -39,15 +39,11 @@ export default function CustomersPage() {
 
   const createMutation = useMutation({
     mutationFn: () =>
-      api.post(
-        '/customers',
-        { fullName: form.fullName, phone: form.phone || undefined, city: form.city || undefined },
-        token,
-      ),
+      api.post('/customers', { fullName: form.fullName, phone: form.phone || undefined }, token),
     onSuccess: () => {
       toast.success(`${noun} ثبت شد`);
       setOpen(false);
-      setForm({ fullName: '', phone: '', city: '' });
+      setForm({ fullName: '', phone: '' });
       void queryClient.invalidateQueries({ queryKey: ['customers'] });
     },
     onError: (error) =>
@@ -95,7 +91,6 @@ export default function CustomersPage() {
                 <tr>
                   <Th>نام</Th>
                   <Th>موبایل</Th>
-                  <Th>شهر</Th>
                   <Th>وضعیت</Th>
                   <Th>برچسب‌ها</Th>
                   <Th>تاریخ ثبت</Th>
@@ -106,7 +101,6 @@ export default function CustomersPage() {
                   <tr key={customer.id} className="hover:bg-slate-50/60 dark:hover:bg-slate-800/40">
                     <Td className="font-medium text-slate-900 dark:text-slate-100">{customer.fullName}</Td>
                     <Td className="nums">{customer.phone ?? '—'}</Td>
-                    <Td>{customer.city ?? '—'}</Td>
                     <Td>
                       <Badge tone={customer.leadStage === 'WON' ? 'success' : 'info'}>
                         {LEAD_STAGE_LABELS[customer.leadStage]}
@@ -180,11 +174,6 @@ export default function CustomersPage() {
             onChange={(event) =>
               setForm({ ...form, phone: event.target.value.replace(/\D/g, '').slice(0, 11) })
             }
-          />
-          <Input
-            label="شهر"
-            value={form.city}
-            onChange={(event) => setForm({ ...form, city: event.target.value })}
           />
         </div>
       </Modal>
