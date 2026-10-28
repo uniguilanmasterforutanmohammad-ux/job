@@ -12,6 +12,7 @@ import {
   CreditCard,
   Gift,
   LayoutDashboard,
+  Layers,
   LogOut,
   MapPin,
   Phone,
@@ -23,7 +24,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { api, ApiClientError } from '@/lib/api-client';
-import { cn, formatJalali, formatToman } from '@/lib/utils';
+import { cn, formatJalali, formatNumber, formatToman } from '@/lib/utils';
 import { useIndustryRegistry } from '@/lib/use-industry-registry';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -54,10 +55,11 @@ const LEGACY_USER_KEY = 'bp_student_user';
  * to the server. That also stops the check-in list from polling while the
  * شاگرد is reading something else.
  */
-type PortalTab = 'home' | 'attendance' | 'appointments' | 'finance' | 'absence';
+type PortalTab = 'home' | 'clubs' | 'attendance' | 'appointments' | 'finance' | 'absence';
 
 const PORTAL_TABS: { key: PortalTab; label: string; icon: typeof LayoutDashboard }[] = [
   { key: 'home', label: 'خانه', icon: LayoutDashboard },
+  { key: 'clubs', label: 'صنف‌ها و مجموعه‌ها', icon: Building2 },
   { key: 'attendance', label: 'حضور و غیاب', icon: UserCheck },
   { key: 'appointments', label: 'نوبت‌های من', icon: CalendarClock },
   { key: 'finance', label: 'مالی و کیف پول', icon: CreditCard },
@@ -385,8 +387,8 @@ function CustomerLoginPanel({ onSuccess }: { onSuccess: (s: CustomerSession) => 
         )}
         <p className="text-xs leading-6 text-slate-500">
           برای عضویت در یک کسب‌وکار جدید، لینک یا QR اختصاصی همان کسب‌وکار را باز کنید؛ پس از
-          تأیید موبایل، آن مجموعه به فهرست «عضویت‌های من» اضافه می‌شود. اگر لینک را ندارید، از
-          فهرست زیر کسب‌وکار خود را انتخاب کنید.
+          تأیید موبایل، آن مجموعه به فهرست «صنف‌ها و مجموعه‌ها» در پنل شما اضافه می‌شود. اگر لینک
+          را ندارید، از فهرست زیر کسب‌وکار خود را انتخاب کنید.
         </p>
         </CardBody>
       </Card>
@@ -442,6 +444,174 @@ function CustomerLoginPanel({ onSuccess }: { onSuccess: (s: CustomerSession) => 
         )}
       </Card>
     </div>
+  );
+}
+
+/** Clubs grouped by industry — «آموزش زبان»، «ورزش و تندرستی»، … */
+function groupClubsByIndustry(clubs: CustomerClub[]) {
+  const groups: { industry: string; clubs: CustomerClub[] }[] = [];
+  for (const club of clubs) {
+    const group = groups.find((item) => item.industry === club.industry);
+    if (group) group.clubs.push(club);
+    else groups.push({ industry: club.industry, clubs: [club] });
+  }
+  return groups;
+}
+
+/** One membership: which club, which industry, and the switch action. */
+function ClubRow({
+  club,
+  active,
+  switching,
+  onSwitch,
+}: {
+  club: CustomerClub;
+  active: boolean;
+  switching: boolean;
+  onSwitch: (tenantId: string) => void;
+}) {
+  const registry = useIndustryRegistry();
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-100 p-3 dark:border-slate-800">
+      <div className="flex items-center gap-3">
+        <div className="rounded-xl bg-brand-50 p-2 text-brand-600 dark:bg-brand-900/30">
+          <Building2 className="h-5 w-5" />
+        </div>
+        <div>
+          <p className="text-sm font-medium">{club.tenantName}</p>
+          <p className="mt-0.5 flex flex-wrap items-center gap-2 text-xs text-slate-500">
+            <Badge tone="neutral">{registry.label(club.industry)}</Badge>
+            <span>{registry.noun(club.industry)} این مجموعه</span>
+            {club.branch?.name && (
+              <span className="flex items-center gap-1">
+                <MapPin className="h-3 w-3" />
+                {club.branch.name}
+                {club.branch.city ? ` • ${club.branch.city}` : ''}
+              </span>
+            )}
+          </p>
+        </div>
+      </div>
+      <div className="flex items-center gap-2">
+        <Badge tone={club.isActive ? 'success' : 'neutral'}>
+          {club.isActive ? 'فعال' : 'غیرفعال'}
+        </Badge>
+        {active ? (
+          <Badge tone="brand">کسب‌وکار فعال پنل</Badge>
+        ) : (
+          <Button
+            size="sm"
+            variant="outline"
+            loading={switching}
+            disabled={!club.isActive}
+            onClick={() => onSwitch(club.tenantId)}
+          >
+            <ArrowLeftRight className="h-4 w-4" />
+            ورود به این مجموعه
+          </Button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/**
+ * A mobile number can be a member of a language school *and* a gym *and* a
+ * clinic. The strip keeps every club visible in all sections (the user asked
+ * for the industries to be obvious, not buried in one card), and acts as the
+ * club switcher: a token is scoped to a single tenant, so picking a chip
+ * re-issues it for that club.
+ */
+function MembershipStrip({
+  clubs,
+  loading,
+  activeTenantId,
+  busyTenantId,
+  onSwitch,
+  onOpenAll,
+}: {
+  clubs: CustomerClub[];
+  loading: boolean;
+  activeTenantId: string;
+  busyTenantId: string | null;
+  onSwitch: (tenantId: string) => void;
+  onOpenAll: () => void;
+}) {
+  const registry = useIndustryRegistry();
+  const industries = Array.from(new Set(clubs.map((club) => club.industry)));
+
+  return (
+    <Card>
+      <CardHeader
+        title="صنف‌ها و مجموعه‌های من"
+        description={
+          clubs.length
+            ? `شما در ${formatNumber(industries.length)} صنف و ${formatNumber(clubs.length)} مجموعه عضو هستید. با انتخاب هر صنف، پنل به همان مجموعه وصل می‌شود.`
+            : 'با همین شمارهٔ موبایل می‌توانید هم‌زمان در چند صنف و مجموعهٔ مختلف عضو باشید.'
+        }
+        action={
+          clubs.length > 1 ? (
+            <Button size="sm" variant="outline" onClick={onOpenAll}>
+              <Layers className="h-4 w-4" />
+              همهٔ صنف‌ها
+            </Button>
+          ) : undefined
+        }
+      />
+      <CardBody className="flex flex-wrap gap-2">
+        {loading ? (
+          <Skeleton className="h-16 w-full" />
+        ) : clubs.length ? (
+          clubs.map((club) => {
+            const active = club.tenantId === activeTenantId;
+            return (
+              <button
+                key={club.tenantId}
+                type="button"
+                disabled={!club.isActive || busyTenantId === club.tenantId}
+                aria-current={active ? 'true' : undefined}
+                title={active ? 'این مجموعه همین حالا فعال است' : 'ورود به این مجموعه'}
+                onClick={() => onSwitch(club.tenantId)}
+                className={cn(
+                  'flex items-center gap-2 rounded-xl border px-3 py-2 text-right text-xs transition-colors disabled:cursor-default',
+                  active
+                    ? 'border-brand-200 bg-brand-50 dark:border-brand-800 dark:bg-brand-900/30'
+                    : 'border-slate-200 hover:bg-slate-50 dark:border-slate-700 dark:hover:bg-slate-800',
+                )}
+              >
+                <Building2
+                  className={cn('h-4 w-4 shrink-0', active ? 'text-brand-600' : 'text-slate-400')}
+                />
+                <span>
+                  <span
+                    className={cn(
+                      'block',
+                      active
+                        ? 'font-semibold text-brand-700 dark:text-brand-200'
+                        : 'font-medium text-slate-700 dark:text-slate-200',
+                    )}
+                  >
+                    {registry.label(club.industry)}
+                  </span>
+                  <span className="mt-1 flex items-center gap-1.5 text-slate-500">
+                    <Badge tone={active ? 'brand' : 'neutral'}>
+                      {registry.noun(club.industry)}
+                    </Badge>
+                    {club.tenantName}
+                  </span>
+                </span>
+                {active && <CheckCircle2 className="h-4 w-4 shrink-0 text-brand-600" />}
+              </button>
+            );
+          })
+        ) : (
+          <p className="text-sm text-slate-500">
+            هنوز در هیچ صنفی عضو نیستید؛ از «خانه» یکی از کسب‌وکارهای فعال را انتخاب کنید تا حساب
+            شما همان‌جا ساخته شود.
+          </p>
+        )}
+      </CardBody>
+    </Card>
   );
 }
 
@@ -607,9 +777,23 @@ function CustomerDashboard({
 
   const targets = targetsQuery.data ?? [];
   const attendance = attendanceQuery.data;
+  const clubGroups = groupClubsByIndustry(clubsQuery.data ?? []);
+  const busyTenantId = switchClub.isPending ? (switchClub.variables ?? null) : null;
 
   return (
-    <div className="grid gap-5 lg:grid-cols-[13rem_minmax(0,1fr)]">
+    <div className="space-y-5">
+      {/* Visible in every section, not only on «خانه»: the industries this
+          number belongs to, and one click to switch the active club. */}
+      <MembershipStrip
+        clubs={clubsQuery.data ?? []}
+        loading={clubsQuery.isLoading}
+        activeTenantId={session.tenantId}
+        busyTenantId={busyTenantId}
+        onSwitch={(tenantId) => switchClub.mutate(tenantId)}
+        onOpenAll={() => setTab('clubs')}
+      />
+
+      <div className="grid gap-5 lg:grid-cols-[13rem_minmax(0,1fr)]">
       {/* Sections instead of one endless page: the portal now reads like the
           business panel, and each tab only loads what it needs. */}
       <nav
@@ -728,63 +912,37 @@ function CustomerDashboard({
         </>
       )}
 
-      {tab === 'home' && (
+      {tab === 'clubs' && (
         <>
-      {/* Businesses the customer belongs to */}
+      {/* Every industry the number belongs to, one group per industry — the
+          «زبان‌آموز / ورزشی / …» list the user asked to see in the panel. */}
       <Card>
         <CardHeader
-          title="عضویت‌های من"
-          description="یک شمارهٔ موبایل می‌تواند هم‌زمان در چند کسب‌وکار (مثلاً یک آموزشگاه زبان و یک باشگاه ورزشی) عضو باشد؛ پنل در هر لحظه به یکی از آن‌ها وصل است و با دکمهٔ هر ردیف جابه‌جا می‌شود."
+          title="صنف‌ها و مجموعه‌هایی که در آن‌ها عضو هستید"
+          description="اگر در چند صنف عضو باشید، همهٔ آن‌ها همین‌جا جدا‌جدا فهرست می‌شوند؛ با «ورود به این مجموعه» پنل به همان کسب‌وکار وصل می‌شود."
         />
-        <CardBody className="space-y-2">
+        <CardBody className="space-y-4">
           {clubsQuery.isLoading ? (
-            <Skeleton className="h-20 w-full" />
-          ) : clubsQuery.data?.length ? (
-            clubsQuery.data.map((club) => (
-              <div
-                key={club.tenantId}
-                className="flex items-center justify-between rounded-xl border border-slate-100 p-3 dark:border-slate-800"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="rounded-xl bg-brand-50 p-2 text-brand-600 dark:bg-brand-900/30">
-                    <Building2 className="h-5 w-5" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium">{club.tenantName}</p>
-                    <p className="mt-0.5 flex flex-wrap items-center gap-2 text-xs text-slate-500">
-                      <Badge tone="neutral">
-                        {registry.label(club.industry)}
-                      </Badge>
-                      <span>{registry.noun(club.industry)} این مجموعه</span>
-                      {club.branch?.name && (
-                        <span className="flex items-center gap-1">
-                          <MapPin className="h-3 w-3" />
-                          {club.branch.name}
-                          {club.branch.city ? ` • ${club.branch.city}` : ''}
-                        </span>
-                      )}
-                    </p>
-                  </div>
+            <Skeleton className="h-24 w-full" />
+          ) : clubGroups.length ? (
+            clubGroups.map((group) => (
+              <div key={group.industry} className="space-y-2">
+                <div className="flex flex-wrap items-center gap-2 border-b border-slate-100 pb-2 dark:border-slate-800">
+                  <Badge tone="brand">{registry.label(group.industry)}</Badge>
+                  <span className="text-xs text-slate-500">
+                    {formatNumber(group.clubs.length)} مجموعه • نام کاربران این صنف «
+                    {registry.noun(group.industry)}» است
+                  </span>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Badge tone={club.isActive ? 'success' : 'neutral'}>
-                    {club.isActive ? 'فعال' : 'غیرفعال'}
-                  </Badge>
-                  {club.tenantId === session.tenantId ? (
-                    <Badge tone="brand">کسب‌وکار فعال پنل</Badge>
-                  ) : (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      loading={switchClub.isPending}
-                      disabled={!club.isActive}
-                      onClick={() => switchClub.mutate(club.tenantId)}
-                    >
-                      <ArrowLeftRight className="h-4 w-4" />
-                      ورود به این مجموعه
-                    </Button>
-                  )}
-                </div>
+                {group.clubs.map((club) => (
+                  <ClubRow
+                    key={club.tenantId}
+                    club={club}
+                    active={club.tenantId === session.tenantId}
+                    switching={busyTenantId === club.tenantId}
+                    onSwitch={(tenantId) => switchClub.mutate(tenantId)}
+                  />
+                ))}
               </div>
             ))
           ) : (
@@ -793,9 +951,61 @@ function CustomerDashboard({
               title="هنوز در هیچ کسب‌وکاری عضو نیستید"
               description="حساب شما با همین شمارهٔ موبایل ساخته می‌شود و می‌تواند هم‌زمان در چند کسب‌وکار باشد. برای شروع: ۱) لینک یا QR دعوت همان مجموعه را باز کنید، ۲) از فهرست کسب‌وکارهای فعال در صفحهٔ ورود یکی را انتخاب کنید تا حساب شما همان لحظه ساخته شود، یا ۳) از مدیر مجموعه بخواهید شمارهٔ شما را در فهرست کاربرانش ثبت کند."
             />
-        )}
-      </CardBody>
-    </Card>
+          )}
+        </CardBody>
+      </Card>
+        </>
+      )}
+
+      {tab === 'home' && (
+        <>
+      {/* Compact summary: the industries themselves live in the strip above and
+          in «صنف‌ها و مجموعه‌ها». */}
+      <Card>
+        <CardHeader
+          title="عضویت‌های من"
+          description="یک شمارهٔ موبایل می‌تواند هم‌زمان در چند صنف و کسب‌وکار (مثلاً یک آموزشگاه زبان و یک باشگاه ورزشی) عضو باشد."
+          action={
+            clubsQuery.data?.length ? (
+              <Button size="sm" variant="outline" onClick={() => setTab('clubs')}>
+                <Layers className="h-4 w-4" />
+                مشاهدهٔ فهرست کامل
+              </Button>
+            ) : undefined
+          }
+        />
+        <CardBody className="space-y-3">
+          {clubsQuery.isLoading ? (
+            <Skeleton className="h-16 w-full" />
+          ) : clubsQuery.data?.length ? (
+            <>
+              <p className="text-sm text-slate-500">
+                شما در {formatNumber(clubGroups.length)} صنف و{' '}
+                {formatNumber(clubsQuery.data.length)} مجموعه عضو هستید. مجموعهٔ فعال:{' '}
+                <span className="font-medium text-slate-700 dark:text-slate-200">
+                  {session.tenantName}
+                </span>
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {clubGroups.map((group) => {
+                  const active = group.clubs.some((club) => club.tenantId === session.tenantId);
+                  return (
+                    <Badge key={group.industry} tone={active ? 'brand' : 'neutral'}>
+                      {registry.label(group.industry)} • {formatNumber(group.clubs.length)}
+                    </Badge>
+                  );
+                })}
+              </div>
+            </>
+          ) : (
+            <EmptyState
+              icon={Building2}
+              title="هنوز در هیچ کسب‌وکاری عضو نیستید"
+              description="حساب شما با همین شمارهٔ موبایل ساخته می‌شود و می‌تواند هم‌زمان در چند کسب‌وکار باشد. برای شروع: ۱) لینک یا QR دعوت همان مجموعه را باز کنید، ۲) از فهرست کسب‌وکارهای فعال در صفحهٔ ورود یکی را انتخاب کنید تا حساب شما همان لحظه ساخته شود، یا ۳) از مدیر مجموعه بخواهید شمارهٔ شما را در فهرست کاربرانش ثبت کند."
+            />
+          )}
+        </CardBody>
+      </Card>
         </>
       )}
 
@@ -1055,6 +1265,7 @@ function CustomerDashboard({
         <LogOut className="h-4 w-4" />
         خروج از حساب
       </Button>
+      </div>
       </div>
     </div>
   );
