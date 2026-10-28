@@ -138,6 +138,15 @@ export type PortalLoyalty = { walletBalance: number; points: number; tier: strin
 
 // ----- End-user (student) dashboard -----
 
+/** A business that accepts new end-user registrations (`GET /app/businesses`). */
+export type CustomerBusinessOption = {
+  id: string;
+  name: string;
+  slug: string;
+  industry: string;
+  logoUrl: string | null;
+};
+
 export type CustomerClub = {
   tenantId: string;
   tenantName: string;

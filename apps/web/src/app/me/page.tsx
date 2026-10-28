@@ -33,6 +33,7 @@ import type {
   CustomerAttendance,
   CustomerCheckInTarget,
   CustomerClub,
+  CustomerBusinessOption,
   CustomerLoginResult,
 } from '@/lib/types-extra';
 
@@ -156,9 +157,33 @@ function CustomerLoginPanel({ onSuccess }: { onSuccess: (s: CustomerSession) => 
   const [phone, setPhone] = useState('');
   const [code, setCode] = useState('');
   const [step, setStep] = useState<'phone' | 'code'>('phone');
+  /** Selected business for the "join a new business" path; null = global login. */
+  const [target, setTarget] = useState<CustomerBusinessOption | null>(null);
+  const [showDirectory, setShowDirectory] = useState(false);
+  const [search, setSearch] = useState('');
+
+  // Public directory: the API only returns ACTIVE businesses, so a business
+  // deactivated by the platform admin never shows up here.
+  const directory = useQuery({
+    queryKey: ['customer-business-directory', search],
+    enabled: showDirectory,
+    queryFn: () =>
+      api.get<CustomerBusinessOption[]>(
+        `/app/businesses${search ? `?search=${encodeURIComponent(search)}` : ''}`,
+      ),
+  });
+
+  const reset = () => {
+    setTarget(null);
+    setStep('phone');
+    setCode('');
+  };
 
   const requestOtp = useMutation({
-    mutationFn: () => api.post('/app/auth/otp/request-global', { phone }),
+    mutationFn: () =>
+      target
+        ? api.post('/app/auth/otp/request', { tenantSlug: target.slug, phone })
+        : api.post('/app/auth/otp/request-global', { phone }),
     onSuccess: () => {
       toast.success('کد ورود ارسال شد');
       setStep('code');
@@ -167,7 +192,14 @@ function CustomerLoginPanel({ onSuccess }: { onSuccess: (s: CustomerSession) => 
   });
 
   const verifyOtp = useMutation({
-    mutationFn: () => api.post<CustomerLoginResult>('/app/auth/otp/verify-global', { phone, code }),
+    mutationFn: () =>
+      target
+        ? api.post<CustomerLoginResult>('/app/auth/otp/verify', {
+            tenantSlug: target.slug,
+            phone,
+            code,
+          })
+        : api.post<CustomerLoginResult>('/app/auth/otp/verify-global', { phone, code }),
     onSuccess: (result) => {
       onSuccess({
         accessToken: result.tokens.accessToken,
@@ -178,16 +210,30 @@ function CustomerLoginPanel({ onSuccess }: { onSuccess: (s: CustomerSession) => 
       });
       toast.success('خوش آمدید');
     },
-    onError: (e) => toast.error(e instanceof ApiClientError ? e.message : 'کد نامعتبر است'),
+    onError: (e) => {
+      toast.error(e instanceof ApiClientError ? e.message : 'کد نامعتبر است');
+      if (!target) setShowDirectory(true);
+    },
   });
 
   return (
-    <Card>
-      <CardHeader
-        title="ورود یا ثبت‌نام با موبایل"
-        description="اولین بار که وارد می‌شوید حساب کاربری خودتان ساخته می‌شود؛ بعد از آن همهٔ کسب‌وکارهایی که در آن‌ها عضو هستید یک‌جا نمایش داده می‌شوند"
-      />
-      <CardBody className="space-y-4">
+    <div className="space-y-4">
+      <Card>
+        <CardHeader
+          title="ورود یا ثبت‌نام با موبایل"
+          description="اولین بار که وارد می‌شوید حساب کاربری خودتان ساخته می‌شود؛ بعد از آن همهٔ کسب‌وکارهایی که در آن‌ها عضو هستید یک‌جا نمایش داده می‌شوند"
+        />
+        <CardBody className="space-y-4">
+          {target && (
+            <div className="flex items-center justify-between rounded-xl bg-brand-50 px-3 py-2 text-sm dark:bg-brand-950/30">
+              <span>
+                ثبت‌نام/ورود در <span className="font-semibold">{target.name}</span>
+              </span>
+              <button type="button" className="text-xs text-brand-700 hover:underline" onClick={reset}>
+                تغییر کسب‌وکار
+              </button>
+            </div>
+          )}
         <Input
           label="شماره موبایل"
           placeholder="09xxxxxxxxx"
@@ -234,10 +280,63 @@ function CustomerLoginPanel({ onSuccess }: { onSuccess: (s: CustomerSession) => 
         </p>
         <p className="text-xs leading-6 text-slate-500">
           برای عضویت در یک کسب‌وکار جدید، لینک یا QR اختصاصی همان کسب‌وکار را باز کنید؛ پس از
-          تأیید موبایل، آن مجموعه به فهرست «عضویت‌های من» اضافه می‌شود.
+          تأیید موبایل، آن مجموعه به فهرست «عضویت‌های من» اضافه می‌شود. اگر لینک را ندارید، از
+          فهرست زیر کسب‌وکار خود را انتخاب کنید.
         </p>
-      </CardBody>
-    </Card>
+        </CardBody>
+      </Card>
+
+      <Card>
+        <CardHeader
+          title="عضویت در کسب‌وکار جدید"
+          description="فقط کسب‌وکارهای فعال نمایش داده می‌شوند؛ با انتخاب هر کسب‌وکار، همان لحظه حساب شما ساخته می‌شود"
+          action={
+            <Button variant="outline" size="sm" onClick={() => setShowDirectory((prev) => !prev)}>
+              <Building2 className="h-4 w-4" />
+              {showDirectory ? 'بستن فهرست' : 'نمایش فهرست کسب‌وکارها'}
+            </Button>
+          }
+        />
+        {showDirectory && (
+          <CardBody className="space-y-3">
+            <Input
+              placeholder="جستجوی نام کسب‌وکار"
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+            />
+            {directory.isLoading ? (
+              <Skeleton className="h-14 w-full" />
+            ) : directory.data?.length ? (
+              <div className="space-y-2">
+                {directory.data.map((business) => (
+                  <button
+                    key={business.id}
+                    type="button"
+                    className="flex w-full items-center justify-between rounded-xl border border-slate-200 px-3 py-2.5 text-start text-sm transition hover:border-brand-400 hover:bg-brand-50/60 dark:border-slate-800 dark:hover:bg-brand-950/20"
+                    onClick={() => {
+                      setTarget(business);
+                      setStep('phone');
+                      setCode('');
+                      setShowDirectory(false);
+                      toast.success(`کسب‌وکار «${business.name}» انتخاب شد`);
+                    }}
+                  >
+                    <span className="font-medium text-slate-800 dark:text-slate-100">
+                      {business.name}
+                    </span>
+                    <Badge tone="neutral">{industryLabel(business.industry)}</Badge>
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <p className="py-2 text-center text-sm text-slate-400">
+                کسب‌وکار فعالی یافت نشد
+              </p>
+            )}
+          </CardBody>
+        )}
+      </Card>
+    </div>
   );
 }
 
