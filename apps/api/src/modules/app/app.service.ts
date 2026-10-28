@@ -351,8 +351,8 @@ export class AppService {
   async createAbsenceRequest(memberId: string, dto: CreateAbsenceRequestDto) {
     const customer = await this.customerFor(memberId);
 
-    const day = new Date(dto.absenceDate);
-    day.setHours(0, 0, 0, 0);
+    // `dateOnlySchema` already normalised the input to UTC midnight of the day.
+    const day = dto.absenceDate;
 
     const existing = await this.prisma.client.absenceRequest.findFirst({
       where: {

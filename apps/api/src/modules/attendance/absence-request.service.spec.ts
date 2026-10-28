@@ -89,6 +89,9 @@ describe('AttendanceExtraService.reviewAbsenceRequest', () => {
     expect(created.status).toBe('EXCUSED');
     expect(created.customerId).toBe('c1');
     expect(created.note).toContain('موجه');
+    // The excused record must land on the requested day, stored as UTC
+    // midnight (PostgreSQL `date` column).
+    expect(created.date).toEqual(absenceRow.absenceDate);
     expect(result.status).toBe('APPROVED');
   });
 

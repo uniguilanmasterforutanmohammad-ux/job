@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { dateOnlySchema } from '../../../common/dto/date-only.dto.js';
 
 export const markAttendanceSchema = z.object({
   customerId: z.string().uuid().optional(),
@@ -6,7 +7,7 @@ export const markAttendanceSchema = z.object({
   branchId: z.string().uuid().optional(),
   status: z.enum(['PRESENT', 'ABSENT', 'LATE', 'EXCUSED', 'CANCELED']).default('PRESENT'),
   method: z.enum(['MANUAL', 'QR', 'PERSONAL_CODE', 'NFC', 'GEO']).default('MANUAL'),
-  date: z.coerce.date().optional(),
+  date: dateOnlySchema.optional(),
   note: z.string().trim().max(300).optional(),
 });
 export type MarkAttendanceDto = z.infer<typeof markAttendanceSchema>;

@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { todayDateOnly } from '../../common/dto/date-only.dto.js';
 import { DomainException } from '../../common/exceptions/domain.exception.js';
 import { PrismaService } from '../../database/prisma.service.js';
 import type {
@@ -138,8 +139,7 @@ export class AttendanceExtraService {
       throw DomainException.badRequest('شما در محدوده شعبه نیستید');
     }
 
-    const today = new Date();
-    const day = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    const day = todayDateOnly();
     const attendance = await this.prisma.client.attendance.create({
       data: {
         tenantId,

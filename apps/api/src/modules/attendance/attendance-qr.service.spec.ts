@@ -1,5 +1,6 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { AttendanceQrService } from './attendance-qr.service.js';
+import { todayDateOnly } from '../../common/dto/date-only.dto.js';
 import type { PrismaService } from '../../database/prisma.service.js';
 import type { RedisService } from '../../redis/redis.service.js';
 import type { OtpService } from '../auth/otp.service.js';
@@ -213,6 +214,12 @@ describe('AttendanceQrService.appCheckIn (panel)', () => {
     expect(data.tenantId).toBe('t1');
     expect(data.method).toBe('MANUAL');
     expect(data.note).toBe('panel');
+    // `date` is a PostgreSQL `date` column: it must be UTC midnight of today's
+    // local calendar day, not a local-midnight value (which Prisma would store
+    // one day earlier east of UTC).
+    expect(data.date).toEqual(todayDateOnly());
+    expect(data.date.getUTCHours()).toBe(0);
+    expect(data.date.getUTCDate()).toBe(new Date().getDate());
     expect(result.alreadyCheckedIn).toBe(false);
   });
 

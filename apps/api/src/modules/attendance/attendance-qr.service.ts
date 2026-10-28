@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { createHmac, randomBytes, randomInt, timingSafeEqual } from 'node:crypto';
 import { toDataURL } from 'qrcode';
+import { todayDateOnly } from '../../common/dto/date-only.dto.js';
 import { DomainException } from '../../common/exceptions/domain.exception.js';
 import { PrismaService } from '../../database/prisma.service.js';
 import { RedisService } from '../../redis/redis.service.js';
@@ -222,8 +223,7 @@ export class AttendanceQrService {
 
     await this.assertWithinGeofence(session, options);
 
-    const today = new Date();
-    const day = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    const day = todayDateOnly();
     const attendance = await this.prisma.client.attendance.create({
       data: {
         tenantId: session.tenantId,

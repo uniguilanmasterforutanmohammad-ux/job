@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { dateOnlySchema } from '../../../common/dto/date-only.dto.js';
 
 // ATT-04 makeup session
 export const createMakeupSchema = z.object({
@@ -41,7 +42,7 @@ export type GeofenceCheckInDto = z.infer<typeof geofenceCheckInSchema>;
 
 /** A student creates an excuse/absence request for a session date. */
 export const createAbsenceRequestSchema = z.object({
-  absenceDate: z.coerce.date(),
+  absenceDate: dateOnlySchema,
   reason: z.string().trim().min(2).max(200),
   note: z.string().trim().max(1000).optional(),
   appointmentId: z.string().uuid().optional(),

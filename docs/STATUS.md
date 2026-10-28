@@ -182,3 +182,17 @@ pnpm db:migrate && pnpm db:seed && pnpm dev
   و در گزارش‌های حضور لحاظ می‌گردد؛ توضیح مربی برای شاگرد نمایش داده می‌شود.
 - مدل دیتاستوری: `AbsenceRequest` (+ enum `AbsenceRequestStatus`) و مهاجرت
   `20261028115130_absence_requests`.
+
+## رفع باگ تاریخ (ستون‌های `@db.Date`) — تکمیل‌شده
+
+- ستون‌های تاریخ تقویمی (`attendances.date`، `absence_requests.absenceDate`) با
+  `new Date(y, m, d)` (نیمه‌شب محلی) پر می‌شدند؛ چون Prisma مقدار `Date` را با روز
+  تقویم **UTC** در ستون `date` ذخیره می‌کند و سرور در `Asia/Tehran` (UTC+03:30) اجرا
+  می‌شود، هر حاضری/غیبت **یک روز عقب‌تر** ثبت می‌شد.
+- Helper مشترک `apps/api/src/common/dto/date-only.dto.ts` اضافه شد:
+  `dateOnlySchema` ورودی `YYYY-MM-DD` (یا instant) را به نیمه‌شب UTC همان روز تبدیل
+  می‌کند؛ `todayDateOnly()` روز جاری محلی را می‌دهد.
+- مسیرهای اصلاح‌شده: `POST /attendance` (ثبت دستی)، `POST /attendance/qr/*` و
+  `POST /public/attendance/check-in` (لینک/QR)، `POST /app/attendance/check-in`
+  (پنل شاگرد)، `POST /app/absence-requests` و حاضری ژئوفنس.
+- تست‌ها: `date-only.dto.spec.ts` + رگرسیون در اسپک‌های QR و درخواست غیبت.

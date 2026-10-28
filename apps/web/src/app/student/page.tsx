@@ -358,7 +358,7 @@ function StudentDashboard({
   const createAbsence = useMutation({
     mutationFn: () =>
       apiPost('/app/absence-requests', {
-        absenceDate: new Date(absenceDate).toISOString(),
+        absenceDate,
         reason: absenceReason,
         note: absenceNote.trim() || undefined,
       }),

@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { DomainException } from '../../common/exceptions/domain.exception.js';
+import { todayDateOnly } from '../../common/dto/date-only.dto.js';
 import { PrismaService } from '../../database/prisma.service.js';
 import type { ListAttendanceDto, MarkAttendanceDto } from './dto/attendance.schemas.js';
 
@@ -19,8 +20,7 @@ export class AttendanceService {
       if (!customer) throw DomainException.notFound('مشتری');
     }
 
-    const date = dto.date ?? new Date();
-    const day = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    const day = dto.date ?? todayDateOnly();
 
     return this.prisma.client.attendance.create({
       data: {
