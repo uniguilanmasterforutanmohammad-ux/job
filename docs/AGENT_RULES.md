@@ -144,7 +144,11 @@
 | ۶۶ | هم‌گام‌کردن پیش‌فرض‌های صنف‌های آموزشی (کلید گم‌شدهٔ `MSG`)               | `ed7e78b` | `fix(db): re-sync the education verticals' default modules (MSG was missing)` |
 | ۶۷ | کارت هر مجموعه با اعداد خودش + بخش «اطلاعیه‌ها» + نام مجموعه در عنوان‌ها  | `edb8edc` | `feat(web): show every club's own attendance, tuition and notices in the portal` |
 | ۶۸ | کامنت «✅ تکمیل شد» زیر تسک «هر مجموعه با دادهٔ خودش»                      | `81f1696` | `docs(taskfile): mark the per-club portal task as done`                  |
-| ۶۹ | ثبت ردیف‌های ۶۵ تا ۶۸ + مستندات وضعیت/اکانت‌ها + ردیف‌های تست              | این کامیت | `docs(agent): log the per-club portal commits and demo data`             |
+| ۶۹ | ثبت ردیف‌های ۶۵ تا ۶۸ + مستندات وضعیت/اکانت‌ها + ردیف‌های تست              | `18921e7` | `docs(agent): log the per-club portal commits and demo data`             |
+| ۷۰ | کلیدگذاری کوئری‌های پنل `/me` به مجموعهٔ فعال (رفع کش مجموعهٔ قبلی در سوئیچ) | `3602adf` | `fix(web): key the portal queries by the active club`                    |
+| ۷۱ | نام واقعی کاربر از پروندهٔ مشتری/زبان‌آموز به عضو پورتال                    | `c43700f` | `fix(api): take the portal member name from the customer file`           |
+| ۷۲ | ثبت نتیجهٔ تست دو-صنفی + کامنت‌های ✅ جاافتاده در تسک‌فایل                  | `833b4e1` | `docs(taskfile): record the two-club verification test`                  |
+| ۷۳ | ثبت ردیف‌های ۷۰ تا ۷۲ + مستندات وضعیت/اکانت‌ها + ردیف‌های تست              | این کامیت | `docs(agent): log the portal query-key fix and the two-club test`        |
 
 > کامیت ثبت لاگ هر ردیف در اجرای بعدی در جدول ثبت می‌شود؛ چون
 > هیچ کامیتی نمی‌تواند هش خودش را درون خودش داشته باشد.
@@ -249,6 +253,12 @@
 | ۶۷ — پنل چند-مجموعه‌ای (UI)  | زنده (Chrome/CDP) | `/tmp/cdp-verify-me-clubs.mjs` → ۲۴/۲۴: کارت جدا برای هر مجموعه با اعداد خودش، میان‌بُرهای مجموعهٔ فعال، بخش تازهٔ «اطلاعیه‌ها» با «جدید» و «خوانده شد»، پاک شدن شمارندهٔ خانه، نام مجموعه در عنوان بخش‌ها و پیروی اطلاعیه‌ها از مجموعهٔ فعال | ✅ ۲۴/۲۴ |
 | ۶۵/۶۷ — رگرسیون پنل         | زنده (Chrome/CDP) | `/tmp/cdp-verify-my-industries.mjs` → ۲۱/۲۱ (اکنون با حساب سه‌صنفی) و `/tmp/cdp-verify-me-profile.mjs` → ۱۵/۱۵ | ✅ |
 | ۶۵/۶۷ — کل بسته‌ها          | واحد + typecheck/build | `pnpm --filter @repo/api test` → ۱۶۵ پاس (۲۶ فایل)؛ `pnpm test` → `@repo/shared` ۲۱ پاس؛ `pnpm --filter @repo/web typecheck|lint|build` ✅ | ✅ |
+| ۷۰ — رفع کش پنل (زنده)      | زنده (Chrome/CDP) | `/tmp/cdp-verify-me-2clubs.mjs` → ۳۳/۳۳: سوئیچ موسیقی↔زبان و عوض‌شدن درست «اطلاعیه‌ها» (پیش از رفع، زیر تیتر مجموعهٔ تازه پیام‌های مجموعهٔ قبلی می‌ماند) | ✅ ۳۳/۳۳ |
+| ۷۰ — رگرسیون پنل            | زنده (Chrome/CDP) | `/tmp/cdp-verify-me-clubs.mjs` → ۲۴/۲۴ و `/tmp/cdp-verify-my-industries.mjs` → ۲۱/۲۱ (اسکریپت صنف‌ها حالا صبر می‌کند تا استریپ پر شود، نه خواندن حالت خالی) | ✅ |
+| ۷۱ — نام عضو پورتال (واحد)   | واحد           | `apps/api/src/modules/app/app.service.spec.ts` → ۲ تست تازه: ارث‌بری نام پروندهٔ کارکنان و ارتقای نام جانشین «کاربر» | ✅ ۲/۲ |
+| ۷۱ — نام عضو پورتال (زنده)   | زنده (HTTP)    | `POST /app/auth/otp/verify-global` با ۰۹۰۲۰۰۰۰۰۰۰ → `user.fullName = "زبان‌آموز نمونه"` (قبلاً «کاربر») | ✅ |
+| ۷۰/۷۱ — کل بسته‌ها           | واحد + typecheck/lint/build | `pnpm --filter @repo/api test` → ۱۶۷ پاس (۲۶ فایل)؛ `pnpm --filter @repo/api|web typecheck` ✅؛ `pnpm --filter @repo/web lint` → ۰ خطا؛ `pnpm --filter @repo/web build` ✅ | ✅ |
+| ۷۲ — تست دو-صنفی (زنده)      | زنده (HTTP)    | دو کسب‌وکار (زبان آوا/موسیقی نوا) + عضویت مشترک ۰۹۰۲۰۰۰۰۰۰۰؛ `verify-global` → ۲ مجموعه، `GET /app/clubs|overview` → اعداد تفکیک‌شده (زبان ۶۷٪/۳٬۰۰۰٬۰۰۰ مانده، موسیقی ۱۰۰٪/تسویه) | ✅ |
 
 ### نکتهٔ عملیاتی (کش Next در حالت توسعه)
 
