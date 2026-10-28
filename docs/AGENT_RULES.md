@@ -106,7 +106,8 @@
 | ۲۸ | صنف داده‌محور: جدول `industries`، مهاجرت و API ساخت/ویرایش/حذف صنف       | `2972e0b` | `feat(api): data-driven industry registry with admin CRUD`              |
 | ۲۹ | کنسول ادمین: ساخت/ویرایش/حذف صنف + ماژول‌های پیش‌فرض                     | `38614a4` | `feat(web-admin): build/rename/delete industries from the console`      |
 | ۳۰ | نام صنف و کاربران نهایی از رجیستری در همهٔ صفحات وب                     | `d9bb9fc` | `feat(web): name industries and their end-users from the registry`      |
-| ۳۱ | ثبت ردیف‌های ۲۷ تا ۳۰ + مستندات وضعیت و کامنت‌های تسک‌فایل               | این کامیت | `docs(agent): log data-driven-industry commits and update status`       |
+| ۳۱ | ثبت ردیف‌های ۲۷ تا ۳۰ + مستندات وضعیت و کامنت‌های تسک‌فایل               | `a6bab1f` | `docs(agent): log data-driven-industry commits and update status`       |
+| ۳۲ | ثبت ردیف ۳۱ در همین جدول                                              | این کامیت | `docs(agent): register the data-driven-industry log commit`             |
 
 > کامیت ثبت لاگ هر ردیف در اجرای بعدی در جدول ثبت می‌شود؛ چون
 > هیچ کامیتی نمی‌تواند هش خودش را درون خودش داشته باشد.
