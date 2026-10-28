@@ -110,7 +110,8 @@
 | ۳۲ | ثبت ردیف ۳۱ در همین جدول                                              | `a62c485` | `docs(agent): register the data-driven-industry log commit`             |
 | ۳۳ | نام کاربران نهایی هر صنف در کل پنل کسب‌وکار (زبان‌آموز/زبان‌آموزان …)      | `b98b629` | `feat(web): name end-users after their industry across the business panel` |
 | ۳۴ | حذف فیلد «شهر» از فرم مشتری جدید                                       | `635655a` | `feat(web-crm): remove the city field from the new-customer form`       |
-| ۳۵ | ثبت ردیف‌های ۳۳ و ۳۴ + مستندات وضعیت و کامنت‌های تسک‌فایل                   | این کامیت | `docs(agent): log industry-naming and customer-form commits`            |
+| ۳۵ | ثبت ردیف‌های ۳۳ و ۳۴ + مستندات وضعیت و کامنت‌های تسک‌فایل                   | `c6565da` | `docs(agent): log industry-naming and customer-form commits`            |
+| ۳۶ | ثبت ردیف ۳۵ در همین جدول                                              | این کامیت | `docs(agent): register the industry-naming log commit`                  |
 
 > کامیت ثبت لاگ هر ردیف در اجرای بعدی در جدول ثبت می‌شود؛ چون
 > هیچ کامیتی نمی‌تواند هش خودش را درون خودش داشته باشد.
