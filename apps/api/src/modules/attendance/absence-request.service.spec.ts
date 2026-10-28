@@ -1,4 +1,6 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
+// TaskForMyAgent #2 — درخواست غیبت موجه شاگرد و بررسی/تأیید آن توسط مربی
+// (ATT-03؛ جزئیات در docs/AGENT_RULES.md)
 import { AttendanceExtraService } from './attendance-extra.service.js';
 import type { PrismaService } from '../../database/prisma.service.js';
 

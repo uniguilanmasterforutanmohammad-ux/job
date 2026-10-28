@@ -1,4 +1,6 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
+// TaskForMyAgent #3/#4 — حاضری با QR/لینک و از پنل شاگرد + ثبت روز تقویمی درست
+// (جزئیات در docs/AGENT_RULES.md)
 import { AttendanceQrService } from './attendance-qr.service.js';
 import { todayDateOnly } from '../../common/dto/date-only.dto.js';
 import type { PrismaService } from '../../database/prisma.service.js';

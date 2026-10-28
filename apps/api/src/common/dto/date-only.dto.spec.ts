@@ -1,4 +1,6 @@
 import { describe, expect, it } from 'vitest';
+// TaskForMyAgent #4 — رفع باگ تاریخ یک‌روز‌عقب در ستون‌های `@db.Date`
+// (ثبت روز تقویمی به‌صورت نیمه‌شب UTC؛ جزئیات در docs/AGENT_RULES.md)
 import {
   dateOnlySchema,
   parseDateOnly,

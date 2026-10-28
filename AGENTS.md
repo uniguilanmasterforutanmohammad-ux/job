@@ -40,6 +40,8 @@ pnpm test                    # unit tests (api + shared, vitest)
 ```
 
 Dev login: phone `09121111111`, OTP bypass code `123456` (development only).
+Every seeded/demo account (owner, team, student, platform operator) is listed in
+`docs/DEV_ACCOUNTS.md`.
 
 ## Tests
 
@@ -47,3 +49,21 @@ Dev login: phone `09121111111`, OTP bypass code `123456` (development only).
 - `apps/api/test/smoke.e2e.spec.ts` is a live-HTTP smoke suite that auto-skips
   when the API is unreachable — start the stack to actually run it.
 - See `docs/TESTING.md` and `docs/SECURITY.md` for coverage and the threat model.
+
+## Agent workflow (mandatory)
+
+`docs/AGENT_RULES.md` is part of these instructions — read it before starting and
+follow it for every task:
+
+1. **Commit after every task and every step of a multi-step task.** Use
+   `<type>(<scope>): <summary>` (feat/fix/refactor/docs/test/chore/perf) with a
+   Persian body describing the change and the commands run, then register the
+   commit in the "Commit Registry" table of `docs/AGENT_RULES.md` (a commit is
+   logged at the latest in the following commit).
+2. **Mark every test you write or run with a comment**: add
+   `// TaskForMyAgent — <task title>` at the top of the spec file, and record the
+   test + result in the "Test Log" table of `docs/AGENT_RULES.md`.
+3. **At the end of every run**, after all steps are done and nothing is left
+   open, read `TaskForMyAgent.md` once more and automatically pick up any task
+   added there (implement, test, commit, register). If nothing is left, say so
+   explicitly in the final answer.

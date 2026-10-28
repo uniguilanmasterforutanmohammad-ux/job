@@ -34,6 +34,9 @@ pnpm test          # turbo run test (هر دو بسته)
 | `apps/api/src/modules/auth/otp.service.spec.ts`                          | هش کد، انقضا، سقف تلاش، throttle                 |
 | `apps/api/src/modules/payments/providers/*.spec.ts`                      | رجیستری درگاه + رفتار provider شبیه‌ساز          |
 | `packages/shared/src/*.spec.ts`                                          | رجیستری ماژول، حل وابستگی، مجوزها                |
+| `apps/api/src/common/dto/date-only.dto.spec.ts`                           | روز تقویمی UTC برای ستون‌های `@db.Date` (بدون یک‌روز‌جابه‌جایی) |
+| `apps/api/src/modules/attendance/absence-request.service.spec.ts`        | چرخهٔ درخواست غیبت موجه شاگرد و تأیید/رد مربی     |
+| `apps/api/src/modules/attendance/attendance-qr.service.spec.ts`          | حاضری QR/لینک و پنل شاگرد، توکن چرخشی، ضدتکرار   |
 
 ### ۲) تست دودی زنده (Live smoke)
 
@@ -58,6 +61,9 @@ pnpm --filter @repo/api test        # تست‌های زنده اجرا می‌�
 - فایل تست کنار سورس با پسوند `.spec.ts` قرار می‌گیرد.
 - ایمپورت‌ها ESM با پسوند `.js` (مطابق کانوانسیون پروژه).
 - برای منطق جدید (guard/service/pipe)، حداقل یک مسیر موفق و یک مسیر خطا تست شود.
+- هر فایل تست برای یک تسک، در بالای فایل کامنت مرجع تسک دارد
+  (`// TaskForMyAgent — <عنوان تسک>`) و نتیجهٔ اجرا در `docs/AGENT_RULES.md`
+  ثبت می‌شود. اکانت‌های لازم برای تست دستی در `docs/DEV_ACCOUNTS.md` است.
 - از تماس شبکه‌ای یا دیتابیس واقعی در تست واحد پرهیز کن؛ آن را به لایه smoke بسپار.
 
 ## چیزهایی که هنوز تست E2E کامل ندارند
