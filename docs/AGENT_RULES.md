@@ -114,7 +114,9 @@
 | ۳۶ | ثبت ردیف ۳۵ در همین جدول                                              | `6e9bdc4` | `docs(agent): register the industry-naming log commit`                  |
 | ۳۷ | ورود با رمز عبور در کنار کد یکبار مصرف در صفحهٔ `/login`                 | `2f1b83f` | `feat(web): password login next to OTP in the business-panel login page` |
 | ۳۸ | ثبت ردیف ۳۷ + مستندات وضعیت/اکانت‌ها و کامنت تسک‌فایل                       | `f8e1a2c` | `docs(agent): log the password-login commit`                            |
-| ۳۹ | ثبت ردیف ۳۸ در همین جدول                                              | این کامیت | `docs(agent): register the password-login log commit`                    |
+| ۳۹ | ثبت ردیف ۳۸ در همین جدول                                              | `5b22f61` | `docs(agent): register the password-login log commit`                    |
+| ۴۰ | آزادسازی شمارهٔ موبایل پس از حذف نرم مشتری                            | `615404f` | `feat(api): release the phone number when a customer is soft-deleted`    |
+| ۴۱ | ثبت ردیف ۴۰ + مستندات وضعیت و کامنت تسک‌فایل                            | این کامیت | `docs(agent): log the soft-delete phone-release commit`                  |
 
 > کامیت ثبت لاگ هر ردیف در اجرای بعدی در جدول ثبت می‌شود؛ چون
 > هیچ کامیتی نمی‌تواند هش خودش را درون خودش داشته باشد.
@@ -174,6 +176,12 @@
 | ۳۷ — ورود با رمز عبور (API) | زنده (HTTP)    | `/auth/login` → رمز درست: ۲۰۰ (OWNER)؛ رمز غلط: ۴۰۰ `INVALID_PASSWORD`؛ بدون رمز: ۴۰۰ `NO_PASSWORD` | ✅ |
 | ۳۷ — ورود با رمز عبور (UI) | زنده (Chrome/CDP) | ۱۰/۱۰ بررسی: تب رمز، ورود موفق → `/dashboard`، ذخیرهٔ توکن، خطای رمز غلط، پیام `NO_PASSWORD`     | ✅ ۱۰/۱۰ |
 | ۳۷ — تایپ و بیلد         | typecheck/build | `pnpm typecheck` (۶/۶)، `pnpm test`، `pnpm build`                                             | ✅ |
+| ۴۰ — واحد (حذف/افزودن دوباره) | واحد        | `apps/api/src/modules/crm/customers.service.spec.ts` (۷ تست: تشخیص تکراری روی پروندهٔ زنده، آزادسازی شماره، بایگانی در `meta`) | ✅ ۷/۷ |
+| ۴۰ — واحد (زنده‌شدن پروندهٔ پورتال) | واحد | `apps/api/src/modules/app/app.service.spec.ts` (۴ تست: استفادهٔ مجدد، زنده‌شدن، عدم تصاحب شمارهٔ گرفته‌شده، ساخت پروندهٔ نو) | ✅ ۴/۴ |
+| ۴۰ — زنده (HTTP)        | زنده (HTTP)     | افزودن → ۴۰۹ روی پروندهٔ فعال → حذف → `phone=NULL`/`meta.archivedPhone` → افزودن دوبارهٔ همان شماره موفق → بازگشت عضو پورتال با همان `customerId` | ✅ |
+| ۴۰ — کل بستهٔ API        | واحد           | `pnpm test` → ۱۴۲ پاس (API، ۲۳ فایل)                                                            | ✅ |
+| ۴۰ — تایپ و بیلد         | typecheck/build | `pnpm typecheck` (۶/۶)، `pnpm build`                                                            | ✅ |
+| ۴۰ — اسموک روی API زنده  | e2e            | `vitest run test/smoke.e2e.spec.ts`                                                              | ✅ ۴ پاس |
 
 ### نکتهٔ عملیاتی (کش Next در حالت توسعه)
 
