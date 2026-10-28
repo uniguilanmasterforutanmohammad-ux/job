@@ -59,6 +59,45 @@ export const SYSTEM_ROLE_LABELS: Record<SystemRole, string> = {
   END_USER: 'کاربر نهایی',
 };
 
+/**
+ * Tenant role key of every system role (CORE-03). A business is born with its
+ * `owner` role only, so the panel links/creates the matching row with these keys
+ * whenever it adds a user with a system role.
+ */
+export const SYSTEM_ROLE_KEYS: Record<SystemRole, string> = {
+  OWNER: 'owner',
+  MANAGER: 'manager',
+  STAFF: 'staff',
+  ACCOUNTANT: 'accountant',
+  RECEPTION: 'reception',
+  END_USER: 'end_user',
+};
+
+/**
+ * Permissions of the tenant role behind each system role. The permission guard
+ * reads the *role row*, so a user created with a system role but without a role
+ * row would be able to do nothing at all — these are the defaults used to create
+ * the missing role.
+ */
+export const SYSTEM_ROLE_DEFAULT_PERMISSIONS: Record<SystemRole, string[]> = {
+  OWNER: [PERMISSIONS.ALL],
+  MANAGER: [PERMISSIONS.ALL],
+  STAFF: [
+    PERMISSIONS.CRM_READ,
+    PERMISSIONS.SCH_READ,
+    PERMISSIONS.SCH_WRITE,
+    PERMISSIONS.ATT_WRITE,
+  ],
+  ACCOUNTANT: [PERMISSIONS.FIN_READ, PERMISSIONS.FIN_WRITE, PERMISSIONS.RPT_READ],
+  RECEPTION: [
+    PERMISSIONS.CRM_READ,
+    PERMISSIONS.CRM_WRITE,
+    PERMISSIONS.SCH_READ,
+    PERMISSIONS.SCH_WRITE,
+  ],
+  END_USER: [PERMISSIONS.APP_READ, PERMISSIONS.APP_WRITE],
+};
+
 export function hasPermission(granted: string[], required: string): boolean {
   if (granted.includes(PERMISSIONS.ALL)) return true;
   return granted.includes(required);
