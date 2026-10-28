@@ -17,6 +17,7 @@ import { Modal } from '@/components/ui/modal';
 import { PageHeader } from '@/components/ui/page-header';
 import { EmptyState, Skeleton } from '@/components/ui/empty-state';
 import { SUB_STATUS_LABELS, SUB_STATUS_TONES } from '@/lib/status';
+import { useEndUserNoun } from '@/lib/use-industry-registry';
 import type { MembershipPlan, Paginated, StudentSubscription } from '@/lib/types';
 
 const KIND_LABELS: Record<string, string> = {
@@ -30,6 +31,7 @@ const KIND_LABELS: Record<string, string> = {
 
 export default function SubscriptionsPage() {
   const token = getAccessToken();
+  const { plural } = useEndUserNoun();
   const queryClient = useQueryClient();
   const [openPlan, setOpenPlan] = useState(false);
   const [planForm, setPlanForm] = useState({ name: '', kind: 'MONTHLY', price: '0', daysCount: '30' });
@@ -78,7 +80,7 @@ export default function SubscriptionsPage() {
     <div className="space-y-5">
       <PageHeader
         title="اشتراک، شهریه و عضویت"
-        description="مدیریت طرح‌ها، اشتراک هنرجو، بسته جلسه و تمدید خودکار"
+        description={`مدیریت طرح‌ها، اشتراک ${plural}، بستهٔ جلسه و تمدید خودکار`}
         action={
           <div className="flex gap-2">
             <Button variant="outline" loading={renewals.isPending} onClick={() => renewals.mutate()}>
