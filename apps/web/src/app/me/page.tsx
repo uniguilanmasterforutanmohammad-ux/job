@@ -184,8 +184,8 @@ function CustomerLoginPanel({ onSuccess }: { onSuccess: (s: CustomerSession) => 
   return (
     <Card>
       <CardHeader
-        title="ورود با موبایل"
-        description="با شماره موبایل وارد شوید؛ همهٔ کسب‌وکارهایی که در آن‌ها عضو هستید یک‌جا نمایش داده می‌شوند"
+        title="ورود یا ثبت‌نام با موبایل"
+        description="اولین بار که وارد می‌شوید حساب کاربری خودتان ساخته می‌شود؛ بعد از آن همهٔ کسب‌وکارهایی که در آن‌ها عضو هستید یک‌جا نمایش داده می‌شوند"
       />
       <CardBody className="space-y-4">
         <Input
@@ -231,6 +231,10 @@ function CustomerLoginPanel({ onSuccess }: { onSuccess: (s: CustomerSession) => 
         )}
         <p className="text-center text-xs text-slate-400">
           در حالت توسعه، کد ثابت <span className="font-mono nums">123456</span> پذیرفته می‌شود.
+        </p>
+        <p className="text-xs leading-6 text-slate-500">
+          برای عضویت در یک کسب‌وکار جدید، لینک یا QR اختصاصی همان کسب‌وکار را باز کنید؛ پس از
+          تأیید موبایل، آن مجموعه به فهرست «عضویت‌های من» اضافه می‌شود.
         </p>
       </CardBody>
     </Card>
@@ -489,9 +493,9 @@ function CustomerDashboard({
               title="هنوز در هیچ کسب‌وکاری عضو نیستید"
               description="با باز کردن لینک یا QR دعوت هر کسب‌وکار، عضویت شما ثبت می‌شود."
             />
-          )}
-        </CardBody>
-      </Card>
+        )}
+      </CardBody>
+    </Card>
 
       {/* Attendance history */}
       <Card>
