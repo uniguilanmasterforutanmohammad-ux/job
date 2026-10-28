@@ -25,6 +25,7 @@ function build() {
           ...data,
         })),
       },
+      branch: { findFirst: vi.fn().mockResolvedValue(null) },
     },
   };
   return { service: new CustomersService(prisma as unknown as PrismaService), prisma };
@@ -109,5 +110,39 @@ describe('CustomersService.remove', () => {
     const { service, prisma } = build();
     await expect(service.remove('t1', 'nope')).rejects.toMatchObject({ status: 404 });
     expect(prisma.client.customer.update).not.toHaveBeenCalled();
+  });
+});
+
+// TaskForMyAgent — صنف زبان‌آموز و صنف‌های آموزشی باید «آموزشگاه» تعریف کنند (شعبهٔ کاربر نهایی)
+describe('CustomersService branch assignment', () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  const BRANCH_ID = '11111111-2222-4333-8444-555555555555';
+
+  it('files a new end-user under the chosen location', async () => {
+    const { service, prisma } = build();
+    prisma.client.branch.findFirst.mockResolvedValue({ id: BRANCH_ID });
+
+    await service.create('t1', { ...BASE_DTO, branchId: BRANCH_ID });
+
+    expect(prisma.client.customer.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({ branchId: BRANCH_ID }),
+    });
+  });
+
+  it('rejects a location id that belongs to another tenant', async () => {
+    const { service, prisma } = build();
+    prisma.client.branch.findFirst.mockResolvedValue(null);
+
+    await expect(service.create('t1', { ...BASE_DTO, branchId: BRANCH_ID })).rejects.toMatchObject({
+      response: { code: 'INVALID_BRANCH' },
+    });
+    expect(prisma.client.customer.create).not.toHaveBeenCalled();
+  });
+
+  it('only resolves a location when one was actually sent', async () => {
+    const { service, prisma } = build();
+    await service.create('t1', BASE_DTO);
+    expect(prisma.client.branch.findFirst).not.toHaveBeenCalled();
   });
 });

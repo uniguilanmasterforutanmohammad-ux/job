@@ -17,12 +17,17 @@ export const createCustomerSchema = z.object({
   source: z.string().trim().max(80).optional(),
   tags: z.array(z.string().trim().max(40)).max(20).default([]),
   leadStage: z.enum(['LEAD', 'NEGOTIATION', 'WON', 'LOST']).default('LEAD'),
+  /** Location the end-user belongs to («آموزشگاه A» / «شعبه»). */
+  branchId: z.string().uuid().optional(),
   notes: z.string().trim().max(2000).optional(),
   meta: z.record(z.string(), z.unknown()).optional(),
 });
 export type CreateCustomerDto = z.infer<typeof createCustomerSchema>;
 
-export const updateCustomerSchema = createCustomerSchema.partial();
+export const updateCustomerSchema = createCustomerSchema.partial().extend({
+  /** `null` clears the assignment (moves the person out of any location). */
+  branchId: z.string().uuid().nullable().optional(),
+});
 export type UpdateCustomerDto = z.infer<typeof updateCustomerSchema>;
 
 export const listCustomersSchema = z.object({

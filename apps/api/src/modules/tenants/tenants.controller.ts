@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Patch, Post } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CurrentUser } from '../../common/decorators/current-user.decorator.js';
 import { RequirePermissions, RequireSystemRoles } from '../../common/decorators/permissions.decorator.js';
@@ -6,11 +6,14 @@ import { ZodValidationPipe } from '../../common/pipes/zod-validation.pipe.js';
 import { PERMISSIONS } from '@repo/shared';
 import { TenantsService } from './tenants.service.js';
 import {
+  branchIdParamSchema,
   createBranchSchema,
   moduleKeysSchema,
+  updateBranchSchema,
   updateTenantSchema,
   type CreateBranchDto,
   type ModuleKeysDto,
+  type UpdateBranchDto,
   type UpdateTenantDto,
 } from './dto/tenant.schemas.js';
 
@@ -59,5 +62,26 @@ export class TenantsController {
   @ApiOperation({ summary: 'افزودن شعبه' })
   createBranch(@CurrentUser('tenantId') tenantId: string, @Body(new ZodValidationPipe(createBranchSchema)) dto: CreateBranchDto) {
     return this.tenants.createBranch(tenantId, dto);
+  }
+
+  @Patch('branches/:id')
+  @RequireSystemRoles('OWNER', 'MANAGER')
+  @ApiOperation({ summary: 'ویرایش شعبه (تغییر نام/نشانی/فعال‌سازی)' })
+  updateBranch(
+    @CurrentUser('tenantId') tenantId: string,
+    @Param('id', new ZodValidationPipe(branchIdParamSchema)) id: string,
+    @Body(new ZodValidationPipe(updateBranchSchema)) dto: UpdateBranchDto,
+  ) {
+    return this.tenants.updateBranch(tenantId, id, dto);
+  }
+
+  @Delete('branches/:id')
+  @RequireSystemRoles('OWNER', 'MANAGER')
+  @ApiOperation({ summary: 'حذف شعبه (وقتی عضوی به آن متصل نیست)' })
+  removeBranch(
+    @CurrentUser('tenantId') tenantId: string,
+    @Param('id', new ZodValidationPipe(branchIdParamSchema)) id: string,
+  ) {
+    return this.tenants.removeBranch(tenantId, id);
   }
 }

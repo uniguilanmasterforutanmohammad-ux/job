@@ -13,6 +13,8 @@ export class CustomersService {
   constructor(private readonly prisma: PrismaService) {}
 
   async create(tenantId: string, dto: CreateCustomerDto) {
+    await this.assertBranch(tenantId, dto.branchId);
+
     if (dto.phone) {
       // Only visible (not soft-deleted) files occupy the phone number: a
       // deleted customer releases it, so the same person can be re-added.
@@ -40,6 +42,7 @@ export class CustomersService {
         source: dto.source ?? null,
         tags: dto.tags,
         leadStage: dto.leadStage,
+        branchId: dto.branchId ?? null,
         notes: dto.notes ?? null,
         meta: (dto.meta ?? {}) as never,
       },
@@ -95,6 +98,7 @@ export class CustomersService {
 
   async update(tenantId: string, id: string, dto: UpdateCustomerDto) {
     await this.assertExists(tenantId, id);
+    await this.assertBranch(tenantId, dto.branchId ?? undefined);
     return this.prisma.client.customer.update({
       where: { id },
       data: {
@@ -106,6 +110,7 @@ export class CustomersService {
         ...(dto.city !== undefined ? { city: dto.city } : {}),
         ...(dto.tags !== undefined ? { tags: dto.tags } : {}),
         ...(dto.leadStage !== undefined ? { leadStage: dto.leadStage } : {}),
+        ...(dto.branchId !== undefined ? { branchId: dto.branchId } : {}),
         ...(dto.notes !== undefined ? { notes: dto.notes } : {}),
         ...(dto.meta !== undefined ? { meta: dto.meta as never } : {}),
       },
@@ -143,5 +148,18 @@ export class CustomersService {
       select: { id: true },
     });
     if (!found) throw DomainException.notFound('مشتری');
+  }
+
+  /**
+   * A branch id always comes from the client, so it must be proven to belong to
+   * the same tenant before it is written (multi-tenant isolation).
+   */
+  private async assertBranch(tenantId: string, branchId?: string): Promise<void> {
+    if (!branchId) return;
+    const branch = await this.prisma.client.branch.findFirst({
+      where: { id: branchId, tenantId, deletedAt: null },
+      select: { id: true },
+    });
+    if (!branch) throw DomainException.badRequest('شعبه انتخاب‌شده معتبر نیست', 'INVALID_BRANCH');
   }
 }

@@ -33,3 +33,13 @@ export const createBranchSchema = z.object({
   phone: z.string().trim().max(20).optional(),
 });
 export type CreateBranchDto = z.infer<typeof createBranchSchema>;
+
+/** Edits a branch (شعبه/آموزشگاه): rename, re-address or (de)activate it. */
+export const updateBranchSchema = createBranchSchema.partial().extend({
+  isActive: z.boolean().optional(),
+});
+export type UpdateBranchDto = z.infer<typeof updateBranchSchema>;
+
+/** Route param validator for `/tenant/branches/:id`. */
+export const branchIdParamSchema = z.string().uuid();
+export type BranchIdParam = z.infer<typeof branchIdParamSchema>;
