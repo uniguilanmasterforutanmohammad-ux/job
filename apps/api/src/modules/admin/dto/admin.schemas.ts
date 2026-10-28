@@ -1,5 +1,13 @@
 import { z } from 'zod';
-import { INDUSTRY_CATEGORIES, MODULE_KEYS } from '@repo/shared';
+import { MODULE_KEYS } from '@repo/shared';
+
+/** Slug of an industry key: `SPORTS_COACHING` or a custom `custom_ab12cd`. */
+const industryKey = z
+  .string()
+  .trim()
+  .min(2)
+  .max(40)
+  .regex(/^[A-Za-z][A-Za-z0-9_]*$/, 'کلید صنف فقط حروف انگلیسی، رقم و _');
 
 const iranianMobile = z
   .string()
@@ -44,7 +52,7 @@ export const adminListTenantsSchema = z.object({
   pageSize: z.coerce.number().int().min(1).max(100).default(20),
   search: z.string().trim().max(120).optional(),
   status: z.enum(['ACTIVE', 'SUSPENDED', 'ARCHIVED']).optional(),
-  industry: z.string().trim().max(40).optional(),
+  industry: industryKey.optional(),
   sortDir: z.enum(['asc', 'desc']).default('desc'),
 });
 export type AdminListTenantsDto = z.infer<typeof adminListTenantsSchema>;
@@ -70,7 +78,7 @@ export const adminCreateTenantSchema = z.object({
     .max(40)
     .regex(/^[a-z0-9-]+$/, 'اسلاگ فقط حروف کوچک انگلیسی، رقم و خط تیره')
     .optional(),
-  industry: z.enum(INDUSTRY_CATEGORIES).default('SPORTS_COACHING'),
+  industry: industryKey.default('SPORTS_COACHING'),
   ownerFullName: z.string().trim().min(2, 'نام مالک باید حداقل ۲ کاراکتر باشد').max(120),
   ownerPhone: iranianMobile,
   ownerEmail: z.string().trim().email('ایمیل نامعتبر است').optional(),
@@ -92,7 +100,7 @@ export const adminUpdateTenantSchema = z.object({
   email: z.string().trim().email('ایمیل نامعتبر است').optional(),
   address: optionalText(400),
   logoUrl: optionalText(500),
-  industry: z.string().trim().max(40).optional(),
+  industry: industryKey.optional(),
   timezone: optionalText(60),
   currency: optionalText(8),
   calendar: z.enum(['JALALI', 'GREGORIAN']).optional(),
@@ -124,8 +132,30 @@ export const adminIndustryModulesSchema = z.object({
 });
 export type AdminIndustryModulesDto = z.infer<typeof adminIndustryModulesSchema>;
 
+/**
+ * Creates a custom industry (شغل/حوزهٔ فعالیت جدید) with an arbitrary Persian
+ * title and any subset of the existing modules as its defaults.
+ */
+export const adminIndustryCreateSchema = z.object({
+  label: z.string().trim().min(2, 'عنوان صنف باید حداقل ۲ کاراکتر باشد').max(60),
+  key: industryKey.optional(),
+  description: z.string().trim().max(300).optional(),
+  endUserNoun: z.string().trim().max(40).optional(),
+  endUserNounPlural: z.string().trim().max(40).optional(),
+  sortOrder: z.coerce.number().int().min(1).max(9999).optional(),
+  isRegistrationEnabled: z.boolean().default(true),
+  modules: z.array(z.enum(MODULE_KEYS)).optional(),
+});
+export type AdminIndustryCreateDto = z.infer<typeof adminIndustryCreateSchema>;
+
+/** Edits the title/metadata of an industry (system or custom). */
+export const adminIndustryUpdateSchema = adminIndustryCreateSchema
+  .omit({ modules: true, key: true })
+  .partial();
+export type AdminIndustryUpdateDto = z.infer<typeof adminIndustryUpdateSchema>;
+
 /** Route param validator for `/admin/industries/:industry`. */
-export const adminIndustryParamSchema = z.enum(INDUSTRY_CATEGORIES);
+export const adminIndustryParamSchema = industryKey;
 export type AdminIndustryParam = z.infer<typeof adminIndustryParamSchema>;
 
 export const adminModuleGrantSchema = z.object({

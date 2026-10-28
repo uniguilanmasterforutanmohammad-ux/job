@@ -19,28 +19,6 @@ datasource db {
 // CORE — platform core (CORE-01 .. CORE-08)
 // ===========================================================================
 
-/// Industry verticals (17 categories / 70+ jobs → PRD §1.3)
-enum IndustryCategory {
-  SPORTS_COACHING // آموزش و تربیت بدنی (پایلوت: مربی ورزشی)
-  LANGUAGE_SCHOOL
-  BEAUTY // آرایشگاه، سالن زیبایی
-  HEALTHCARE
-  ART_MUSIC
-  EARLY_CHILD
-  PSYCHOLOGY
-  LEGAL
-  MEDIA_PHOTO
-  TECHNOLOGY
-  RESTAURANT_CAFE
-  RETAIL
-  TECHNICAL_SERVICES
-  REAL_ESTATE
-  TRANSPORT
-  TOURISM
-  BUSINESS_CONSULTING
-  OTHER
-}
-
 /// Module registry — every capability is a toggleable module (PRD §2)
 enum ModuleKey {
   CRM
@@ -78,7 +56,7 @@ model Tenant {
   id              String             @id @default(uuid()) @db.Uuid
   slug            String             @unique
   name            String
-  industry        IndustryCategory   @default(SPORTS_COACHING)
+  industry        String             @default("SPORTS_COACHING")
   legalName       String?
   nationalId      String? // شناسه ملی / کد اقتصادی
   economicCode    String?
@@ -158,6 +136,7 @@ model Tenant {
     consentForms         ConsentForm[]
     attendanceQrSessions AttendanceQrSession[]
     absenceRequests      AbsenceRequest[]
+    industryRef          Industry             @relation(fields: [industry], references: [key])
 
     @@index([industry])
     @@map("tenants")
@@ -1986,32 +1965,46 @@ model PlatformAuditLog {
   @@map("platform_audit_logs")
 }
 
-/// Per-industry platform settings (PRD §17 verticals). The platform admin can
-/// stop new businesses from registering in an industry and edit that industry's
-/// default module set.
-model IndustrySetting {
-  id                    String           @id @default(uuid()) @db.Uuid
-  industry              IndustryCategory @unique
+/// Industry / domain of activity registry (PRD §17 + custom verticals).
+///
+/// The 17 PRD verticals are seeded as `isSystem = true`; the platform admin can
+/// add any number of custom industries (a new title) and manage, for every
+/// industry, whether new businesses may register and which modules a new
+/// business of that industry starts with.
+model Industry {
+  /// Slug: `SPORTS_COACHING` for system rows, `custom-<slug>` for custom ones.
+  key                   String  @id
+  label                 String
+  description           String?
+  /// System industries come from the PRD and cannot be deleted.
+  isSystem              Boolean @default(false)
   /// When false, `/register` must not offer this industry.
-  isRegistrationEnabled Boolean          @default(true)
-  createdAt             DateTime         @default(now())
-  updatedAt             DateTime         @updatedAt
+  isRegistrationEnabled Boolean @default(true)
+  /// What this industry calls its end-users (شاگرد/بیمار/هنرجو …).
+  endUserNoun           String?
+  endUserNounPlural     String?
+  /// Ascending order in the admin console and the signup selector.
+  sortOrder             Int     @default(100)
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
 
   modules IndustryModuleDefault[]
+  tenants Tenant[]
 
-  @@map("industry_settings")
+  @@index([sortOrder])
+  @@map("industries")
 }
 
 /// Editable default module set of an industry ("ماژول‌های پیش‌فرض صنف").
 /// This table is the runtime source of truth; `INDUSTRY_DEFAULT_MODULES` in
 /// @repo/shared is only its seed/fallback.
 model IndustryModuleDefault {
-  id        String           @id @default(uuid()) @db.Uuid
-  industry  IndustryCategory
+  id        String   @id @default(uuid()) @db.Uuid
+  industry  String
   key       ModuleKey
   createdAt DateTime         @default(now())
 
-  setting IndustrySetting @relation(fields: [industry], references: [industry], onDelete: Cascade)
+  industryRef Industry @relation(fields: [industry], references: [key], onDelete: Cascade)
 
   @@unique([industry, key])
   @@index([industry])

@@ -9,7 +9,7 @@ import { buildMeta, toSkipTake } from '../../common/dto/pagination.dto.js';
 import { DomainException } from '../../common/exceptions/domain.exception.js';
 import { uniqueTenantSlug } from '../../common/utils/slug.js';
 import { PrismaService } from '../../database/prisma.service.js';
-import type { IndustryCategory, TenantStatus } from '@repo/db';
+import type { TenantStatus } from '@repo/db';
 import { ModuleAccessService } from '../tenants/module-access.service.js';
 import { IndustryRegistryService } from '../industries/industry-registry.service.js';
 import { AdminAuditService, type AuditContext } from './admin-audit.service.js';
@@ -72,7 +72,7 @@ export class AdminTenantService {
   async list(dto: AdminListTenantsDto) {
     const where = {
       ...(dto.status ? { status: dto.status as TenantStatus } : {}),
-      ...(dto.industry ? { industry: { equals: dto.industry as IndustryCategory } } : {}),
+      ...(dto.industry ? { industry: dto.industry } : {}),
       ...(dto.search
         ? {
             OR: [
@@ -168,7 +168,7 @@ export class AdminTenantService {
         data: {
           slug,
           name: dto.name,
-          industry: dto.industry as IndustryCategory,
+          industry: dto.industry,
           status: dto.status as TenantStatus,
           phone: dto.phone,
           email: dto.email,
@@ -259,7 +259,7 @@ export class AdminTenantService {
       where: { id: tenantId },
       data: {
         ...rest,
-        ...(industry ? { industry: industry as IndustryCategory } : {}),
+        ...(industry ? { industry } : {}),
         ...(taxRate !== undefined ? { taxRate } : {}),
         ...(settings !== undefined ? { settings: settings as never } : {}),
       },

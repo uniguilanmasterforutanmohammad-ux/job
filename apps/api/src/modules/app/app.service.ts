@@ -71,7 +71,7 @@ export class AppService {
       where: {
         status: 'ACTIVE',
         deletedAt: null,
-        ...(filter.industry ? { industry: filter.industry as never } : {}),
+        ...(filter.industry ? { industry: filter.industry } : {}),
         ...(filter.search
           ? {
               OR: [

@@ -1,4 +1,4 @@
-import type { ModuleKey, IndustryCategory } from '@repo/shared';
+import type { ModuleKey } from '@repo/shared';
 
 export type SessionUser = {
   memberId: string;
@@ -25,7 +25,8 @@ export type MeResponse = {
     id: string;
     name: string;
     slug: string;
-    industry: IndustryCategory;
+    /** Industry key from the registry (system vertical or admin-created). */
+    industry: string;
     currency: string;
     calendar: string;
     locale: string;

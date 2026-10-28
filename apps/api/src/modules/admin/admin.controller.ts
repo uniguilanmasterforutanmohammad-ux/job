@@ -41,6 +41,8 @@ import {
   adminIndustryModulesSchema,
   adminIndustryParamSchema,
   adminIndustryRegistrationSchema,
+  adminIndustryCreateSchema,
+  adminIndustryUpdateSchema,
   adminListMembersSchema,
   adminListTenantsSchema,
   adminMemberStatusSchema,
@@ -59,6 +61,8 @@ import {
   type AdminCreatePlatformMemberDto,
   type AdminIndustryModulesDto,
   type AdminIndustryRegistrationDto,
+  type AdminIndustryCreateDto,
+  type AdminIndustryUpdateDto,
   type AdminListMembersDto,
   type AdminListTenantsDto,
   type AdminMemberStatusDto,
@@ -126,6 +130,40 @@ export class AdminController {
     @Req() req: Request,
   ) {
     return this.industries.setRegistration(actor, industry, dto, requestContext(req));
+  }
+
+  @Post('industries')
+  @RequirePlatformRoles('ADMIN')
+  @ApiOperation({ summary: 'ثبت صنف/شغل جدید با عنوان دلخواه و ماژول‌های پیش‌فرض' })
+  createIndustry(
+    @CurrentPlatform() actor: PlatformPrincipal,
+    @Body(new ZodValidationPipe(adminIndustryCreateSchema)) dto: AdminIndustryCreateDto,
+    @Req() req: Request,
+  ) {
+    return this.industries.create(actor, dto, requestContext(req));
+  }
+
+  @Patch('industries/:industry')
+  @RequirePlatformRoles('ADMIN')
+  @ApiOperation({ summary: 'ویرایش عنوان و مشخصات یک صنف' })
+  updateIndustry(
+    @CurrentPlatform() actor: PlatformPrincipal,
+    @Param('industry', new ZodValidationPipe(adminIndustryParamSchema)) industry: string,
+    @Body(new ZodValidationPipe(adminIndustryUpdateSchema)) dto: AdminIndustryUpdateDto,
+    @Req() req: Request,
+  ) {
+    return this.industries.update(actor, industry, dto, requestContext(req));
+  }
+
+  @Delete('industries/:industry')
+  @RequirePlatformRoles('ADMIN')
+  @ApiOperation({ summary: 'حذف یک صنف سفارشی (صنف‌های سیستمی قابل حذف نیستند)' })
+  removeIndustry(
+    @CurrentPlatform() actor: PlatformPrincipal,
+    @Param('industry', new ZodValidationPipe(adminIndustryParamSchema)) industry: string,
+    @Req() req: Request,
+  ) {
+    return this.industries.remove(actor, industry, requestContext(req));
   }
 
   @Put('industries/:industry/modules')

@@ -20,8 +20,11 @@ export class IndustriesController {
   async list() {
     const rows = await this.registry.list();
     return rows.map((row) => ({
-      industry: row.industry,
+      industry: row.key,
       label: row.label,
+      description: row.description,
+      endUserNoun: row.endUserNoun,
+      endUserNounPlural: row.endUserNounPlural,
       isRegistrationEnabled: row.isRegistrationEnabled,
       defaultModules: row.defaultModules,
     }));

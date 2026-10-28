@@ -6,7 +6,7 @@
  */
 import { hash } from 'argon2';
 import { createPrismaClient } from '../src/client.js';
-import type { ModuleKey, IndustryCategory } from '../generated/client/enums.js';
+import type { ModuleKey } from '../generated/client/enums.js';
 
 const prisma = createPrismaClient();
 
@@ -94,7 +94,7 @@ async function seedDemoTenant() {
     create: {
       slug: 'coach-demo',
       name: 'باشگاه نمونه مربی‌گری',
-      industry: 'SPORTS_COACHING' as IndustryCategory,
+      industry: 'SPORTS_COACHING',
       phone: '09120000000',
       currency: 'IRR',
       calendar: 'JALALI',
