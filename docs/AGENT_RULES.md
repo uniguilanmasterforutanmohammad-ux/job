@@ -131,7 +131,8 @@
 | ۵۳ | تغییر کسب‌وکار فعال کاربر نهایی + پیام کامل «عدم عضویت»                    | `8b0aaf1` | `feat(api): switch the active club of a portal user and say "no membership" clearly` |
 | ۵۴ | پنل کاربری بخش‌بندی‌شده + سوئیچ عضویت + حذف لود مداوم حاضری                 | `c7d8230` | `feat(web): turn the customer panel into a sectioned panel with club switching` |
 | ۵۵ | ثبت ردیف‌های ۴۷ تا ۵۴ + مستندات و کامنت تسک‌فایل                          | `368b504` | `docs(agent): log the password, lint and portal commits`                 |
-| ۵۶ | تکمیل هش ردیف‌های ۹، ۱۴ و ۵۵ (ردیف‌های خودارجاع «این کامیت»)              | این کامیت | `docs(agent): fill the self-referential commit rows in the registry`     |
+| ۵۶ | تکمیل هش ردیف‌های ۹، ۱۴ و ۵۵ (ردیف‌های خودارجاع «این کامیت»)              | `4be33f8` | `docs(agent): fill the self-referential commit rows in the registry`     |
+| ۵۷ | بازگرداندن گیت ثبت‌نام صنف‌ها در دادهٔ توسعه + ثبت ردیف ۵۶                 | این کامیت | `docs(agent): record the dev-data reset and register the registry commit` |
 
 > کامیت ثبت لاگ هر ردیف در اجرای بعدی در جدول ثبت می‌شود؛ چون
 > هیچ کامیتی نمی‌تواند هش خودش را درون خودش داشته باشد.
@@ -221,6 +222,7 @@
 | ۵۴ — پنل بخش‌بندی‌شده       | زنده (Chrome/CDP) | ۲۱/۲۱: پنج بخش، نبود ویجت حاضری در خانه، صفر درخواست targets در خانه، نمایش هر کارت در بخش خودش، سوئیچ کسب‌وکار فعال | ✅ ۲۱/۲۱ |
 | ۴۸–۵۴ — کل بسته‌ها         | واحد           | `pnpm test` → ۱۶۲ پاس (API، ۲۵ فایل) + ۲۱ پاس (`@repo/shared`)                                  | ✅ |
 | ۴۸–۵۴ — تایپ/بیلد/اسموک    | typecheck/build/e2e | `pnpm typecheck` (۶/۶)، `pnpm build`، اسموک زندهٔ API (۴ پاس)                                   | ✅ |
+| بازنشانی دادهٔ توسعه (پیش از تست کاربر) | دستی + زنده (HTTP) | `update industries set "isRegistrationEnabled"=true where …` برای ۱۳ صنفِ باقی‌مانده‌از تست + پاک‌سازی کلیدهای `otp:*`؛ سپس `GET /industries` → ۱۸ صنف با `registration OFF = 0` | ✅ |
 
 ### نکتهٔ عملیاتی (کش Next در حالت توسعه)
 
