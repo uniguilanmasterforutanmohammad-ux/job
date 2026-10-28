@@ -200,7 +200,6 @@ export default function MarketingCampaignsPage() {
             <div className="space-y-2">
               <div
                 className="overflow-hidden rounded-xl border border-slate-200 dark:border-slate-700"
-                // eslint-disable-next-line react/no-danger
                 dangerouslySetInnerHTML={{ __html: shareCard.data.svg }}
               />
               <a
