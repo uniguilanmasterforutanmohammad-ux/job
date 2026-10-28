@@ -5,7 +5,9 @@ import type {
   AttendanceAlertDto,
   CreateMakeupDto,
   GeofenceCheckInDto,
+  ListAbsenceRequestsDto,
   ListMakeupDto,
+  ReviewAbsenceRequestDto,
   UseMakeupDto,
 } from './dto/attendance-extra.schemas.js';
 
@@ -17,8 +19,7 @@ function haversineMeters(a: { lat: number; lng: number }, b: { lat: number; lng:
   const dLng = ((b.lng - a.lng) * Math.PI) / 180;
   const lat1 = (a.lat * Math.PI) / 180;
   const lat2 = (b.lat * Math.PI) / 180;
-  const h =
-    Math.sin(dLat / 2) ** 2 + Math.sin(dLng / 2) ** 2 * Math.cos(lat1) * Math.cos(lat2);
+  const h = Math.sin(dLat / 2) ** 2 + Math.sin(dLng / 2) ** 2 * Math.cos(lat1) * Math.cos(lat2);
   return 2 * R * Math.asin(Math.sqrt(h));
 }
 
@@ -61,7 +62,8 @@ export class AttendanceExtraService {
   async useMakeup(tenantId: string, id: string, dto: UseMakeupDto) {
     const credit = await this.prisma.client.makeupCredit.findFirst({ where: { id, tenantId } });
     if (!credit) throw DomainException.notFound('اعتبار جبران جلسه');
-    if (credit.status !== 'AVAILABLE') throw DomainException.conflict('این اعتبار قابل استفاده نیست');
+    if (credit.status !== 'AVAILABLE')
+      throw DomainException.conflict('این اعتبار قابل استفاده نیست');
     if (credit.expiresAt && credit.expiresAt < new Date()) {
       await this.prisma.client.makeupCredit.update({ where: { id }, data: { status: 'EXPIRED' } });
       throw DomainException.badRequest('اعتبار جبران جلسه منقضی شده است');
@@ -92,7 +94,12 @@ export class AttendanceExtraService {
 
     const atRiskIds = [...byCustomer.entries()]
       .filter(([, v]) => v.total > 0 && (v.present / v.total) * 100 < dto.thresholdPercent)
-      .map(([id, v]) => ({ customerId: id, present: v.present, total: v.total, ratio: Math.round((v.present / v.total) * 100) }));
+      .map(([id, v]) => ({
+        customerId: id,
+        present: v.present,
+        total: v.total,
+        ratio: Math.round((v.present / v.total) * 100),
+      }));
 
     if (!atRiskIds.length) return { threshold: dto.thresholdPercent, atRisk: [] };
 
@@ -146,5 +153,87 @@ export class AttendanceExtraService {
       },
     });
     return { attendance, distanceMeters: Math.round(distance), withinRadius };
+  }
+
+  // ----- ATT-03 absence/excuse requests (coach/business side) -----
+
+  /** Coach inbox: pending (or filtered) absence requests awaiting review. */
+  async listAbsenceRequests(tenantId: string, dto: ListAbsenceRequestsDto) {
+    return this.prisma.client.absenceRequest.findMany({
+      where: {
+        tenantId,
+        ...(dto.status ? { status: dto.status } : {}),
+        ...(dto.customerId ? { customerId: dto.customerId } : {}),
+      },
+      orderBy: [{ status: 'asc' }, { absenceDate: 'desc' }],
+      take: 200,
+      include: {
+        customer: { select: { id: true, fullName: true, phone: true } },
+      },
+    });
+  }
+
+  /**
+   * Approves or rejects an absence request. On approval the absence is recorded
+   * as an EXCUSED attendance for that date (ATT-03) so it feeds attendance
+   * reports; on rejection a note is stored for the student to see.
+   */
+  async reviewAbsenceRequest(
+    tenantId: string,
+    memberId: string,
+    id: string,
+    dto: ReviewAbsenceRequestDto,
+  ) {
+    const request = await this.prisma.client.absenceRequest.findFirst({
+      where: { id, tenantId },
+    });
+    if (!request) throw DomainException.notFound('درخواست غیبت');
+    if (request.status !== 'PENDING') {
+      throw DomainException.conflict('این درخواست قبلاً بررسی شده است');
+    }
+
+    return this.prisma.client.$transaction(async (tx) => {
+      const updated = await tx.absenceRequest.update({
+        where: { id },
+        data: {
+          status: dto.decision,
+          reviewNote: dto.reviewNote ?? null,
+          reviewedByMemberId: memberId,
+          reviewedAt: new Date(),
+        },
+      });
+
+      if (dto.decision === 'APPROVED') {
+        // Record the absence as EXCUSED (ATT-03). Idempotent: update an existing
+        // row for that customer/date instead of duplicating it.
+        const note = `موجه: ${request.note ?? request.reason}`;
+        const existing = await tx.attendance.findFirst({
+          where: {
+            tenantId,
+            customerId: request.customerId,
+            date: request.absenceDate,
+          },
+          select: { id: true },
+        });
+        if (existing) {
+          await tx.attendance.update({
+            where: { id: existing.id },
+            data: { status: 'EXCUSED', note },
+          });
+        } else {
+          await tx.attendance.create({
+            data: {
+              tenantId,
+              customerId: request.customerId,
+              status: 'EXCUSED',
+              method: 'MANUAL',
+              date: request.absenceDate,
+              note,
+            },
+          });
+        }
+      }
+      return updated;
+    });
   }
 }

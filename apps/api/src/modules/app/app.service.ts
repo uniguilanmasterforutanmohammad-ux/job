@@ -7,6 +7,7 @@ import { MessagingService } from '../messaging/messaging.service.js';
 import { PaymentsService } from '../payments/payments.service.js';
 import { AttendanceQrService } from '../attendance/attendance-qr.service.js';
 import type { AppCheckInDto } from '../attendance/dto/attendance-qr.schemas.js';
+import type { CreateAbsenceRequestDto } from '../attendance/dto/attendance-extra.schemas.js';
 import type {
   AppAvailabilityDto,
   AppBookDto,
@@ -342,6 +343,51 @@ export class AppService {
   async panelCheckIn(memberId: string, dto: AppCheckInDto) {
     const customer = await this.customerFor(memberId);
     return this.attendanceQr.appCheckIn(customer.id, customer.tenantId, dto);
+  }
+
+  // ----- ATT-03 absence/excuse requests (student self-service) -----
+
+  /** A student submits an excuse request ("I can't attend this session because ..."). */
+  async createAbsenceRequest(memberId: string, dto: CreateAbsenceRequestDto) {
+    const customer = await this.customerFor(memberId);
+
+    const day = new Date(dto.absenceDate);
+    day.setHours(0, 0, 0, 0);
+
+    const existing = await this.prisma.client.absenceRequest.findFirst({
+      where: {
+        tenantId: customer.tenantId,
+        customerId: customer.id,
+        absenceDate: day,
+        status: 'PENDING',
+      },
+      select: { id: true },
+    });
+    if (existing) {
+      throw DomainException.conflict('برای این تاریخ یک درخواست در انتظار بررسی دارید');
+    }
+
+    return this.prisma.client.absenceRequest.create({
+      data: {
+        tenantId: customer.tenantId,
+        customerId: customer.id,
+        absenceDate: day,
+        reason: dto.reason,
+        note: dto.note ?? null,
+        appointmentId: dto.appointmentId ?? null,
+        serviceId: dto.serviceId ?? null,
+      },
+    });
+  }
+
+  /** A student's own absence requests and their review status. */
+  async myAbsenceRequests(memberId: string) {
+    const customer = await this.customerFor(memberId);
+    return this.prisma.client.absenceRequest.findMany({
+      where: { tenantId: customer.tenantId, customerId: customer.id },
+      orderBy: { absenceDate: 'desc' },
+      take: 100,
+    });
   }
 
   // ----- APP-02 booking -----

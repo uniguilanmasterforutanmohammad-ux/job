@@ -169,3 +169,16 @@ pnpm db:migrate && pnpm db:seed && pnpm dev
 - مسیرهای پنل: `POST /app/auth/otp/request-global`، `POST /app/auth/otp/verify-global`،
   `GET /app/clubs`، `GET /app/attendance`، `GET /app/attendance/targets`،
   `POST /app/attendance/check-in`.
+
+## درخواست غیبت موجه (ATT-03) — تکمیل‌شده
+
+- شاگرد از داشبورد خودش برای یک تاریخ/جلسه، «غیبت موجه» یا عدم حضور ثبت می‌کند
+  به‌همراه علت (بیماری/مسافرت/...) و توضیح تکمیلی
+  (`POST /app/absence-requests`، مشاهده: `GET /app/absence-requests`).
+- مربی (کسب‌وکار) درخواست‌ها را در صفحه‌ی حضور و غیاب می‌بیند و با توضیح
+  **تأیید یا رد** می‌کند (`GET /attendance/absence-requests`،
+  `PATCH /attendance/absence-requests/:id/review`).
+- با تأیید، غیبت به‌صورت رکورد `EXCUSED` برای همان تاریخ ثبت می‌شود (idempotent)
+  و در گزارش‌های حضور لحاظ می‌گردد؛ توضیح مربی برای شاگرد نمایش داده می‌شود.
+- مدل دیتاستوری: `AbsenceRequest` (+ enum `AbsenceRequestStatus`) و مهاجرت
+  `20261028115130_absence_requests`.

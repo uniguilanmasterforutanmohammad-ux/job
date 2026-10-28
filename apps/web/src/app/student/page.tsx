@@ -22,10 +22,12 @@ import { api, ApiClientError } from '@/lib/api-client';
 import { formatJalali, formatToman } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Select } from '@/components/ui/select';
 import { Card, CardBody, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { EmptyState, Skeleton } from '@/components/ui/empty-state';
 import type {
+  AbsenceRequest,
   PortalLoyalty,
   StudentAttendance,
   StudentCheckInTarget,
@@ -87,6 +89,22 @@ const ATTENDANCE_STATUS_LABELS: Record<string, string> = {
   EXCUSED: 'موجه',
   CANCELED: 'لغوشده',
 };
+
+const ABSENCE_STATUS_LABELS: Record<string, string> = {
+  PENDING: 'در انتظار بررسی',
+  APPROVED: 'تأییدشده (موجه)',
+  REJECTED: 'ردشده',
+  CANCELED: 'لغوشده',
+};
+
+const ABSENCE_STATUS_TONES: Record<string, 'warning' | 'success' | 'danger' | 'neutral'> = {
+  PENDING: 'warning',
+  APPROVED: 'success',
+  REJECTED: 'danger',
+  CANCELED: 'neutral',
+};
+
+const ABSENCE_REASONS = ['بیماری', 'مسافرت', 'شرایط شخصی', 'بدون اطلاع قبلی', 'سایر'];
 
 function useStudentSession() {
   const [session, setSession] = useState<StudentSession | null>(null);
@@ -280,6 +298,10 @@ function StudentDashboard({
     queryKey: ['student-loyalty'],
     queryFn: () => apiGet<PortalLoyalty>('/app/loyalty'),
   });
+  const absenceQuery = useQuery({
+    queryKey: ['student-absence-requests'],
+    queryFn: () => apiGet<AbsenceRequest[]>('/app/absence-requests'),
+  });
 
   const [coords, setCoords] = useState<{ lat: number; lng: number; acc: number } | null>(null);
   useEffect(() => {
@@ -328,6 +350,25 @@ function StudentDashboard({
       toast.success('نوبت لغو شد');
       void queryClient.invalidateQueries({ queryKey: ['student-appointments'] });
     },
+  });
+
+  const [absenceDate, setAbsenceDate] = useState('');
+  const [absenceReason, setAbsenceReason] = useState(ABSENCE_REASONS[0]);
+  const [absenceNote, setAbsenceNote] = useState('');
+  const createAbsence = useMutation({
+    mutationFn: () =>
+      apiPost('/app/absence-requests', {
+        absenceDate: new Date(absenceDate).toISOString(),
+        reason: absenceReason,
+        note: absenceNote.trim() || undefined,
+      }),
+    onSuccess: () => {
+      toast.success('درخواست غیبت ثبت شد و برای بررسی به مربی ارسال گردید');
+      setAbsenceDate('');
+      setAbsenceNote('');
+      void queryClient.invalidateQueries({ queryKey: ['student-absence-requests'] });
+    },
+    onError: (e) => toast.error(e instanceof ApiClientError ? e.message : 'ثبت درخواست ناموفق بود'),
   });
 
   const targets = targetsQuery.data ?? [];
@@ -497,6 +538,85 @@ function StudentDashboard({
           ) : (
             <EmptyState icon={UserCheck} title="حضوری ثبت نشده است" />
           )}
+        </CardBody>
+      </Card>
+
+      <Card>
+        <CardHeader
+          title="درخواست غیبت / عدم حضور یک جلسه"
+          description="اگر نمی‌توانید در جلسه‌ای شرکت کنید، علت را ثبت کنید تا مربی بررسی کند"
+          action={
+            <Badge tone="info">
+              {(absenceQuery.data ?? []).filter((r) => r.status === 'PENDING').length} در انتظار
+            </Badge>
+          }
+        />
+        <CardBody className="space-y-4">
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Input
+              label="تاریخ جلسه"
+              type="date"
+              dir="ltr"
+              className="nums"
+              value={absenceDate}
+              onChange={(e) => setAbsenceDate(e.target.value)}
+            />
+            <div>
+              <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
+                علت
+              </label>
+              <Select value={absenceReason} onChange={(e) => setAbsenceReason(e.target.value)}>
+                {ABSENCE_REASONS.map((reason) => (
+                  <option key={reason} value={reason}>
+                    {reason}
+                  </option>
+                ))}
+              </Select>
+            </div>
+          </div>
+          <Input
+            label="توضیح تکمیلی (اختیاری)"
+            value={absenceNote}
+            onChange={(e) => setAbsenceNote(e.target.value)}
+          />
+          <Button
+            loading={createAbsence.isPending}
+            disabled={!absenceDate}
+            onClick={() => createAbsence.mutate()}
+          >
+            <CalendarDays className="h-4 w-4" />
+            ارسال درخواست به مربی
+          </Button>
+
+          <div className="space-y-2 border-t border-slate-100 pt-4 dark:border-slate-800">
+            <p className="text-sm font-medium text-slate-700 dark:text-slate-300">درخواست‌های من</p>
+            {absenceQuery.isLoading ? (
+              <Skeleton className="h-16 w-full" />
+            ) : absenceQuery.data?.length ? (
+              absenceQuery.data.map((request) => (
+                <div
+                  key={request.id}
+                  className="rounded-xl border border-slate-100 p-3 dark:border-slate-800"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm nums">{formatJalali(request.absenceDate)}</span>
+                    <Badge tone={ABSENCE_STATUS_TONES[request.status] ?? 'neutral'}>
+                      {ABSENCE_STATUS_LABELS[request.status] ?? request.status}
+                    </Badge>
+                  </div>
+                  <p className="mt-1 text-xs text-slate-500">
+                    {request.reason}
+                    {request.note ? ` — ${request.note}` : ''}
+                  </p>
+                  {request.reviewNote && (
+                    <p className="mt-1 text-xs text-brand-600">پاسخ مربی: {request.reviewNote}</p>
+                  )}
+                </div>
+              ))
+            ) : (
+              <p className="text-sm text-slate-500">درخواستی ثبت نکرده‌اید.</p>
+            )}
+          </div>
         </CardBody>
       </Card>
 

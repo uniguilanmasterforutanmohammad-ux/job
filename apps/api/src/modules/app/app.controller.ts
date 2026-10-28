@@ -32,6 +32,10 @@ import {
   type AppReviewDto,
 } from './dto/app.schemas.js';
 import { appCheckInSchema, type AppCheckInDto } from '../attendance/dto/attendance-qr.schemas.js';
+import {
+  createAbsenceRequestSchema,
+  type CreateAbsenceRequestDto,
+} from '../attendance/dto/attendance-extra.schemas.js';
 
 @ApiTags('app')
 @Controller('app')
@@ -203,6 +207,26 @@ export class AppController {
     @Body(new ZodValidationPipe(appCheckInSchema)) dto: AppCheckInDto,
   ) {
     return this.app.panelCheckIn(memberId, dto);
+  }
+
+  // ----- ATT-03 absence/excuse requests -----
+
+  @Get('absence-requests')
+  @RequirePermissions('app:read')
+  @ApiOperation({ summary: 'درخواست‌های غیبت موجه من و وضعیت بررسی (ATT-03)' })
+  myAbsenceRequests(@CurrentUser('memberId') memberId: string) {
+    return this.app.myAbsenceRequests(memberId);
+  }
+
+  @Post('absence-requests')
+  @RequirePermissions('app:write')
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
+  @ApiOperation({ summary: 'ثبت درخواست غیبت موجه/عدم حضور یک جلسه (ATT-03)' })
+  createAbsenceRequest(
+    @CurrentUser('memberId') memberId: string,
+    @Body(new ZodValidationPipe(createAbsenceRequestSchema)) dto: CreateAbsenceRequestDto,
+  ) {
+    return this.app.createAbsenceRequest(memberId, dto);
   }
 
   // ----- APP-05 messages -----

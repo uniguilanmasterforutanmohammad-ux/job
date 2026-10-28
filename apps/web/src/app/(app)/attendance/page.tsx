@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Table, Td, Th } from '@/components/ui/table';
 import { EmptyState, Skeleton } from '@/components/ui/empty-state';
 import { QrAttendancePanel } from '@/components/attendance/qr-panel';
+import { AbsenceRequestsPanel } from '@/components/attendance/absence-requests-panel';
 
 type AttendanceRow = {
   id: string;
@@ -49,6 +50,8 @@ export default function AttendancePage() {
       </div>
 
       <QrAttendancePanel branches={branchesQuery.data ?? []} />
+
+      <AbsenceRequestsPanel />
 
       <Card>
         <CardHeader title="سوابق حضور" description="آخرین ثبت‌های حضور" />

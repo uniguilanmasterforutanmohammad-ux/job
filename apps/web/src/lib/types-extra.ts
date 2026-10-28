@@ -189,3 +189,18 @@ export type StudentCheckInTarget = {
   branchId: string | null;
   expiresAt: string;
 };
+
+export type AbsenceRequestStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'CANCELED';
+
+export type AbsenceRequest = {
+  id: string;
+  customerId: string;
+  absenceDate: string;
+  reason: string;
+  note: string | null;
+  status: AbsenceRequestStatus;
+  reviewNote: string | null;
+  reviewedAt: string | null;
+  createdAt: string;
+  customer?: { id: string; fullName: string; phone: string | null } | null;
+};

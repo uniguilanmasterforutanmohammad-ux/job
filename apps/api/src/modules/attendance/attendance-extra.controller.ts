@@ -10,12 +10,16 @@ import {
   attendanceAlertSchema,
   createMakeupSchema,
   geofenceCheckInSchema,
+  listAbsenceRequestsSchema,
   listMakeupSchema,
+  reviewAbsenceRequestSchema,
   useMakeupSchema,
   type AttendanceAlertDto,
   type CreateMakeupDto,
   type GeofenceCheckInDto,
+  type ListAbsenceRequestsDto,
   type ListMakeupDto,
+  type ReviewAbsenceRequestDto,
   type UseMakeupDto,
 } from './dto/attendance-extra.schemas.js';
 
@@ -74,5 +78,29 @@ export class AttendanceExtraController {
     @Body(new ZodValidationPipe(geofenceCheckInSchema)) dto: GeofenceCheckInDto,
   ) {
     return this.attendance.geofenceCheckIn(tenantId, dto);
+  }
+
+  // ----- ATT-03 absence/excuse requests (coach review inbox) -----
+
+  @Get('absence-requests')
+  @RequirePermissions(PERMISSIONS.ATT_READ)
+  @ApiOperation({ summary: 'فهرست درخواست‌های غیبت موجه شاگردان (ATT-03)' })
+  listAbsenceRequests(
+    @CurrentUser('tenantId') tenantId: string,
+    @Query(new ZodValidationPipe(listAbsenceRequestsSchema)) dto: ListAbsenceRequestsDto,
+  ) {
+    return this.attendance.listAbsenceRequests(tenantId, dto);
+  }
+
+  @Patch('absence-requests/:id/review')
+  @RequirePermissions(PERMISSIONS.ATT_WRITE)
+  @ApiOperation({ summary: 'تأیید یا رد درخواست غیبت موجه با توضیح (ATT-03)' })
+  reviewAbsenceRequest(
+    @CurrentUser('tenantId') tenantId: string,
+    @CurrentUser('memberId') memberId: string,
+    @Param('id') id: string,
+    @Body(new ZodValidationPipe(reviewAbsenceRequestSchema)) dto: ReviewAbsenceRequestDto,
+  ) {
+    return this.attendance.reviewAbsenceRequest(tenantId, memberId, id, dto);
   }
 }
