@@ -135,7 +135,11 @@
 | ۵۷ | بازگرداندن گیت ثبت‌نام صنف‌ها در دادهٔ توسعه + ثبت ردیف ۵۶                 | `e386435` | `docs(agent): record the dev-data reset and register the registry commit` |
 | ۵۸ | نمایش تمامی صنف‌های کاربر در پنل `/me` (استریپ + بخش گروه‌بندی‌شده)        | `07dde8b` | `feat(web): show every industry the portal user belongs to`              |
 | ۵۹ | کامنت «✅ تکمیل شد» زیر تسک چت در `TaskForMyAgent.md`                   | `e38b9e0` | `docs(taskfile): mark the portal industries task as done`                |
-| ۶۰ | ثبت ردیف‌های ۵۸ و ۵۹ + مستندات وضعیت/اکانت‌ها + ردیف تست جدید             | این کامیت | `docs(agent): log the portal-industries commit and dev account`          |
+| ۶۰ | ثبت ردیف‌های ۵۸ و ۵۹ + مستندات وضعیت/اکانت‌ها + ردیف تست جدید             | `0154071` | `docs(agent): log the portal-industries commit and dev account`          |
+| ۶۱ | افزودن `joinedAt` (تاریخ عضویت) به فهرست عضویت‌های کاربر نهایی            | `681a6a3` | `feat(api): expose when each of the portal user's memberships started`   |
+| ۶۲ | بخش «پروفایل من» با اطلاعات تماس + انتقال کارت رمز به آن                 | `0b0fa9b` | `feat(web): add a profile section with contact details to the portal`    |
+| ۶۳ | کامنت «✅ تکمیل شد» زیر تسک پروفایل در `TaskForMyAgent.md`              | `f7bc8ed` | `docs(taskfile): mark the portal profile-page task as done`              |
+| ۶۴ | ثبت ردیف‌های ۶۱ تا ۶۳ + مستندات وضعیت + ردیف‌های تست پروفایل              | این کامیت | `docs(agent): log the portal profile section and membership date`        |
 
 > کامیت ثبت لاگ هر ردیف در اجرای بعدی در جدول ثبت می‌شود؛ چون
 > هیچ کامیتی نمی‌تواند هش خودش را درون خودش داشته باشد.
@@ -229,6 +233,11 @@
 | ۵۸ — چند صنفی‌بودن کاربر (API) | زنده (HTTP) | حساب دو-صنفی `09117818389`: `POST /app/auth/otp/verify-global` → `clubs` = `LANGUAGE_SCHOOL` + `SPORTS_COACHING`؛ `GET /app/clubs` → ۲ عضو در ۲ صنف؛ `POST /app/auth/switch-club` → ۲۰۰ | ✅ ۲/۲ |
 | ۵۸ — استریپ و بخش صنف‌ها (UI) | زنده (Chrome/CDP) | `/tmp/cdp-verify-my-industries.mjs` → ۲۲/۲۲: استریپ همیشه-دیده با شمارش «۲ صنف و ۲ مجموعه»، چیپ هر صنف با واژهٔ صنف («زبان‌آموز»/«شاگرد»)، نوار ۶ بخشی، بخش «صنف‌ها و مجموعه‌ها» با گروه‌بندی صنفی و «۱ مجموعه» به‌ازای هر گروه، جابه‌جایی به باشگاه (توست «به باشگاه مربی‌گری منتقل شدید») و باقی‌ماندن استریپ در بخش حضور و غیاب | ✅ ۲۲/۲۲ |
 | ۵۸ — تایپ/لینت وب          | typecheck/lint | `pnpm --filter @repo/web typecheck` ✅؛ `pnpm --filter @repo/web lint` → ۰ خطا (همان ۱۱ هشدار advisory قبلی) | ✅ |
+| ۶۱ — تاریخ عضویت (واحد)     | واحد           | `apps/api/src/modules/app/app-switch-club.service.spec.ts` → `joinedAt` هر دو عضویت بررسی می‌شود | ✅ |
+| ۶۱ — تاریخ عضویت (زنده)     | زنده (HTTP)    | `GET /app/clubs` → `joinedAt` برای دو عضویت (`2026-10-28T19:34:50Z` آموزش زبان، `2026-10-28T20:35:40Z` ورزش) | ✅ |
+| ۶۲ — بخش پروفایل (UI)       | زنده (Chrome/CDP) | `/tmp/cdp-verify-me-profile.mjs` → ۱۵/۱۵: نوار ۷ بخشی با «پروفایل من»، کارت «اطلاعات من» (نام، شمارهٔ موبایل، صنف، مجموعهٔ فعال، تاریخ شمسی عضویت، وضعیت ورود)، انتقال کارت رمز به پروفایل و نبودش در خانه، «عضو از …» در ردیف‌های عضویت، پیروی کارت از مجموعهٔ فعال پس از سوئیچ | ✅ ۱۵/۱۵ |
+| ۵۸/۶۲ — رگرسیون صنف‌ها      | زنده (Chrome/CDP) | `/tmp/cdp-verify-my-industries.mjs` دوباره پس از افزودن بخش پروفایل → ۲۱/۲۱ | ✅ ۲۱/۲۱ |
+| ۶۱/۶۲ — کل بسته‌ها          | واحد + typecheck/build | `pnpm test` → API ۱۶۲ پاس (۲۵ فایل) + `@repo/shared` ۲۱ پاس (۳ فایل)؛ `pnpm --filter @repo/web build` ✅ (۳۶ روت) | ✅ |
 
 ### نکتهٔ عملیاتی (کش Next در حالت توسعه)
 
