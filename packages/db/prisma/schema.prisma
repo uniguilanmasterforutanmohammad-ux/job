@@ -1985,3 +1985,35 @@ model PlatformAuditLog {
   @@index([platformMemberId, createdAt])
   @@map("platform_audit_logs")
 }
+
+/// Per-industry platform settings (PRD §17 verticals). The platform admin can
+/// stop new businesses from registering in an industry and edit that industry's
+/// default module set.
+model IndustrySetting {
+  id                    String           @id @default(uuid()) @db.Uuid
+  industry              IndustryCategory @unique
+  /// When false, `/register` must not offer this industry.
+  isRegistrationEnabled Boolean          @default(true)
+  createdAt             DateTime         @default(now())
+  updatedAt             DateTime         @updatedAt
+
+  modules IndustryModuleDefault[]
+
+  @@map("industry_settings")
+}
+
+/// Editable default module set of an industry ("ماژول‌های پیش‌فرض صنف").
+/// This table is the runtime source of truth; `INDUSTRY_DEFAULT_MODULES` in
+/// @repo/shared is only its seed/fallback.
+model IndustryModuleDefault {
+  id        String           @id @default(uuid()) @db.Uuid
+  industry  IndustryCategory
+  key       ModuleKey
+  createdAt DateTime         @default(now())
+
+  setting IndustrySetting @relation(fields: [industry], references: [industry], onDelete: Cascade)
+
+  @@unique([industry, key])
+  @@index([industry])
+  @@map("industry_default_modules")
+}
