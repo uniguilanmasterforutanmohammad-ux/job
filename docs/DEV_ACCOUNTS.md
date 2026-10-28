@@ -5,12 +5,15 @@
 
 آدرس‌های سرویس‌ها:
 
-| سرویس           | آدرس                                         |
-| --------------- | -------------------------------------------- |
-| وب (پنل‌ها)     | http://localhost:3000                        |
-| API             | http://localhost:4000/api/v1                 |
-| Swagger         | http://localhost:4000/api/docs               |
-| پنل مدیریت پلتفرم | http://localhost:3000/admin/login          |
+| سرویس                    | آدرس                                   |
+| ------------------------ | -------------------------------------- |
+| صفحهٔ اصلی (لندینگ)       | http://localhost:3000                  |
+| ثبت‌نام کسب‌وکار جدید      | http://localhost:3000/register         |
+| ورود پنل کسب‌وکار         | http://localhost:3000/login            |
+| پنل کاربری مشتری (شاگرد)  | http://localhost:3000/me               |
+| بنل مدیریت پلتفرم         | http://localhost:3000/admin/login      |
+| API                      | http://localhost:4000/api/v1           |
+| Swagger                  | http://localhost:4000/api/docs         |
 
 ## ورود با کد یکبار مصرف (OTP)
 

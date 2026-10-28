@@ -69,9 +69,11 @@
 | ۴ | رفع باگ تاریخ یک‌روز-عقب در ستون‌های `@db.Date`                       | `13afc8c` | `fix(attendance): store calendar days at UTC midnight`                 |
 | ۵ | فایل راهنمای اکانت‌های محیط توسعه                                    | `20466e2` | `docs(dev): add development accounts guide`                            |
 | ۶ | فایل قوانین ایجنت + ارجاع در `AGENTS.md` + کامنت تسک روی تست‌ها       | `c943115` | `docs(agent): add agent rules file with commit/test registry`          |
-| ۷ | ثبت کامیت‌ها در جدول لاگ + به‌روزرسانی `TaskForMyAgent.md`               | این کامیت | `chore(agent): register task commits and task-file update`             |
+| ۷ | ثبت کامیت‌ها در جدول لاگ + به‌روزرسانی `TaskForMyAgent.md`               | `27ad93f` | `chore(agent): register task commits and task-file update`             |
+| ۸ | صفحهٔ اصلی (لندینگ) + ثبت‌نام کسب‌وکار + نام‌گذاری درست پنل مشتری (۳ مرحله) | `cde87ec`، `11dc556`، `4b59393` | `refactor(naming)` → `feat(web): landing` → `feat(web): register` |
+| ۹ | به‌روزرسانی مستندات (STATUS/DEV_ACCOUNTS) و ثبت آن در این جدول           | این کامیت | `docs: status + dev accounts for landing/register/customer portal`      |
 
-> کامیت ردیف ۷ (همین کامیت ثبت لاگ) در اجرای بعدی در جدول ثبت می‌شود؛ چون
+> کامیت ثبت لاگ هر ردیف در اجرای بعدی در جدول ثبت می‌شود؛ چون
 > هیچ کامیتی نمی‌تواند هش خودش را درون خودش داشته باشد.
 
 ## تست‌های اجراشده (Test Log)
@@ -90,3 +92,14 @@
 | ۵ — اکانت‌های توسعه      | زنده (HTTP)    | ۹ اکانت: مالک/عضو تیم/۳ شاگرد/۳ اپراتور (جدول `docs/DEV_ACCOUNTS.md`)           | ✅ |
 | ۶ — قوانین ایجنت         | واحد           | `pnpm --filter @repo/api test` پس از افزودن کامنت‌های تسک                       | ✅ ۹۷ پاس |
 | ۷ — ثبت لاگ              | بازبینی دستی    | بررسی خروجی `git log` و تطابق هش‌ها با جدول بالا                                | ✅ |
+| ۸ — نام‌گذاری `/me`       | زنده (HTTP)    | `/me`=200، `/student`=308→`/me`، `/login`=200                                  | ✅ |
+| ۸ — لندینگ               | زنده (HTTP+SSR)| `/`=200 با ۱۰۶ گره متن فارسی در SSR (بدون خطای رندر)                            | ✅ |
+| ۸ — ثبت‌نام کسب‌وکار       | زنده (HTTP)    | `POST /auth/register` با OTP نامعتبر → خطای `OTP_NOT_FOUND` (قرارداد فیلدها درست) | ✅ |
+| ۸ — کل بسته              | typecheck/build | `pnpm typecheck`، `pnpm test` (۹۷ پاس)، `pnpm build`                          | ✅ |
+
+### نکتهٔ عملیاتی (کش Next در حالت توسعه)
+
+اگر در `packages/shared` چیزی اضافه/تغییر دادید و در وب خطای
+`Cannot read properties of undefined` یا `is not a function` دیدید، کش حالت توسعهٔ
+Next (`apps/web/.next`) را خالی و سرور dev را دوباره اجرا کنید؛ Next فایل‌های
+`dist` پکیج‌های workspace را همیشه دوباره نمی‌خواند.
