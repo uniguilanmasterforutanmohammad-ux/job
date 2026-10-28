@@ -46,7 +46,12 @@ export default function TeamPage() {
   const queryClient = useQueryClient();
   const [memberOpen, setMemberOpen] = useState(false);
   const [roleOpen, setRoleOpen] = useState(false);
-  const [memberForm, setMemberForm] = useState({ fullName: '', phone: '', systemRole: 'STAFF' });
+  const [memberForm, setMemberForm] = useState({
+    fullName: '',
+    phone: '',
+    systemRole: 'STAFF',
+    roleId: '',
+  });
   const [roleForm, setRoleForm] = useState({ key: '', name: '', permissions: [] as string[] });
 
   const membersQuery = useQuery({
@@ -67,13 +72,14 @@ export default function TeamPage() {
           fullName: memberForm.fullName,
           phone: memberForm.phone || undefined,
           systemRole: memberForm.systemRole,
+          roleId: memberForm.roleId || undefined,
         },
         token,
       ),
     onSuccess: () => {
       toast.success('کاربر افزوده شد');
       setMemberOpen(false);
-      setMemberForm({ fullName: '', phone: '', systemRole: 'STAFF' });
+      setMemberForm({ fullName: '', phone: '', systemRole: 'STAFF', roleId: '' });
       void queryClient.invalidateQueries({ queryKey: ['members'] });
     },
     onError: (error) =>
@@ -237,6 +243,22 @@ export default function TeamPage() {
                 {label}
               </option>
             ))}
+          </Select>
+          {/* نقش سفارشی (اختیاری): اگر انتخاب شود، مجوزهای همان نقش داده
+              می‌شود؛ وگرنه نقش سیستمی بالا. */}
+          <Select
+            label="نقش سفارشی (اختیاری)"
+            value={memberForm.roleId}
+            onChange={(e) => setMemberForm({ ...memberForm, roleId: e.target.value })}
+          >
+            <option value="">— پیش‌فرض نقش سیستمی —</option>
+            {(rolesQuery.data ?? [])
+              .filter((role) => !role.isSystem)
+              .map((role) => (
+                <option key={role.id} value={role.id}>
+                  {role.name}
+                </option>
+              ))}
           </Select>
         </div>
       </Modal>
