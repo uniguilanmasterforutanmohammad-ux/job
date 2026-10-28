@@ -68,7 +68,11 @@
 | ۳ | پنل کاربر نهایی (شاگرد) + حاضری از پنل/لینک — همراه کامیت اول        | `799d2cd` | در همان کامیت اولیه (`/student`, `/app/*`, `public check-in`)          |
 | ۴ | رفع باگ تاریخ یک‌روز-عقب در ستون‌های `@db.Date`                       | `13afc8c` | `fix(attendance): store calendar days at UTC midnight`                 |
 | ۵ | فایل راهنمای اکانت‌های محیط توسعه                                    | `20466e2` | `docs(dev): add development accounts guide`                            |
-| ۶ | فایل قوانین ایجنت + ارجاع در `AGENTS.md` + کامنت تسک روی تست‌ها       | این کامیت | `docs(agent): add agent rules and task/comments convention`            |
+| ۶ | فایل قوانین ایجنت + ارجاع در `AGENTS.md` + کامنت تسک روی تست‌ها       | `c943115` | `docs(agent): add agent rules file with commit/test registry`          |
+| ۷ | ثبت کامیت‌ها در جدول لاگ + به‌روزرسانی `TaskForMyAgent.md`               | این کامیت | `chore(agent): register task commits and task-file update`             |
+
+> کامیت ردیف ۷ (همین کامیت ثبت لاگ) در اجرای بعدی در جدول ثبت می‌شود؛ چون
+> هیچ کامیتی نمی‌تواند هش خودش را درون خودش داشته باشد.
 
 ## تست‌های اجراشده (Test Log)
 
@@ -84,3 +88,5 @@
 | ۴ — اسموک روی API زنده  | e2e            | `vitest run test/smoke.e2e.spec.ts`                                           | ✅ ۴ پاس |
 | ۴ — بررسی زندهٔ دیتابیس | دستی (psql)    | ثبت درخواست برای `2026-11-20` و کنترل `absence_requests."absenceDate"`          | ✅ بدون جابه‌جایی روز |
 | ۵ — اکانت‌های توسعه      | زنده (HTTP)    | ۹ اکانت: مالک/عضو تیم/۳ شاگرد/۳ اپراتور (جدول `docs/DEV_ACCOUNTS.md`)           | ✅ |
+| ۶ — قوانین ایجنت         | واحد           | `pnpm --filter @repo/api test` پس از افزودن کامنت‌های تسک                       | ✅ ۹۷ پاس |
+| ۷ — ثبت لاگ              | بازبینی دستی    | بررسی خروجی `git log` و تطابق هش‌ها با جدول بالا                                | ✅ |
