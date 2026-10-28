@@ -765,7 +765,10 @@ function CustomerDashboard({
   );
 
   const clubsQuery = useQuery({
-    queryKey: ['customer-clubs'],
+    // The token is scoped to one club at a time, so every club-scoped query
+    // carries the active club in its key. Without it, switching club showed the
+    // *previous* club's cached rows (اطلاعیه/حاضری/فاکتور) under the new name.
+    queryKey: ['customer-clubs', session.phone ?? 'me'],
     queryFn: () => apiGet<CustomerClub[]>('/app/clubs'),
   });
   /**
@@ -773,12 +776,12 @@ function CustomerDashboard({
    * notices, next appointment). Only loaded for the two sections that show it.
    */
   const overviewQuery = useQuery({
-    queryKey: ['customer-overview'],
+    queryKey: ['customer-overview', session.phone ?? 'me'],
     queryFn: () => apiGet<CustomerOverview>('/app/overview'),
     enabled: tab === 'home' || tab === 'clubs',
   });
   const noticesQuery = useQuery({
-    queryKey: ['customer-notices'],
+    queryKey: ['customer-notices', session.tenantId],
     queryFn: () => apiGet<CustomerNotice[]>('/app/notifications'),
     enabled: tab === 'notices',
   });
@@ -792,38 +795,38 @@ function CustomerDashboard({
     onError: (e) => toast.error(e instanceof ApiClientError ? e.message : 'ثبت خوانده‌شدن ناموفق بود'),
   });
   const attendanceQuery = useQuery({
-    queryKey: ['customer-attendance'],
+    queryKey: ['customer-attendance', session.tenantId],
     queryFn: () => apiGet<CustomerAttendance>('/app/attendance'),
   });
   const targetsQuery = useQuery({
-    queryKey: ['customer-checkin-targets'],
+    queryKey: ['customer-checkin-targets', session.tenantId],
     queryFn: () => apiGet<CustomerCheckInTarget[]>('/app/attendance/targets'),
     // Only poll while the شاگرد is actually looking at the check-in section.
     enabled: tab === 'attendance',
     refetchInterval: tab === 'attendance' ? 15_000 : false,
   });
   const appointmentsQuery = useQuery({
-    queryKey: ['customer-appointments'],
+    queryKey: ['customer-appointments', session.tenantId],
     queryFn: () => apiGet<Appointment[]>('/app/appointments'),
     enabled: tab === 'appointments',
   });
   const invoicesQuery = useQuery({
-    queryKey: ['customer-invoices'],
+    queryKey: ['customer-invoices', session.tenantId],
     queryFn: () => apiGet<Invoice[]>('/app/invoices'),
     enabled: tab === 'finance',
   });
   const loyaltyQuery = useQuery({
-    queryKey: ['customer-loyalty'],
+    queryKey: ['customer-loyalty', session.tenantId],
     queryFn: () => apiGet<PortalLoyalty>('/app/loyalty'),
   });
   const absenceQuery = useQuery({
-    queryKey: ['customer-absence-requests'],
+    queryKey: ['customer-absence-requests', session.tenantId],
     queryFn: () => apiGet<AbsenceRequest[]>('/app/absence-requests'),
     enabled: tab === 'absence',
   });
   // Tells the password card whether to ask for the current password.
   const meQuery = useQuery({
-    queryKey: ['customer-me'],
+    queryKey: ['customer-me', session.tenantId],
     queryFn: () =>
       apiGet<{
         member: {
