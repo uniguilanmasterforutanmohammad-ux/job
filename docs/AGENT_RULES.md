@@ -86,7 +86,10 @@
 | ۸ | صفحهٔ اصلی (لندینگ) + ثبت‌نام کسب‌وکار + نام‌گذاری درست پنل مشتری (۳ مرحله) | `cde87ec`، `11dc556`، `4b59393` | `refactor(naming)` → `feat(web): landing` → `feat(web): register` |
 | ۹ | به‌روزرسانی مستندات (STATUS/DEV_ACCOUNTS) و ثبت آن در این جدول           | این کامیت | `docs: status + dev accounts for landing/register/customer portal`      |
 | ۱۰ | شفاف‌سازی «ثبت‌نام مشتری» در پنل `/me`                                   | `a1a3fd7` | `feat(web): make consumer signup explicit in the /me portal`            |
-| ۱۱ | ثبت ردیف‌های ۹ و ۱۰ در همین جدول                                        | این کامیت | `docs(agent): log landing/register commits in registry`                 |
+| ۱۱ | ثبت ردیف‌های ۹ و ۱۰ در همین جدول                                        | `3cc7e24` | `docs(agent): log landing/register commits in registry`                 |
+| ۱۲ | کامنت «✅ تکمیل شد» زیر همهٔ تسک‌های انجام‌شدهٔ `TaskForMyAgent.md`        | `6279c25` | `docs(taskfile): mark every completed task with a completion comment`   |
+| ۱۳ | قانون ثبت کامنت تکمیل در قوانین ایجنت + `AGENTS.md`                      | `d8f8137` | `docs(agent): require a completion comment under every finished task`   |
+| ۱۴ | ثبت ردیف‌های ۱۲ و ۱۳ در همین جدول                                        | این کامیت | `docs(agent): log taskfile annotation commits`                          |
 
 > کامیت ثبت لاگ هر ردیف در اجرای بعدی در جدول ثبت می‌شود؛ چون
 > هیچ کامیتی نمی‌تواند هش خودش را درون خودش داشته باشد.
@@ -113,6 +116,8 @@
 | ۸ — کل بسته              | typecheck/build | `pnpm typecheck`، `pnpm test` (۹۷ پاس)، `pnpm build`                          | ✅ |
 | ۱۰ — ثبت‌نام مشتری        | زنده (HTTP)    | `/me`=200 (کارت «ورود یا ثبت‌نام با موبایل») + `pnpm --filter @repo/web typecheck` | ✅ |
 | ۱۱ — وضعیت نهایی         | بازبینی دستی    | `git status` پاک + بررسی همهٔ مسیرها (`/`، `/register`، `/me`، `/login`، `/admin/login`=200، `/student`=308) | ✅ |
+| ۱۲ — کامنت‌های تسک‌فایل    | بازبینی diff   | `git diff --stat TaskForMyAgent.md` → فقط ۲۶ خط insert، بدون تغییر متن کاربر                        | ✅ |
+| ۱۳ — قوانین ایجنت         | بازبینی دستی    | خواندن `docs/AGENT_RULES.md` و `AGENTS.md` (۴ وظیفهٔ الزامی)                                        | ✅ |
 
 ### نکتهٔ عملیاتی (کش Next در حالت توسعه)
 
