@@ -107,7 +107,10 @@
 | ۲۹ | کنسول ادمین: ساخت/ویرایش/حذف صنف + ماژول‌های پیش‌فرض                     | `38614a4` | `feat(web-admin): build/rename/delete industries from the console`      |
 | ۳۰ | نام صنف و کاربران نهایی از رجیستری در همهٔ صفحات وب                     | `d9bb9fc` | `feat(web): name industries and their end-users from the registry`      |
 | ۳۱ | ثبت ردیف‌های ۲۷ تا ۳۰ + مستندات وضعیت و کامنت‌های تسک‌فایل               | `a6bab1f` | `docs(agent): log data-driven-industry commits and update status`       |
-| ۳۲ | ثبت ردیف ۳۱ در همین جدول                                              | این کامیت | `docs(agent): register the data-driven-industry log commit`             |
+| ۳۲ | ثبت ردیف ۳۱ در همین جدول                                              | `a62c485` | `docs(agent): register the data-driven-industry log commit`             |
+| ۳۳ | نام کاربران نهایی هر صنف در کل پنل کسب‌وکار (زبان‌آموز/زبان‌آموزان …)      | `b98b629` | `feat(web): name end-users after their industry across the business panel` |
+| ۳۴ | حذف فیلد «شهر» از فرم مشتری جدید                                       | `635655a` | `feat(web-crm): remove the city field from the new-customer form`       |
+| ۳۵ | ثبت ردیف‌های ۳۳ و ۳۴ + مستندات وضعیت و کامنت‌های تسک‌فایل                   | این کامیت | `docs(agent): log industry-naming and customer-form commits`            |
 
 > کامیت ثبت لاگ هر ردیف در اجرای بعدی در جدول ثبت می‌شود؛ چون
 > هیچ کامیتی نمی‌تواند هش خودش را درون خودش داشته باشد.
@@ -160,6 +163,10 @@
 | ۲۹ — UI کنسول صنف‌ها     | زنده (Chrome/CDP) | ۲۰/۲۰ بررسی: فهرست ۱۸ صنف، دیالوگ ساخت (۵ فیلد متنی + ۱۴ چک‌باکس ماژول + سوییچ ثبت‌نام)، ساخت/ویرایش/حذف صنف، ظهور در `/register`، نبود دکمهٔ حذف برای صنف سیستمی | ✅ ۲۰/۲۰ |
 | ۲۹/۳۰ — اسموک روی API زنده | e2e          | `vitest run test/smoke.e2e.spec.ts`                                                              | ✅ ۴ پاس |
 | ۲۹/۳۰ — تایپ و بیلد      | typecheck/build | `pnpm typecheck`، `pnpm test`، `pnpm build`                                                    | ✅ |
+| ۳۳ — نام کاربران نهایی صنف | زنده (Chrome/CDP) | ۱۳/۱۳ بررسی: پنل زبان («زبان‌آموزان» در عنوان/سایدبار/جدول/KPI/فاکتور/مجوزها) + پنل باشگاه همچنان «شاگردان» | ✅ ۱۳/۱۳ |
+| ۳۳ — نام‌گذاری در پنل‌های دیگر | زنده (Chrome/CDP) | ۷/۷ بررسی: زیرعنوان حضور و غیاب، مالی، بازاریابی، گزارش‌ها و پورتال عمومی `/portal/[slug]` («پورتال زبان‌آموزان») | ✅ ۷/۷ |
+| ۳۴ — فرم مشتری جدید      | زنده (Chrome/CDP) | فرم فقط «نام و نام خانوادگی» + «شماره موبایل»؛ جدول بدون ستون «شهر»؛ ثبت بدون شهر → ۲۰۰ و نمایش در فهرست | ✅ |
+| ۳۳/۳۴ — تایپ و بیلد      | typecheck/build | `pnpm typecheck` (۶/۶)، `pnpm test`، `pnpm build`                                             | ✅ |
 
 ### نکتهٔ عملیاتی (کش Next در حالت توسعه)
 
