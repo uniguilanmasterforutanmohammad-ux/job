@@ -132,7 +132,10 @@
 | ۵۴ | پنل کاربری بخش‌بندی‌شده + سوئیچ عضویت + حذف لود مداوم حاضری                 | `c7d8230` | `feat(web): turn the customer panel into a sectioned panel with club switching` |
 | ۵۵ | ثبت ردیف‌های ۴۷ تا ۵۴ + مستندات و کامنت تسک‌فایل                          | `368b504` | `docs(agent): log the password, lint and portal commits`                 |
 | ۵۶ | تکمیل هش ردیف‌های ۹، ۱۴ و ۵۵ (ردیف‌های خودارجاع «این کامیت»)              | `4be33f8` | `docs(agent): fill the self-referential commit rows in the registry`     |
-| ۵۷ | بازگرداندن گیت ثبت‌نام صنف‌ها در دادهٔ توسعه + ثبت ردیف ۵۶                 | این کامیت | `docs(agent): record the dev-data reset and register the registry commit` |
+| ۵۷ | بازگرداندن گیت ثبت‌نام صنف‌ها در دادهٔ توسعه + ثبت ردیف ۵۶                 | `e386435` | `docs(agent): record the dev-data reset and register the registry commit` |
+| ۵۸ | نمایش تمامی صنف‌های کاربر در پنل `/me` (استریپ + بخش گروه‌بندی‌شده)        | `07dde8b` | `feat(web): show every industry the portal user belongs to`              |
+| ۵۹ | کامنت «✅ تکمیل شد» زیر تسک چت در `TaskForMyAgent.md`                   | `e38b9e0` | `docs(taskfile): mark the portal industries task as done`                |
+| ۶۰ | ثبت ردیف‌های ۵۸ و ۵۹ + مستندات وضعیت/اکانت‌ها + ردیف تست جدید             | این کامیت | `docs(agent): log the portal-industries commit and dev account`          |
 
 > کامیت ثبت لاگ هر ردیف در اجرای بعدی در جدول ثبت می‌شود؛ چون
 > هیچ کامیتی نمی‌تواند هش خودش را درون خودش داشته باشد.
@@ -223,6 +226,9 @@
 | ۴۸–۵۴ — کل بسته‌ها         | واحد           | `pnpm test` → ۱۶۲ پاس (API، ۲۵ فایل) + ۲۱ پاس (`@repo/shared`)                                  | ✅ |
 | ۴۸–۵۴ — تایپ/بیلد/اسموک    | typecheck/build/e2e | `pnpm typecheck` (۶/۶)، `pnpm build`، اسموک زندهٔ API (۴ پاس)                                   | ✅ |
 | بازنشانی دادهٔ توسعه (پیش از تست کاربر) | دستی + زنده (HTTP) | `update industries set "isRegistrationEnabled"=true where …` برای ۱۳ صنفِ باقی‌مانده‌از تست + پاک‌سازی کلیدهای `otp:*`؛ سپس `GET /industries` → ۱۸ صنف با `registration OFF = 0` | ✅ |
+| ۵۸ — چند صنفی‌بودن کاربر (API) | زنده (HTTP) | حساب دو-صنفی `09117818389`: `POST /app/auth/otp/verify-global` → `clubs` = `LANGUAGE_SCHOOL` + `SPORTS_COACHING`؛ `GET /app/clubs` → ۲ عضو در ۲ صنف؛ `POST /app/auth/switch-club` → ۲۰۰ | ✅ ۲/۲ |
+| ۵۸ — استریپ و بخش صنف‌ها (UI) | زنده (Chrome/CDP) | `/tmp/cdp-verify-my-industries.mjs` → ۲۲/۲۲: استریپ همیشه-دیده با شمارش «۲ صنف و ۲ مجموعه»، چیپ هر صنف با واژهٔ صنف («زبان‌آموز»/«شاگرد»)، نوار ۶ بخشی، بخش «صنف‌ها و مجموعه‌ها» با گروه‌بندی صنفی و «۱ مجموعه» به‌ازای هر گروه، جابه‌جایی به باشگاه (توست «به باشگاه مربی‌گری منتقل شدید») و باقی‌ماندن استریپ در بخش حضور و غیاب | ✅ ۲۲/۲۲ |
+| ۵۸ — تایپ/لینت وب          | typecheck/lint | `pnpm --filter @repo/web typecheck` ✅؛ `pnpm --filter @repo/web lint` → ۰ خطا (همان ۱۱ هشدار advisory قبلی) | ✅ |
 
 ### نکتهٔ عملیاتی (کش Next در حالت توسعه)
 
