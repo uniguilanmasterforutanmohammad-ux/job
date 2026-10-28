@@ -44,6 +44,12 @@ export type AdminTenantSummary = {
     status: string;
     plan: { code: string; name: string } | null;
   } | null;
+  /** Modules currently enabled for this business. */
+  enabledModuleKeys: ModuleKey[];
+  /** Industry default module set (PRD §17). */
+  defaultModules: ModuleKey[];
+  /** Enabled modules that are still missing from the industry default set. */
+  missingDefaultModules: ModuleKey[];
   _count: { members: number; branches: number; customers: number };
 };
 
@@ -105,10 +111,15 @@ export type AdminModuleEntry = {
 
 export type AdminTenantModules = {
   tenantId: string;
+  industry: string;
+  defaultModules: ModuleKey[];
   modules: AdminModuleEntry[];
   enabledCount: number;
   totalCount: number;
+  missingDefaultModules: ModuleKey[];
 };
+
+export type AdminCreatedTenant = AdminTenantDetail;
 
 export type AdminMember = {
   id: string;

@@ -1,7 +1,7 @@
 'use client';
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { AlertTriangle, Check, Loader2, Plus, X } from 'lucide-react';
+import { AlertTriangle, Check, Layers, Loader2, Plus, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { api, ApiClientError } from '@/lib/api-client';
 import { getAdminToken, isAtLeast, useAdminAuth } from '@/lib/admin-auth';
@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { EmptyState, Skeleton } from '@/components/ui/empty-state';
 import type { AdminTenantModules } from '@/lib/admin-types';
+import type { ModuleKey } from '@repo/shared';
 
 export function ModuleGrid({ tenantId }: { tenantId: string }) {
   const token = getAdminToken();
@@ -51,6 +52,25 @@ export function ModuleGrid({ tenantId }: { tenantId: string }) {
       toast.error(error instanceof ApiClientError ? error.message : 'خطا در غیرفعال‌سازی ماژول'),
   });
 
+  const defaults = query.data?.defaultModules ?? [];
+  const missingDefaults = query.data?.missingDefaultModules ?? [];
+
+  const grantDefaults = useMutation({
+    mutationFn: () =>
+      api.post(
+        `/admin/tenants/${tenantId}/modules/grant`,
+        { keys: missingDefaults, withDependencies: true },
+        token,
+      ),
+    onSuccess: () => {
+      toast.success('ماژول‌های پیش‌فرض صنف فعال شدند');
+      void queryClient.invalidateQueries({ queryKey: ['admin-tenant-modules', tenantId] });
+      void queryClient.invalidateQueries({ queryKey: ['admin-tenant', tenantId] });
+    },
+    onError: (error) =>
+      toast.error(error instanceof ApiClientError ? error.message : 'فعال‌سازی پیش‌فرض‌ها ناموفق بود'),
+  });
+
   if (query.isLoading) {
     return (
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -65,15 +85,45 @@ export function ModuleGrid({ tenantId }: { tenantId: string }) {
     return <EmptyState title="ماژول‌ها بارگذاری نشد" />;
   }
 
-  const { modules, enabledCount, totalCount } = query.data;
+  const { modules, enabledCount, totalCount, industry } = query.data;
+  const defaultSet = new Set<ModuleKey>(defaults);
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between rounded-xl bg-slate-50 px-4 py-3 dark:bg-slate-800/50">
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-slate-50 px-4 py-3 dark:bg-slate-800/50">
         <p className="text-sm text-slate-600 dark:text-slate-300">
           <span className="font-semibold nums">{enabledCount}</span> از{' '}
           <span className="nums">{totalCount}</span> ماژول فعال است
         </p>
+        <div className="flex items-center gap-2">
+          {missingDefaults.length === 0 ? (
+            <Badge tone="success">
+              <Layers className="h-3 w-3" />
+              همهٔ پیش‌فرض‌های صنف فعال است
+            </Badge>
+          ) : (
+            <>
+              <p className="text-xs text-amber-700 nums">
+                {missingDefaults.length} ماژول پیش‌فرض غیرفعال ({industry})
+              </p>
+              {canEdit && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={grantDefaults.isPending}
+                  onClick={() => grantDefaults.mutate()}
+                >
+                  {grantDefaults.isPending ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <Plus className="h-3.5 w-3.5" />
+                  )}
+                  افزودن پیش‌فرض‌های صنف
+                </Button>
+              )}
+            </>
+          )}
+        </div>
         {!canEdit && <Badge tone="warning">فقط خواندنی — سطح دسترسی شما کافی نیست</Badge>}
       </div>
 
@@ -95,7 +145,14 @@ export function ModuleGrid({ tenantId }: { tenantId: string }) {
               <div className="space-y-2">
                 <div className="flex items-start justify-between gap-2">
                   <div>
-                    <p className="font-medium text-slate-900 dark:text-slate-100">{module.label}</p>
+                    <p className="font-medium text-slate-900 dark:text-slate-100">
+                      {module.label}
+                      {defaultSet.has(module.key) && (
+                        <span className="ms-2 text-[10px] font-normal text-slate-400">
+                          پیش‌فرض صنف
+                        </span>
+                      )}
+                    </p>
                     <p className="text-xs text-slate-400 nums" dir="ltr">
                       {module.key}
                     </p>

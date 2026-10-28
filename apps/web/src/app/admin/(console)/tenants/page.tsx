@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
-import { Search, Building2 } from 'lucide-react';
+import { Search, Building2, Plus } from 'lucide-react';
 import { api } from '@/lib/api-client';
 import { getAdminToken } from '@/lib/admin-auth';
 import { Card, CardBody } from '@/components/ui/card';
@@ -14,6 +14,8 @@ import { Table, Td, Th } from '@/components/ui/table';
 import { PageHeader } from '@/components/ui/page-header';
 import { EmptyState, Skeleton } from '@/components/ui/empty-state';
 import { StatusBadge } from '@/components/admin/status-badge';
+import { CreateTenantDialog } from '@/components/admin/create-tenant-dialog';
+import { TenantModulesCell, TenantStatusToggle } from '@/components/admin/tenant-list-actions';
 import { formatJalali, formatNumber } from '@/lib/utils';
 import type { AdminTenantSummary } from '@/lib/admin-types';
 import type { Paginated } from '@/lib/types';
@@ -45,6 +47,7 @@ export default function AdminTenantsPage() {
   const [status, setStatus] = useState('');
   const [industry, setIndustry] = useState('');
   const [page, setPage] = useState(1);
+  const [createOpen, setCreateOpen] = useState(false);
 
   const query = useQuery({
     queryKey: ['admin-tenants', { search, status, industry, page }],
@@ -59,7 +62,18 @@ export default function AdminTenantsPage() {
 
   return (
     <div className="space-y-5">
-      <PageHeader title="کسب‌وکارها" description="مدیریت، ویرایش و کنترل دسترسی ماژول‌های هر کسب‌وکار" />
+      <PageHeader
+        title="کسب‌وکارها"
+        description="مدیریت، ویرایش و کنترل دسترسی ماژول‌های هر کسب‌وکار"
+        action={
+          <Button onClick={() => setCreateOpen(true)}>
+            <Plus className="h-4 w-4" />
+            کسب‌وکار جدید
+          </Button>
+        }
+      />
+
+      <CreateTenantDialog open={createOpen} onClose={() => setCreateOpen(false)} />
 
       <Card>
         <CardBody className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -134,10 +148,11 @@ export default function AdminTenantsPage() {
                   <Th>صنعت</Th>
                   <Th>وضعیت</Th>
                   <Th>پلن</Th>
+                  <Th>ماژول‌ها</Th>
                   <Th>کاربران</Th>
                   <Th>مشتریان</Th>
                   <Th>تاریخ ایجاد</Th>
-                  <Th></Th>
+                  <Th>اقدام</Th>
                 </tr>
               </thead>
               <tbody>
@@ -161,13 +176,22 @@ export default function AdminTenantsPage() {
                         </span>
                       )}
                     </Td>
+                    <Td>
+                      <TenantModulesCell tenant={tenant} />
+                    </Td>
                     <Td className="nums">{formatNumber(tenant._count.members)}</Td>
                     <Td className="nums">{formatNumber(tenant._count.customers)}</Td>
                     <Td className="text-slate-500">{formatJalali(tenant.createdAt)}</Td>
                     <Td>
-                      <Link href={`/admin/tenants/${tenant.id}`} className="text-brand-600 hover:underline">
-                        مدیریت
-                      </Link>
+                      <div className="flex flex-col items-start gap-2">
+                        <Link
+                          href={`/admin/tenants/${tenant.id}`}
+                          className="text-brand-600 hover:underline"
+                        >
+                          مدیریت
+                        </Link>
+                        <TenantStatusToggle tenant={tenant} />
+                      </div>
                     </Td>
                   </tr>
                 ))}
