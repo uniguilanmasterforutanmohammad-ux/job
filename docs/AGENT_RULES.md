@@ -96,6 +96,10 @@
 | ۱۸ | UI کنسول ادمین: ساخت کسب‌وکار، ماژول‌ها، فعال/غیرفعال‌سازی                | `1a3b16d` | `feat(web-admin): business creation, module defaults and status toggle` |
 | ۱۹ | انتخاب کسب‌وکار از فهرست فعال در پنل مشتری `/me`                          | `b414c6f` | `feat(web-me): pick a business from the active directory on signup`     |
 | ۲۰ | ثبت ردیف‌های ۱۵ تا ۱۹ + مستندات وضعیت و کامنت‌های تسک‌فایل                | `44525fe` | `docs(agent): log admin-console commits, status and taskfile completion notes` |
+| ۲۱ | جدول‌های رجیستری صنف + مهاجرت seed (۱۷ صنف، ۸۳ ماژول پیش‌فرض)            | `c43332e` | `feat(db): industry settings + editable default modules`                |
+| ۲۲ | API رجیستری صنف + گیت ثبت‌نام + اندپوینت‌های ادمین/عمومی                   | `af88110` | `feat(api): industry registry — per-industry registration gate + editable default modules` |
+| ۲۳ | صفحهٔ `/admin/industries` (سوییچ ثبت‌نام + ویرایش ماژول‌های پیش‌فرض)        | `78a6c8d` | `feat(web-admin): industry console — registration gate + default module editor` |
+| ۲۴ | صفحهٔ `/register` متصل به رجیستری صنف‌ها                                  | `783adb6` | `feat(web): register page reads the industry registry`                  |
 
 > کامیت ثبت لاگ هر ردیف در اجرای بعدی در جدول ثبت می‌شود؛ چون
 > هیچ کامیتی نمی‌تواند هش خودش را درون خودش داشته باشد.
@@ -132,6 +136,14 @@
 | ۱۴ — UI کنسول ادمین      | زنده (Chrome/CDP) | ۱۵ بررسی: دکمهٔ «کسب‌وکار جدید»، ستون ماژول‌ها، باز شدن دیالوگ با ۸ ماژول پیش‌انتخاب‌شده، برچسب «پیش‌فرض صنف» در تب ماژول‌ها، فهرست کسب‌وکارهای فعال در `/me` و مخفی بودن کسب‌وکار SUSPENDED | ✅ ۱۵/۱۵ |
 | ۱۴ — اسموک روی API زنده  | e2e           | `vitest run test/smoke.e2e.spec.ts`                                                              | ✅ ۴ پاس |
 | ۱۴ — تایپ و بیلد         | typecheck/build | `pnpm typecheck`، `pnpm test`، `pnpm build`                                                    | ✅ |
+| ۱۵ — مهاجرت رجیستری صنف  | دستی (psql)    | `prisma migrate deploy` + شمارش: ۱۷ ردیف `industry_settings` و ۸۳ ردیف `industry_default_modules` | ✅ |
+| ۱۵ — رجیستری صنف         | واحد           | `apps/api/src/modules/industries/industry-registry.service.spec.ts` (۹ تست)                      | ✅ |
+| ۱۵ — سرویس ادمین صنف     | واحد           | `apps/api/src/modules/admin/admin-industry.service.spec.ts` (۲ تست)                               | ✅ |
+| ۱۵ — کل بستهٔ API        | واحد           | `pnpm test` → ۱۱۹ پاس (API) و ۱۶ پاس (`@repo/shared`)                                             | ✅ |
+| ۱۵ — گیت ثبت‌نام صنف     | زنده (HTTP)    | غیرفعال‌سازی BEAUTY → `403 INDUSTRY_REGISTRATION_DISABLED` در `/auth/register`؛ کاهش پیش‌فرض به `[CRM]` → کسب‌وکار جدید با یک ماژول → بازگردانی | ✅ |
+| ۱۵ — UI ادمین و ثبت‌نام   | زنده (Chrome/CDP) | ۱۲ بررسی صفحهٔ صنف‌ها/دیالوگ ماژول‌ها + ۸ بررسی چرخهٔ غیرفعال‌کردن از UI → حذف صنف از `/register` (۱۶ گزینه) → فعال‌سازی → بازگشت به ۱۷ | ✅ ۲۰/۲۰ |
+| ۱۵ — اسموک روی API زنده  | e2e            | `vitest run test/smoke.e2e.spec.ts`                                                              | ✅ ۴ پاس |
+| ۱۵ — تایپ و بیلد         | typecheck/build | `pnpm typecheck`، `pnpm test`، `pnpm build`                                                     | ✅ |
 
 ### نکتهٔ عملیاتی (کش Next در حالت توسعه)
 
