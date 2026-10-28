@@ -38,6 +38,7 @@ function build() {
           phone: PHONE,
           fullName: 'بیتا',
           isActive: true,
+          createdAt: new Date('2026-01-02T00:00:00.000Z'),
           tenant: {
             id: 't-lang',
             name: 'زبان‌آموزان تنکا',
@@ -54,6 +55,7 @@ function build() {
           phone: PHONE,
           fullName: 'بیتا',
           isActive: true,
+          createdAt: new Date('2026-02-03T00:00:00.000Z'),
           tenant: {
             id: 't-gym',
             name: 'باشگاه موج',
@@ -101,6 +103,11 @@ describe('AppService.switchClub — multi-club پورتال', () => {
     expect(result.user.tenantId).toBe('t-gym');
     expect(result.user.tenantName).toBe('باشگاه موج');
     expect(result.clubs.map((club) => club.tenantId)).toEqual(['t-lang', 't-gym']);
+    // The profile shows when each membership started.
+    expect(result.clubs.map((club) => club.joinedAt)).toEqual([
+      '2026-01-02T00:00:00.000Z',
+      '2026-02-03T00:00:00.000Z',
+    ]);
   });
 
   it('rejects a business the phone is not a member of', async () => {

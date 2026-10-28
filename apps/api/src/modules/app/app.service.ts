@@ -367,6 +367,8 @@ export class AppService {
         fullName: string;
         branch: { id: string; name: string; city: string | null } | null;
         isActive: boolean;
+        /** When this membership started — shown on the user's profile. */
+        joinedAt: string;
       }
     >();
     for (const row of rows) {
@@ -382,6 +384,7 @@ export class AppService {
         fullName: row.customer?.fullName ?? row.fullName,
         branch: row.branch ?? null,
         isActive: row.isActive && (row.customer?.isActive ?? true),
+        joinedAt: row.createdAt.toISOString(),
       });
     }
 
@@ -405,6 +408,7 @@ export class AppService {
         fullName: customer.fullName,
         branch: null,
         isActive: customer.isActive,
+        joinedAt: customer.createdAt.toISOString(),
       });
     }
 
