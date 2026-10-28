@@ -1,11 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { useQuery } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { Building2, CheckCircle2, Phone, ShieldCheck, Sparkles } from 'lucide-react';
-import { INDUSTRY_CATEGORIES, MODULE_DESCRIPTIONS, MODULE_KEYS, industryLabel } from '@repo/shared';
+import { Building2, CheckCircle2, Phone, ShieldCheck, Sparkles, TriangleAlert } from 'lucide-react';
+import { MODULE_DESCRIPTIONS, MODULE_LABELS, type ModuleKey } from '@repo/shared';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
@@ -13,6 +14,14 @@ import { Card, CardBody, CardHeader } from '@/components/ui/card';
 import { api, ApiClientError } from '@/lib/api-client';
 import { useAuth } from '@/lib/auth';
 import type { LoginResult } from '@/lib/types';
+
+/** One row of the public industry registry (`GET /industries`). */
+type PublicIndustry = {
+  industry: string;
+  label: string;
+  isRegistrationEnabled: boolean;
+  defaultModules: ModuleKey[];
+};
 
 /** Registration of a new business (tenant) — PRD §2 onboarding. */
 export default function RegisterPage() {
@@ -29,6 +38,28 @@ export default function RegisterPage() {
   const [otpSent, setOtpSent] = useState(false);
   const [loading, setLoading] = useState(false);
   const [sending, setSending] = useState(false);
+
+  // Industries come from the platform admin registry: an industry whose
+  // registration was switched off there must not be offered here.
+  const industriesQuery = useQuery({
+    queryKey: ['public-industries'],
+    queryFn: () => api.get<PublicIndustry[]>('/industries'),
+  });
+  const availableIndustries = (industriesQuery.data ?? []).filter(
+    (item) => item.isRegistrationEnabled,
+  );
+  const selectedIndustry = availableIndustries.find((item) => item.industry === form.industry);
+  const noIndustryAvailable = !industriesQuery.isLoading && availableIndustries.length === 0;
+
+  // Keep the selection valid when the registry says the current one is closed.
+  useEffect(() => {
+    if (industriesQuery.isLoading || !industriesQuery.data) return;
+    if (selectedIndustry) return;
+    const fallback = availableIndustries[0];
+    if (fallback && fallback.industry !== form.industry) {
+      setForm((prev) => ({ ...prev, industry: fallback.industry }));
+    }
+  }, [industriesQuery.isLoading, industriesQuery.data, selectedIndustry, availableIndustries, form.industry]);
 
   const set = (key: keyof typeof form) => (value: string) =>
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -51,6 +82,10 @@ export default function RegisterPage() {
   }
 
   async function submit() {
+    if (noIndustryAvailable || !selectedIndustry) {
+      toast.error('ثبت‌نام در این صنف فعلاً غیرفعال است');
+      return;
+    }
     if (form.businessName.trim().length < 2) {
       toast.error('نام کسب‌وکار را وارد کنید');
       return;
@@ -120,13 +155,27 @@ export default function RegisterPage() {
               label="صنف / حوزهٔ فعالیت"
               value={form.industry}
               onChange={(e) => set('industry')(e.target.value)}
+              disabled={industriesQuery.isLoading || noIndustryAvailable}
             >
-              {INDUSTRY_CATEGORIES.map((industry) => (
-                <option key={industry} value={industry}>
-                  {industryLabel(industry)}
-                </option>
-              ))}
+              {industriesQuery.isLoading ? (
+                <option value="">در حال بارگذاری…</option>
+              ) : noIndustryAvailable ? (
+                <option value="">ثبت‌نام موقتاً بسته است</option>
+              ) : (
+                availableIndustries.map((industry) => (
+                  <option key={industry.industry} value={industry.industry}>
+                    {industry.label}
+                  </option>
+                ))
+              )}
             </Select>
+            {noIndustryAvailable && (
+              <p className="flex items-center gap-1.5 text-xs text-amber-700">
+                <TriangleAlert className="h-3.5 w-3.5" />
+                ثبت‌نام در هیچ صنفی فعال نیست؛ لطفاً بعداً دوباره تلاش کنید یا با پشتیبانی تماس
+                بگیرید.
+              </p>
+            )}
           </CardBody>
         </Card>
 
@@ -180,25 +229,42 @@ export default function RegisterPage() {
         <Card>
           <CardHeader
             title="ماژول‌های این صنف"
-            description={`${industryLabel(form.industry)} — قابل تغییر بعد از ساخت`}
+            description={`${selectedIndustry?.label ?? '—'} — این ماژول‌ها خودکار فعال می‌شوند و بعداً قابل تغییرند`}
           />
           <CardBody className="space-y-2">
-            {MODULE_KEYS.slice(0, 6).map((key) => (
-              <div key={key} className="flex items-start gap-2 text-sm">
-                <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-500" />
-                <span className="text-slate-700 dark:text-slate-200">
-                  {MODULE_DESCRIPTIONS[key]}
-                </span>
-              </div>
-            ))}
-            <p className="flex items-center gap-1.5 pt-1 text-xs text-slate-500">
-              <Sparkles className="h-3.5 w-3.5" />
-              بقیهٔ ماژول‌ها (کمپین، انبار، کارکنان، فروشگاه، اسناد) بعداً قابل فعال‌سازی است.
-            </p>
+            {selectedIndustry?.defaultModules.length ? (
+              <>
+                {selectedIndustry.defaultModules.map((key) => (
+                  <div key={key} className="flex items-start gap-2 text-sm">
+                    <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-500" />
+                    <span className="text-slate-700 dark:text-slate-200">
+                      <span className="font-medium">{MODULE_LABELS[key]}</span>
+                      <span className="block text-xs text-slate-500">
+                        {MODULE_DESCRIPTIONS[key]}
+                      </span>
+                    </span>
+                  </div>
+                ))}
+                <p className="flex items-center gap-1.5 pt-1 text-xs text-slate-500">
+                  <Sparkles className="h-3.5 w-3.5" />
+                  بقیهٔ ماژول‌ها (کمپین، انبار، کارکنان، فروشگاه، اسناد) بعداً قابل فعال‌سازی است.
+                </p>
+              </>
+            ) : (
+              <p className="text-sm text-slate-400">
+                برای این صنف ماژول پیش‌فرضی تعیین نشده است؛ بعد از ساخت از تنظیمات فعال کنید.
+              </p>
+            )}
           </CardBody>
         </Card>
 
-        <Button className="w-full" size="lg" loading={loading} onClick={() => void submit()}>
+        <Button
+          className="w-full"
+          size="lg"
+          loading={loading}
+          disabled={noIndustryAvailable || industriesQuery.isLoading}
+          onClick={() => void submit()}
+        >
           <ShieldCheck className="h-4 w-4" />
           ساخت کسب‌وکار و ورود به پنل
         </Button>
