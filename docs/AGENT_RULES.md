@@ -102,6 +102,11 @@
 | ۲۴ | صفحهٔ `/register` متصل به رجیستری صنف‌ها                                  | `783adb6` | `feat(web): register page reads the industry registry`                  |
 | ۲۵ | ثبت ردیف‌های ۲۱ تا ۲۴ + مستندات وضعیت و کامنت‌های تسک‌فایل                | `02e94c3` | `docs(agent): log industry-registry commits, status and taskfile notes`  |
 | ۲۶ | پیش‌انتخاب پیش‌فرض‌های رجیستری در دیالوگ «کسب‌وکار جدید»                  | `c498352` | `fix(web-admin): preselect the registry defaults in the create-business dialog` |
+| ۲۷ | ثبت ردیف ۲۶ در همین جدول                                              | `b3f9183` | `docs(agent): register the create-dialog fix commit`                    |
+| ۲۸ | صنف داده‌محور: جدول `industries`، مهاجرت و API ساخت/ویرایش/حذف صنف       | `2972e0b` | `feat(api): data-driven industry registry with admin CRUD`              |
+| ۲۹ | کنسول ادمین: ساخت/ویرایش/حذف صنف + ماژول‌های پیش‌فرض                     | `38614a4` | `feat(web-admin): build/rename/delete industries from the console`      |
+| ۳۰ | نام صنف و کاربران نهایی از رجیستری در همهٔ صفحات وب                     | `d9bb9fc` | `feat(web): name industries and their end-users from the registry`      |
+| ۳۱ | ثبت ردیف‌های ۲۷ تا ۳۰ + مستندات وضعیت و کامنت‌های تسک‌فایل               | این کامیت | `docs(agent): log data-driven-industry commits and update status`       |
 
 > کامیت ثبت لاگ هر ردیف در اجرای بعدی در جدول ثبت می‌شود؛ چون
 > هیچ کامیتی نمی‌تواند هش خودش را درون خودش داشته باشد.
@@ -146,6 +151,14 @@
 | ۱۵ — UI ادمین و ثبت‌نام   | زنده (Chrome/CDP) | ۱۲ بررسی صفحهٔ صنف‌ها/دیالوگ ماژول‌ها + ۸ بررسی چرخهٔ غیرفعال‌کردن از UI → حذف صنف از `/register` (۱۶ گزینه) → فعال‌سازی → بازگشت به ۱۷ | ✅ ۲۰/۲۰ |
 | ۱۵ — اسموک روی API زنده  | e2e            | `vitest run test/smoke.e2e.spec.ts`                                                              | ✅ ۴ پاس |
 | ۱۵ — تایپ و بیلد         | typecheck/build | `pnpm typecheck`، `pnpm test`، `pnpm build`                                                     | ✅ |
+| ۲۸ — مهاجرت صنف داده‌محور | دستی (psql)    | `prisma migrate deploy` → جدول `industries` با ۱۷ صنف سیستمی و ۸۳ ردیف ماژول پیش‌فرض              | ✅ |
+| ۲۸ — رجیستری صنف (بازنویسی) | واحد        | `apps/api/src/modules/industries/industry-registry.service.spec.ts` (۱۸ تست: CRUD، کلید یکتا، گیت ثبت‌نام، ماژول‌ها) | ✅ |
+| ۲۸ — سرویس ادمین صنف     | واحد           | `apps/api/src/modules/admin/admin-industry.service.spec.ts` (۵ تست: create/update/remove/registration/modules + ممیزی) | ✅ |
+| ۲۸ — کل بستهٔ API        | واحد           | `pnpm test` → ۱۳۱ پاس (API، ۲۱ فایل) + ۱۶ پاس (`@repo/shared`)                                    | ✅ |
+| ۲۸ — چرخهٔ صنف سفارشی    | زنده (HTTP)    | ساخت «کلاس‌های شنا» → ثبت‌نام کسب‌وکار با همان ماژول‌های `[CRM, FIN]` → ۴۰۹ در حذف صنف دارای کسب‌وکار → ۴۰۳ پس از غیرفعال‌سازی ثبت‌نام | ✅ |
+| ۲۹ — UI کنسول صنف‌ها     | زنده (Chrome/CDP) | ۲۰/۲۰ بررسی: فهرست ۱۸ صنف، دیالوگ ساخت (۵ فیلد متنی + ۱۴ چک‌باکس ماژول + سوییچ ثبت‌نام)، ساخت/ویرایش/حذف صنف، ظهور در `/register`، نبود دکمهٔ حذف برای صنف سیستمی | ✅ ۲۰/۲۰ |
+| ۲۹/۳۰ — اسموک روی API زنده | e2e          | `vitest run test/smoke.e2e.spec.ts`                                                              | ✅ ۴ پاس |
+| ۲۹/۳۰ — تایپ و بیلد      | typecheck/build | `pnpm typecheck`، `pnpm test`، `pnpm build`                                                    | ✅ |
 
 ### نکتهٔ عملیاتی (کش Next در حالت توسعه)
 

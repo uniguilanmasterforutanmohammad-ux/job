@@ -1,6 +1,6 @@
 # وضعیت پیاده‌سازی
 
-آخرین به‌روزرسانی: فاز ۴ + کنسول ادمین `/admin` (کسب‌وکارها و رجیستری صنف‌ها)
+آخرین به‌روزرسانی: فاز ۴ + کنسول ادمین `/admin` (کسب‌وکارها و رجیستری صنف‌های داده‌محور)
 
 ## خلاصه
 
@@ -116,8 +116,17 @@ SUB, CAMP, INV, HR, MKT, SHOP, DOC, RPT, APP) پیاده‌سازی، تایپ�
 
 ## رجیستری صنف‌ها در کنسول ادمین (تکمیل‌شده)
 
-«صنف / حوزهٔ فعالیت» خودش یک موجودیت قابل‌مدیریت است: صفحهٔ `/admin/industries`
-هر ۱۷ صنف PRD را نشان می‌دهد و ادمین پلتفرم دو چیز را کنترل می‌کند:
+«صنف / حوزهٔ فعالیت» یک موجودیت **داده‌محور** است (دیگر enum دیتابیس نیست):
+جدول `industries` (مهاجرت `20261028210000_custom_industries`) صنف‌های ۱۷گانهٔ
+PRD را به‌صورت `isSystem = true` نگه می‌دارد و ادمین پلتفرم می‌تواند کنار آن‌ها
+هر تعداد **صنف/شغل سفارشی با عنوان دلخواه** بسازد. صفحهٔ `/admin/industries`
+همهٔ صنف‌ها را نشان می‌دهد و ادمین سه کار انجام می‌دهد:
+
+- **ساخت/ویرایش/حذف صنف:** `POST /admin/industries` (عنوان، کلید لاتین اختیاری،
+  توضیح، نام کاربران نهایی مفرد/جمع، ترتیب نمایش، وضعیت ثبت‌نام و ماژول‌های
+  پیش‌فرض)، `PATCH /admin/industries/:industry` و `DELETE /admin/industries/:industry`.
+  صنف‌های سیستمی حذف‌نشدنی‌اند (`INDUSTRY_IS_SYSTEM`) و صنفی که کسب‌وکار دارد
+  ابتدا باید کسب‌وکارهایش جابه‌جا شوند (۴۰۹).
 
 - **امکان ثبت‌نام هر صنف:** `POST /admin/industries/:industry/registration`.
   صنف غیرفعال در `GET /industries` با `isRegistrationEnabled: false` می‌آید،
@@ -129,12 +138,20 @@ SUB, CAMP, INV, HR, MKT, SHOP, DOC, RPT, APP) پیاده‌سازی، تایپ�
   دیالوگ «کسب‌وکار جدید» در کنسول ادمین. کارت «ماژول‌های این صنف» در `/register`
   هم همین فهرست را نشان می‌دهد.
 
-منبع داده: جدول‌های `industry_settings` و `industry_default_modules`
-(مهاجرت `20261028193000_industry_settings`، ۱۷ صنف و ۸۳ ردیف پیش‌فرض).
+- **نام کاربران نهایی (`endUserNoun`)؛** نام مشتریان هر صنف از رجیستری خوانده
+  می‌شود (هوک مشترک `useIndustryRegistry` در وب) و برای صنف‌های سفارشی هم کار
+  می‌کند.
+
+منبع داده: جدول‌های `industries` و `industry_default_modules`.
 `IndustryRegistryService` تنها خواننده/نویسندهٔ آن‌هاست و نقشهٔ ثابت
-`INDUSTRY_DEFAULT_MODULES` در `@repo/shared` فقط seed/fallback است. همهٔ
-تغییرات در `platform_audit_logs` با اکشن‌های `industry.registration_toggle` و
+`INDUSTRY_DEFAULT_MODULES`/`END_USER_NOUNS` در `@repo/shared` فقط seed/fallback
+است. همهٔ تغییرات در `platform_audit_logs` با اکشن‌های `industry.create`،
+`industry.update`، `industry.delete`، `industry.registration_toggle` و
 `industry.modules_update` ثبت می‌شوند.
+
+> ادمین **ماژول جدید نمی‌سازد**: ماژول‌ها کد و قواعد خودشان را دارند و سفارش
+> ساخت ماژول جدید به‌صورت مستقیم به توسعه‌دهنده داده می‌شود؛ ادمین فقط از بین
+> ۱۴ ماژول موجود برای هر صنف انتخاب می‌کند.
 
 ### مدیریت کسب‌وکارها در کنسول ادمین (تکمیل‌شده)
 
