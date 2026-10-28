@@ -126,6 +126,16 @@ export class AppController {
     return this.app.myClubs(memberId);
   }
 
+  @Get('overview')
+  @RequireModule('APP')
+  @RequirePermissions('app:read')
+  @ApiOperation({
+    summary: 'خلاصهٔ همهٔ مجموعه‌های کاربر: حضور، شهریه، اطلاعیه و نوبت هرکدام (APP-01)',
+  })
+  myOverview(@CurrentUser('memberId') memberId: string) {
+    return this.app.myOverview(memberId);
+  }
+
   @Post('auth/switch-club')
   @RequireModule('APP')
   @RequirePermissions('app:read')

@@ -428,6 +428,213 @@ export class AppService {
     return this.membershipsForPhone(member.phone);
   }
 
+  /**
+   * Cross-club home for the portal: every club this phone belongs to, each with
+   * *its own* numbers (حضور و غیاب، شهریه، اطلاعیه، نوبت بعدی). The token scopes
+   * the detail sections to a single club, so this is the only place where a
+   * multi-club student can compare all of them side by side. Every query is
+   * filtered by the customer ids of this phone's own memberships, so no other
+   * customer's data can leak in.
+   */
+  async myOverview(memberId: string) {
+    const member = await this.prisma.client.member.findUnique({
+      where: { id: memberId },
+      select: { phone: true },
+    });
+    if (!member?.phone) throw DomainException.notFound('کاربر');
+
+    const clubs = await this.membershipsForPhone(member.phone);
+    const customerIds = clubs
+      .map((club) => club.customerId)
+      .filter((id): id is string => Boolean(id));
+    const tenantIds = clubs.map((club) => club.tenantId);
+    const now = new Date();
+
+    const [attendance, invoices, installments, notices, appointments] = customerIds.length
+      ? await Promise.all([
+          this.prisma.client.attendance.groupBy({
+            by: ['customerId', 'status'],
+            where: { tenantId: { in: tenantIds }, customerId: { in: customerIds } },
+            _count: { _all: true },
+          }),
+          this.prisma.client.invoice.findMany({
+            where: {
+              tenantId: { in: tenantIds },
+              customerId: { in: customerIds },
+              deletedAt: null,
+              status: { notIn: ['PAID', 'CANCELED', 'DRAFT', 'REFUNDED'] },
+            },
+            select: { customerId: true, total: true, paidTotal: true, dueDate: true },
+          }),
+          this.prisma.client.installment.findMany({
+            where: {
+              tenantId: { in: tenantIds },
+              customerId: { in: customerIds },
+              status: { in: ['PENDING', 'OVERDUE'] },
+            },
+            orderBy: { dueDate: 'asc' },
+            select: { customerId: true, amount: true, dueDate: true },
+          }),
+          this.prisma.client.message.findMany({
+            where: { tenantId: { in: tenantIds }, customerId: { in: customerIds } },
+            orderBy: { createdAt: 'desc' },
+            select: {
+              id: true,
+              customerId: true,
+              subject: true,
+              body: true,
+              channel: true,
+              createdAt: true,
+              readAt: true,
+            },
+          }),
+          this.prisma.client.appointment.findMany({
+            where: {
+              tenantId: { in: tenantIds },
+              customerId: { in: customerIds },
+              status: { in: ['SCHEDULED', 'CONFIRMED'] },
+              startsAt: { gte: now },
+            },
+            orderBy: { startsAt: 'asc' },
+            select: { customerId: true, startsAt: true },
+          }),
+        ])
+      : [[], [], [], [], []];
+
+    const attendanceByCustomer = new Map<string, { present: number; total: number }>();
+    for (const row of attendance) {
+      if (!row.customerId) continue;
+      const bucket = attendanceByCustomer.get(row.customerId) ?? { present: 0, total: 0 };
+      bucket.total += row._count._all;
+      if (row.status === 'PRESENT' || row.status === 'LATE') bucket.present += row._count._all;
+      attendanceByCustomer.set(row.customerId, bucket);
+    }
+
+    const financeByCustomer = new Map<
+      string,
+      { outstanding: number; invoices: number; installments: number; nextDueDate: Date | null }
+    >();
+    const financeFor = (customerId: string) => {
+      const bucket = financeByCustomer.get(customerId) ?? {
+        outstanding: 0,
+        invoices: 0,
+        installments: 0,
+        nextDueDate: null,
+      };
+      financeByCustomer.set(customerId, bucket);
+      return bucket;
+    };
+    const keepEarliest = (current: Date | null, candidate: Date | null) => {
+      if (!candidate) return current;
+      return !current || candidate < current ? candidate : current;
+    };
+    for (const invoice of invoices) {
+      const bucket = financeFor(invoice.customerId);
+      bucket.outstanding += Number(invoice.total) - Number(invoice.paidTotal);
+      bucket.invoices += 1;
+      bucket.nextDueDate = keepEarliest(bucket.nextDueDate, invoice.dueDate);
+    }
+    for (const installment of installments) {
+      const bucket = financeFor(installment.customerId);
+      bucket.outstanding += Number(installment.amount);
+      bucket.installments += 1;
+      bucket.nextDueDate = keepEarliest(bucket.nextDueDate, installment.dueDate);
+    }
+
+    const noticesByCustomer = new Map<
+      string,
+      {
+        total: number;
+        unread: number;
+        latest: {
+          id: string;
+          subject: string | null;
+          body: string;
+          channel: string;
+          createdAt: Date;
+          readAt: Date | null;
+        } | null;
+      }
+    >();
+    for (const notice of notices) {
+      if (!notice.customerId) continue;
+      const bucket = noticesByCustomer.get(notice.customerId) ?? {
+        total: 0,
+        unread: 0,
+        latest: null,
+      };
+      bucket.total += 1;
+      if (!notice.readAt) bucket.unread += 1;
+      bucket.latest ??= {
+        id: notice.id,
+        subject: notice.subject,
+        body: notice.body,
+        channel: notice.channel,
+        createdAt: notice.createdAt,
+        readAt: notice.readAt,
+      };
+      noticesByCustomer.set(notice.customerId, bucket);
+    }
+
+    const appointmentsByCustomer = new Map<string, { upcoming: number; nextStartsAt: Date | null }>();
+    for (const appointment of appointments) {
+      const bucket = appointmentsByCustomer.get(appointment.customerId) ?? {
+        upcoming: 0,
+        nextStartsAt: null,
+      };
+      bucket.upcoming += 1;
+      bucket.nextStartsAt ??= appointment.startsAt;
+      appointmentsByCustomer.set(appointment.customerId, bucket);
+    }
+
+    const rows = clubs.map((club) => {
+      const customerId = club.customerId;
+      const attendanceBucket = (customerId && attendanceByCustomer.get(customerId)) || {
+        present: 0,
+        total: 0,
+      };
+      const finance = (customerId && financeByCustomer.get(customerId)) || {
+        outstanding: 0,
+        invoices: 0,
+        installments: 0,
+        nextDueDate: null,
+      };
+      const noticesBucket = (customerId && noticesByCustomer.get(customerId)) || {
+        total: 0,
+        unread: 0,
+        latest: null,
+      };
+      const appointmentBucket = (customerId && appointmentsByCustomer.get(customerId)) || {
+        upcoming: 0,
+        nextStartsAt: null,
+      };
+      return {
+        ...club,
+        attendance: {
+          present: attendanceBucket.present,
+          total: attendanceBucket.total,
+          ratio: attendanceBucket.total
+            ? Math.round((attendanceBucket.present / attendanceBucket.total) * 100)
+            : 0,
+        },
+        finance,
+        notices: noticesBucket,
+        appointments: appointmentBucket,
+      };
+    });
+
+    return {
+      totals: {
+        clubs: rows.length,
+        industries: new Set(rows.map((row) => row.industry)).size,
+        outstanding: rows.reduce((sum, row) => sum + row.finance.outstanding, 0),
+        unreadNotices: rows.reduce((sum, row) => sum + row.notices.unread, 0),
+        upcomingAppointments: rows.reduce((sum, row) => sum + row.appointments.upcoming, 0),
+      },
+      clubs: rows,
+    };
+  }
+
   /** All attendance records for this student across every club (APP-04). */
   async myAttendance(memberId: string) {
     const customer = await this.customerFor(memberId);
