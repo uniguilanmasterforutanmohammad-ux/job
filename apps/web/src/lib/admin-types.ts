@@ -121,12 +121,21 @@ export type AdminTenantModules = {
 
 export type AdminCreatedTenant = AdminTenantDetail;
 
-/** One row of the PRD §17 industry registry (`GET /admin/industries`). */
+/** One row of the industry registry (`GET /admin/industries`). */
 export type AdminIndustry = {
-  industry: string;
+  /** Slug of the industry; system rows use the PRD key, custom rows `custom_*`. */
+  key: string;
   label: string;
+  description: string | null;
+  /** PRD verticals are system rows and cannot be deleted. */
+  isSystem: boolean;
   isRegistrationEnabled: boolean;
+  endUserNoun: string | null;
+  endUserNounPlural: string | null;
+  sortOrder: number;
   defaultModules: ModuleKey[];
+  tenantCount: number;
+  createdAt: string;
   updatedAt: string;
 };
 

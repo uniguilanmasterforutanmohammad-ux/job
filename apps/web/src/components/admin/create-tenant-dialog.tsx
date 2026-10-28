@@ -66,8 +66,14 @@ export function CreateTenantDialog({
     queryKey: ['admin-industries'],
     queryFn: () => api.get<AdminIndustry[]>('/admin/industries', token),
   });
+  // Options come from the registry (custom industries included); the static
+  // PRD list is only a fallback while the request is in flight.
+  const industryOptions =
+    industriesQuery.data && industriesQuery.data.length > 0
+      ? industriesQuery.data.map((item) => ({ key: item.key, label: item.label }))
+      : INDUSTRY_CATEGORIES.map((key) => ({ key, label: industryLabel(key) }));
   const defaultsFor = (industry: string): ModuleKey[] =>
-    industriesQuery.data?.find((item) => item.industry === industry)?.defaultModules ??
+    industriesQuery.data?.find((item) => item.key === industry)?.defaultModules ??
     defaultModulesForIndustry(industry);
 
   const set = <K extends keyof FormState>(key: K, value: FormState[K]) =>
@@ -141,9 +147,9 @@ export function CreateTenantDialog({
               setModules(defaultsFor(event.target.value));
             }}
           >
-            {INDUSTRY_CATEGORIES.map((key) => (
-              <option key={key} value={key}>
-                {industryLabel(key)}
+            {industryOptions.map((option) => (
+              <option key={option.key} value={option.key}>
+                {option.label}
               </option>
             ))}
           </Select>
