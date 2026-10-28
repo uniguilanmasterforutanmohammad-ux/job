@@ -198,7 +198,7 @@ export default function RegisterPage() {
               type="password"
               dir="ltr"
               className="text-left"
-              hint="حداقل ۸ کاراکتر — برای ورود سریع بعدی"
+              hint="حداقل ۸ کاراکتر — با این رمز بعداً بدون کد یکبار مصرف وارد می‌شوید"
               value={form.password}
               onChange={(e) => set('password')(e.target.value)}
             />
