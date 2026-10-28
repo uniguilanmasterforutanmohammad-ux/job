@@ -27,6 +27,7 @@ import { Select } from '@/components/ui/select';
 import { Card, CardBody, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { EmptyState, Skeleton } from '@/components/ui/empty-state';
+import { ChangePasswordCard } from '@/components/settings/change-password-card';
 import type {
   AbsenceRequest,
   PortalLoyalty,
@@ -42,6 +43,17 @@ const CUSTOMER_USER_KEY = 'bp_customer_user';
 /** Pre-rename keys — read once so an open session keeps working. */
 const LEGACY_TOKEN_KEY = 'bp_student_token';
 const LEGACY_USER_KEY = 'bp_student_user';
+
+/** `POST /auth/login` — same session shape the OTP portal login returns. */
+type PasswordLoginResult = {
+  tokens: { accessToken: string };
+  user: {
+    fullName: string;
+    phone: string | null;
+    tenantId: string;
+    tenantName: string;
+  };
+};
 
 type CustomerSession = {
   accessToken: string;
@@ -157,6 +169,9 @@ function CustomerLoginPanel({ onSuccess }: { onSuccess: (s: CustomerSession) => 
   const registry = useIndustryRegistry();
   const [phone, setPhone] = useState('');
   const [code, setCode] = useState('');
+  const [password, setPassword] = useState('');
+  /** شاگرد/زبان‌آموز می‌تواند با کد یکبار مصرف یا رمز عبور وارد شود. */
+  const [mode, setMode] = useState<'otp' | 'password'>('otp');
   const [step, setStep] = useState<'phone' | 'code'>('phone');
   /** Selected business for the "join a new business" path; null = global login. */
   const [target, setTarget] = useState<CustomerBusinessOption | null>(null);
@@ -178,7 +193,29 @@ function CustomerLoginPanel({ onSuccess }: { onSuccess: (s: CustomerSession) => 
     setTarget(null);
     setStep('phone');
     setCode('');
+    setPassword('');
   };
+
+  const passwordLogin = useMutation({
+    mutationFn: () =>
+      api.post<PasswordLoginResult>('/auth/login', {
+        phone,
+        password,
+        ...(target ? { tenantSlug: target.slug } : {}),
+      }),
+    onSuccess: (result) => {
+      onSuccess({
+        accessToken: result.tokens.accessToken,
+        fullName: result.user.fullName,
+        phone: result.user.phone,
+        tenantId: result.user.tenantId,
+        tenantName: result.user.tenantName,
+      });
+      toast.success('خوش آمدید');
+    },
+    onError: (e) =>
+      toast.error(e instanceof ApiClientError ? e.message : 'ورود با رمز عبور ناموفق بود'),
+  });
 
   const requestOtp = useMutation({
     mutationFn: () =>
@@ -235,6 +272,25 @@ function CustomerLoginPanel({ onSuccess }: { onSuccess: (s: CustomerSession) => 
               </button>
             </div>
           )}
+        <div className="flex gap-2 rounded-xl bg-slate-100 p-1 dark:bg-slate-800">
+          {([
+            ['otp', 'ورود با کد یکبار مصرف'],
+            ['password', 'ورود با رمز عبور'],
+          ] as const).map(([value, label]) => (
+            <button
+              key={value}
+              type="button"
+              onClick={() => setMode(value)}
+              className={`flex-1 rounded-lg px-3 py-2 text-xs font-medium transition-colors ${
+                mode === value
+                  ? 'bg-white text-brand-700 shadow-sm dark:bg-slate-900 dark:text-brand-200'
+                  : 'text-slate-500'
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
         <Input
           label="شماره موبایل"
           placeholder="09xxxxxxxxx"
@@ -243,8 +299,19 @@ function CustomerLoginPanel({ onSuccess }: { onSuccess: (s: CustomerSession) => 
           inputMode="numeric"
           value={phone}
           onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 11))}
-          disabled={step === 'code'}
+          disabled={step === 'code' || mode === 'password' && passwordLogin.isPending}
         />
+        {mode === 'password' && (
+          <Input
+            label="رمز عبور"
+            type="password"
+            autoComplete="current-password"
+            dir="ltr"
+            className="text-left"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+          />
+        )}
         {step === 'code' && (
           <Input
             label="کد یکبار مصرف"
@@ -255,7 +322,17 @@ function CustomerLoginPanel({ onSuccess }: { onSuccess: (s: CustomerSession) => 
             onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 8))}
           />
         )}
-        {step === 'phone' ? (
+        {mode === 'password' ? (
+          <Button
+            className="w-full"
+            loading={passwordLogin.isPending}
+            disabled={!/^09\d{9}$/.test(phone) || password.length < 8}
+            onClick={() => passwordLogin.mutate()}
+          >
+            <ShieldCheck className="h-4 w-4" />
+            ورود با رمز عبور
+          </Button>
+        ) : step === 'phone' ? (
           <Button
             className="w-full"
             loading={requestOtp.isPending}
@@ -276,9 +353,16 @@ function CustomerLoginPanel({ onSuccess }: { onSuccess: (s: CustomerSession) => 
             ورود
           </Button>
         )}
-        <p className="text-center text-xs text-slate-400">
-          در حالت توسعه، کد ثابت <span className="font-mono nums">123456</span> پذیرفته می‌شود.
-        </p>
+        {mode === 'password' ? (
+          <p className="text-center text-xs text-slate-400">
+            رمز عبور را خودتان در «تنظیم رمز عبور» همین پنل تعیین می‌کنید؛ اگر رمزی ندارید، با کد
+            یکبار مصرف وارد شوید و یکی بسازید.
+          </p>
+        ) : (
+          <p className="text-center text-xs text-slate-400">
+            در حالت توسعه، کد ثابت <span className="font-mono nums">123456</span> پذیرفته می‌شود.
+          </p>
+        )}
         <p className="text-xs leading-6 text-slate-500">
           برای عضویت در یک کسب‌وکار جدید، لینک یا QR اختصاصی همان کسب‌وکار را باز کنید؛ پس از
           تأیید موبایل، آن مجموعه به فهرست «عضویت‌های من» اضافه می‌شود. اگر لینک را ندارید، از
@@ -392,6 +476,11 @@ function CustomerDashboard({
   const absenceQuery = useQuery({
     queryKey: ['customer-absence-requests'],
     queryFn: () => apiGet<AbsenceRequest[]>('/app/absence-requests'),
+  });
+  // Tells the password card whether to ask for the current password.
+  const meQuery = useQuery({
+    queryKey: ['customer-me'],
+    queryFn: () => apiGet<{ member: { hasPassword?: boolean } }>('/auth/me'),
   });
 
   const [coords, setCoords] = useState<{ lat: number; lng: number; acc: number } | null>(null);
@@ -800,6 +889,12 @@ function CustomerDashboard({
         کد تأیید موبایل ثبت کنید. برای جلسه‌های باز، از دکمهٔ «حاضرم» بالای همین صفحه استفاده
         کنید.
       </div>
+
+      <ChangePasswordCard
+        hasPassword={meQuery.data?.member.hasPassword}
+        token={session.accessToken}
+        onDone={onLogout}
+      />
 
       <Button variant="outline" className="w-full" onClick={onLogout}>
         <LogOut className="h-4 w-4" />

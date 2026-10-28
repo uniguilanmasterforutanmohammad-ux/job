@@ -15,6 +15,7 @@ import { Card, CardBody, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Table, Td, Th } from '@/components/ui/table';
 import { BranchesCard } from '@/components/settings/branches-card';
+import { ChangePasswordCard } from '@/components/settings/change-password-card';
 import { useBranchNoun } from '@/lib/use-industry-registry';
 import type { BackupRecord, Paginated } from '@/lib/types';
 
@@ -36,7 +37,7 @@ type TenantDetail = {
 export default function SettingsPage() {
   const token = getAccessToken();
   const branch = useBranchNoun();
-  const { refresh } = useAuth();
+  const { refresh, me, logout } = useAuth();
   const queryClient = useQueryClient();
 
   const { data } = useQuery({
@@ -204,6 +205,8 @@ export default function SettingsPage() {
         </Card>
 
         <BranchesCard />
+
+        <ChangePasswordCard hasPassword={me?.member.hasPassword} onDone={() => void logout()} />
       </div>
 
       <div className="grid gap-5 lg:grid-cols-2">

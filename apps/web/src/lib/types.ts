@@ -20,6 +20,8 @@ export type MeResponse = {
     email: string | null;
     systemRole: string;
     avatarUrl: string | null;
+    /** False when the member has no password yet (OTP-only login). */
+    hasPassword?: boolean;
   };
   tenant: {
     id: string;
