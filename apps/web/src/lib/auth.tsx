@@ -20,6 +20,8 @@ type AuthState = {
   me: MeResponse | null;
   loading: boolean;
   login: (phone: string, code: string) => Promise<void>;
+  /** Stores tokens returned by another auth flow (e.g. tenant registration). */
+  completeLogin: (result: LoginResult) => Promise<void>;
   logout: () => Promise<void>;
   refresh: () => Promise<void>;
 };
@@ -62,14 +64,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     void refresh();
   }, [refresh]);
 
-  const login = useCallback(
-    async (phone: string, code: string) => {
-      const result = await api.post<LoginResult>('/auth/otp/verify', { phone, code });
+  const completeLogin = useCallback(
+    async (result: LoginResult) => {
       localStorage.setItem(TOKEN_KEY, result.tokens.accessToken);
       setUser(result.user);
       await refresh();
     },
     [refresh],
+  );
+
+  const login = useCallback(
+    async (phone: string, code: string) => {
+      const result = await api.post<LoginResult>('/auth/otp/verify', { phone, code });
+      await completeLogin(result);
+    },
+    [completeLogin],
   );
 
   const logout = useCallback(async () => {
@@ -84,8 +93,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [router]);
 
   const value = useMemo(
-    () => ({ user, me, loading, login, logout, refresh }),
-    [user, me, loading, login, logout, refresh],
+    () => ({ user, me, loading, login, completeLogin, logout, refresh }),
+    [user, me, loading, login, completeLogin, logout, refresh],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
