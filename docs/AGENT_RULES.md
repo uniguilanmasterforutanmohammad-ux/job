@@ -90,6 +90,11 @@
 | ۱۲ | کامنت «✅ تکمیل شد» زیر همهٔ تسک‌های انجام‌شدهٔ `TaskForMyAgent.md`        | `6279c25` | `docs(taskfile): mark every completed task with a completion comment`   |
 | ۱۳ | قانون ثبت کامنت تکمیل در قوانین ایجنت + `AGENTS.md`                      | `d8f8137` | `docs(agent): require a completion comment under every finished task`   |
 | ۱۴ | ثبت ردیف‌های ۱۲ و ۱۳ در همین جدول                                        | این کامیت | `docs(agent): log taskfile annotation commits`                          |
+| ۱۵ | ماژول پیش‌فرض صنف مشترک (`defaultModulesForIndustry`)                    | `5a9a0a6` | `feat(shared): add defaultModulesForIndustry helper`                    |
+| ۱۶ | ساخت کسب‌وکار در API ادمین + نمایش پیش‌فرض‌های صنف                       | `0374bc0` | `feat(admin): create businesses and surface industry default modules`   |
+| ۱۷ | فهرست عمومی کسب‌وکارهای فعال برای ثبت‌نام کاربر جدید                      | `0fd023e` | `feat(app): active-only business directory for new-user signup`         |
+| ۱۸ | UI کنسول ادمین: ساخت کسب‌وکار، ماژول‌ها، فعال/غیرفعال‌سازی                | `1a3b16d` | `feat(web-admin): business creation, module defaults and status toggle` |
+| ۱۹ | انتخاب کسب‌وکار از فهرست فعال در پنل مشتری `/me`                          | `b414c6f` | `feat(web-me): pick a business from the active directory on signup`     |
 
 > کامیت ثبت لاگ هر ردیف در اجرای بعدی در جدول ثبت می‌شود؛ چون
 > هیچ کامیتی نمی‌تواند هش خودش را درون خودش داشته باشد.
@@ -118,6 +123,14 @@
 | ۱۱ — وضعیت نهایی         | بازبینی دستی    | `git status` پاک + بررسی همهٔ مسیرها (`/`، `/register`، `/me`، `/login`، `/admin/login`=200، `/student`=308) | ✅ |
 | ۱۲ — کامنت‌های تسک‌فایل    | بازبینی diff   | `git diff --stat TaskForMyAgent.md` → فقط ۲۶ خط insert، بدون تغییر متن کاربر                        | ✅ |
 | ۱۳ — قوانین ایجنت         | بازبینی دستی    | خواندن `docs/AGENT_RULES.md` و `AGENTS.md` (۴ وظیفهٔ الزامی)                                        | ✅ |
+| ۱۴ — پنل ادمین (ماژول پیش‌فرض) | واحد       | `packages/shared/src/modules.spec.ts` (۳ تست `defaultModulesForIndustry`)                        | ✅ |
+| ۱۴ — ساخت کسب‌وکار       | واحد           | `apps/api/src/modules/admin/admin-tenant.service.spec.ts` (۶ تست) + کاتالوگ پیش‌فرض در `admin-module.service.spec.ts` | ✅ |
+| ۱۴ — فهرست فعال         | واحد           | `apps/api/src/modules/app/app-businesses.service.spec.ts` (۳ تست: فقط `ACTIVE`)                   | ✅ |
+| ۱۴ — کل بستهٔ API        | واحد           | `pnpm test` → ۱۰۸ پاس (API) و ۱۶ پاس (`@repo/shared`)                                            | ✅ |
+| ۱۴ — بررسی زندهٔ API     | زنده (HTTP)    | `POST /admin/tenants` (ماژول SHOP+ATT → فعال‌شده: ATT, CRM, FIN, INV, SHOP) → نمایش در `/app/businesses` → SUSPENDED → حذف از فهرست و `NOT_FOUND` در اسلاگ مستقیم → ACTIVE | ✅ |
+| ۱۴ — UI کنسول ادمین      | زنده (Chrome/CDP) | ۱۵ بررسی: دکمهٔ «کسب‌وکار جدید»، ستون ماژول‌ها، باز شدن دیالوگ با ۸ ماژول پیش‌انتخاب‌شده، برچسب «پیش‌فرض صنف» در تب ماژول‌ها، فهرست کسب‌وکارهای فعال در `/me` و مخفی بودن کسب‌وکار SUSPENDED | ✅ ۱۵/۱۵ |
+| ۱۴ — اسموک روی API زنده  | e2e           | `vitest run test/smoke.e2e.spec.ts`                                                              | ✅ ۴ پاس |
+| ۱۴ — تایپ و بیلد         | typecheck/build | `pnpm typecheck`، `pnpm test`، `pnpm build`                                                    | ✅ |
 
 ### نکتهٔ عملیاتی (کش Next در حالت توسعه)
 
