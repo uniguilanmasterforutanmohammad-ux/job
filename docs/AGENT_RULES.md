@@ -168,6 +168,14 @@
 | ۹۰ | فاز ۲ — نظرات و امتیاز خریداران                                           | `e15847f` | `feat(marketplace): verified-purchase reviews and ratings`                |
 | ۹۱ | فاز ۲ — کنسول مدیریت بازارگاه                                             | `b1cbc0c` | `feat(admin): marketplace console with moderation queue`                  |
 | ۹۲ | فاز ۲ — سئو، نقشهٔ سایت و داده‌های ساختاریافته                            | `ad4c9d0` | `feat(seo): sitemap, robots, OG image and rich JSON-LD`                   |
+| ۹۳ | فاز ۲ — تصویر OG ثابت فارسی (جایگزین satori) و رفع lint              | `1f70c99` | `fix(seo): static Persian OG cover instead of satori`                     |
+| ۹۴ | فاز ۲ — مستندات بازارگاه و وضعیت                                        | `8060b1c` | `docs(marketplace): phase 2 payment, shipping, reviews and console`       |
+| ۹۵ | ثبت تسک تازهٔ «اتصال اطلاعیه‌ها به گروه بله»                            | `673e066` | `chore(agent): add the Bale notification task`                            |
+| ۹۶ | اعلان لغو سفارش برای فروشنده                                            | `f3fa01b` | `fix(shop): notify the owner when an order is canceled`                   |
+| ۹۷ | ماژول بله — مدل داده، سرویس، API و تست                                  | `0a96777` | `feat(bale): Bale group integration for notifications`                    |
+| ۹۸ | اطلاعیه‌ها — انتشار برای اعضا + آینه در بله                             | `19c6c2f` | `feat(msg): announcements with Bale mirroring`                            |
+| ۹۹ | وب — کارت اتصال بله و صفحهٔ اطلاعیه‌ها                                   | `393b733` | `feat(web): Bale connection card and announcements page`                  |
+| ۱۰۰ | مستندات ماژول بله                                                      | `2efb995` | `docs(bale): document the Bale bridge and announcements`                  |
 
 > کامیت ثبت لاگ هر ردیف در اجرای بعدی در جدول ثبت می‌شود؛ چون
 > هیچ کامیتی نمی‌تواند هش خودش را درون خودش داشته باشد.
@@ -300,6 +308,13 @@
 | بازارگاه فاز۲ — ادمین واحد | واحد           | `apps/api/src/modules/admin/admin-marketplace.service.spec.ts` (۴ تست: آمار، قطع انتشار + audit، تأیید نظر، فیلتر صف) | ✅ ۴/۴ |
 | بازارگاه فاز۲ — ادمین زنده | زنده (HTTP)    | ورود ادمین → `overview` (۱ کسب‌وکار، ۵ کالا، ۴ سفارش، GMV ۲٬۶۹۰٬۰۰۰)؛ `businesses?search=coach`؛ نظر بدون خرید → صف pending → تأیید → در `products/:id/reviews` عمومی؛ تغییر انتشار با audit | ✅ |
 | بازارگاه فاز۲ — سئو        | زنده (HTTP)    | `/robots.txt` با Disallow ادمین/پنل/پرداخت و `Sitemap`؛ `/sitemap.xml` با ۱۲ URL (۵ صفحه + ۳ محصول + ۳ خدمت + ۱ ویترین)؛ متادیتای OG بازارگاه در head | ✅ |
+| بازارگاه فاز۲ — تصویر OG (بیلد) | build وب | `pnpm --filter @repo/web build` پس از جایگزینی مسیر داینامیک با `public/marketplace/og-cover.png` → ۴۷ صفحه + `sitemap.xml` و `robots.txt` | ✅ |
+| بازارگاه فاز۲ — کل بسته‌ها | واحد + typecheck/lint | `pnpm test` → API ۲۰۴ پاس/۴ skip؛ `pnpm typecheck` ۶ تسک ✅؛ `pnpm lint` ۰ خطا | ✅ |
+| بله — سرویس (واحد) | واحد | `apps/api/src/modules/bale/bale.service.spec.ts` → ۹ تست: الگوی توکن پیش از شبکه، ماسک `406463380:wmR…fU`، تأیید ادمین، حالت «عضو نه ادمین»، تشخیص گروه با لینک و با «تنها گروه ادمین»، پیام آزمایشی، skip رویداد غیرفعال، escape + تاریخ شمسی ۱۴۰۵، خطای بله → FAILED | ✅ ۹/۹ |
+| بله — اطلاعیه (واحد) | واحد | `apps/api/src/modules/messaging/announcements.service.spec.ts` → ۴ تست: یک پیام `IN_APP` به‌ازای هر گیرنده + یک آینه، تیک خاموش بدون فراخوانی بله، خطای گیرندهٔ خالی، ارسال دوباره | ✅ ۴/۴ |
+| بله — کل بسته‌ها | واحد + typecheck/lint/build | `pnpm --filter @repo/api test` → ۲۲۱ پاس/۳۴ فایل؛ `pnpm typecheck` ۶ تسک ✅؛ `pnpm lint` ۰ خطا (۲۱ هشدار مشورتی)؛ `pnpm --filter @repo/web build` ✅ | ✅ |
+| بله — زندهٔ HTTP | زنده (HTTP) | `PUT /bale/settings` → `botUsername=testforsitebot`، `chatTitle=گروه تست اتصال به سایت`، `verification.isAdmin=true`، توکن ماسک‌شده؛ `POST /bale/discover` → `matchedBy=bot-membership`؛ `POST /bale/test` → `message_id=6`؛ `POST /messages/announcements` → ۱۲ گیرنده و `baleMessageId=7`؛ `/app/overview` شاگرد → `unreadNotices=1` با همان عنوان | ✅ |
+| بله — رابط پنل (UI) | زنده (Chrome/CDP) | `/tmp/cdp-verify-bale.mjs` → ۱۹/۱۹: کارت بله در تنظیمات، وضعیت متصل، نام گروه، ماسک توکن، پیش‌پر شدن لینک/شناسه، تیک ادمین، ارسال آزمایشی، فرم اطلاعیه، تاریخچه با «بله: ارسال شد» و ۱۲ گیرنده، انتشار از UI | ✅ ۱۹/۱۹ |
 
 ### نکتهٔ عملیاتی (کش Next در حالت توسعه)
 
