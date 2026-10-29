@@ -6,6 +6,7 @@ import { TokenService, type TokenPair } from '../auth/token.service.js';
 import { MessagingService } from '../messaging/messaging.service.js';
 import { PaymentsService } from '../payments/payments.service.js';
 import { AttendanceQrService } from '../attendance/attendance-qr.service.js';
+import { ShopService } from '../shop/shop.service.js';
 import type { AppCheckInDto } from '../attendance/dto/attendance-qr.schemas.js';
 import type { CreateAbsenceRequestDto } from '../attendance/dto/attendance-extra.schemas.js';
 import type {
@@ -43,6 +44,7 @@ export class AppService {
     private readonly payments: PaymentsService,
     private readonly messaging: MessagingService,
     private readonly attendanceQr: AttendanceQrService,
+    private readonly shop: ShopService,
   ) {}
 
   // ----- APP-01 login -----
@@ -963,6 +965,88 @@ export class AppService {
       points: loyalty?.points ?? 0,
       tier: loyalty?.tier ?? 'bronze',
     };
+  }
+
+  // ----- SHOP — my orders (marketplace purchases) -----
+
+  /** Every order placed with the mobile number behind this portal member. */
+  async myOrders(memberId: string) {
+    const customerIds = await this.portalCustomerIds(memberId);
+    if (customerIds.length === 0) return [];
+
+    const orders = await this.prisma.client.order.findMany({
+      where: { customerId: { in: customerIds } },
+      orderBy: { createdAt: 'desc' },
+      take: 50,
+      select: {
+        id: true,
+        number: true,
+        status: true,
+        items: true,
+        subtotal: true,
+        shippingCost: true,
+        total: true,
+        shippingMethod: true,
+        trackingCode: true,
+        address: true,
+        createdAt: true,
+        tenant: { select: { slug: true, name: true, logoUrl: true } },
+        payments: {
+          select: { id: true, status: true },
+          orderBy: { createdAt: 'desc' },
+          take: 1,
+        },
+      },
+    });
+
+    return orders.map(({ payments, ...order }) => ({
+      ...order,
+      payment: payments[0] ?? null,
+    }));
+  }
+
+  /** A single order, only when it belongs to one of this member's files. */
+  private async findMyOrder(memberId: string, orderId: string) {
+    const customerIds = await this.portalCustomerIds(memberId);
+    if (customerIds.length === 0) throw DomainException.notFound('سفارش');
+    const order = await this.prisma.client.order.findFirst({
+      where: { id: orderId, customerId: { in: customerIds } },
+    });
+    if (!order) throw DomainException.notFound('سفارش');
+    return order;
+  }
+
+  async myOrder(memberId: string, orderId: string) {
+    return this.findMyOrder(memberId, orderId);
+  }
+
+  async cancelMyOrder(memberId: string, orderId: string) {
+    const order = await this.findMyOrder(memberId, orderId);
+    if (order.status !== 'PENDING') {
+      throw DomainException.badRequest('فقط سفارش در انتظار تأیید قابل لغو است');
+    }
+    return this.shop.updateStatus(order.tenantId, order.id, { status: 'CANCELED' });
+  }
+
+  /** Starts (or retries) the online payment of a pending order. */
+  async payMyOrder(memberId: string, orderId: string) {
+    const order = await this.findMyOrder(memberId, orderId);
+    if (order.status !== 'PENDING') {
+      throw DomainException.badRequest('این سفارش دیگر قابل پرداخت نیست');
+    }
+    return this.payments.createOnlinePayment(order.tenantId, {
+      orderId: order.id,
+      customerId: order.customerId ?? undefined,
+      description: `پرداخت سفارش ${order.number}`,
+    });
+  }
+
+  private async portalCustomerIds(memberId: string): Promise<string[]> {
+    const customers = await this.prisma.client.customer.findMany({
+      where: { memberId, deletedAt: null },
+      select: { id: true },
+    });
+    return customers.map((customer) => customer.id);
   }
 
   // ----- APP-07 reviews -----

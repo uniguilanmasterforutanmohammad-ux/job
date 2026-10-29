@@ -7,6 +7,7 @@ import type { TokenService } from '../auth/token.service.js';
 import type { PaymentsService } from '../payments/payments.service.js';
 import type { MessagingService } from '../messaging/messaging.service.js';
 import type { AttendanceQrService } from '../attendance/attendance-qr.service.js';
+import type { ShopService } from '../shop/shop.service.js';
 
 const PHONE = '09120000088';
 
@@ -52,6 +53,7 @@ function build(rows: unknown[]) {
     {} as unknown as PaymentsService,
     {} as unknown as MessagingService,
     {} as unknown as AttendanceQrService,
+    {} as unknown as ShopService,
   );
   return { service, client };
 }

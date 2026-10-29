@@ -17,6 +17,7 @@ import {
   Layers,
   LogOut,
   MapPin,
+  Package,
   Phone,
   QrCode,
   CalendarX2,
@@ -35,6 +36,7 @@ import { Card, CardBody, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { EmptyState, Skeleton } from '@/components/ui/empty-state';
 import { ChangePasswordCard } from '@/components/settings/change-password-card';
+import { ORDER_STATUS_LABELS, ORDER_STATUS_TONES } from '@/lib/status';
 import type {
   AbsenceRequest,
   PortalLoyalty,
@@ -67,6 +69,7 @@ type PortalTab =
   | 'attendance'
   | 'appointments'
   | 'finance'
+  | 'orders'
   | 'absence'
   | 'profile';
 
@@ -77,6 +80,7 @@ const PORTAL_TABS: { key: PortalTab; label: string; icon: typeof LayoutDashboard
   { key: 'attendance', label: 'حضور و غیاب', icon: UserCheck },
   { key: 'appointments', label: 'نوبت‌های من', icon: CalendarClock },
   { key: 'finance', label: 'مالی و کیف پول', icon: CreditCard },
+  { key: 'orders', label: 'سفارش‌های من', icon: Package },
   { key: 'absence', label: 'درخواست غیبت', icon: CalendarX2 },
   { key: 'profile', label: 'پروفایل من', icon: IdCard },
 ];
@@ -113,6 +117,21 @@ type Invoice = {
   total: string;
   paidTotal: string;
   status: string;
+};
+
+type PortalOrder = {
+  id: string;
+  number: string;
+  status: string;
+  items: Array<{ title: string; quantity: number; unitPrice: number }>;
+  subtotal: string;
+  shippingCost: string;
+  total: string;
+  shippingMethod: string | null;
+  trackingCode: string | null;
+  createdAt: string;
+  tenant: { slug: string; name: string; logoUrl: string | null };
+  payment: { id: string; status: string } | null;
 };
 
 const ATTENDANCE_STATUS_LABELS: Record<string, string> = {
@@ -814,6 +833,31 @@ function CustomerDashboard({
     queryKey: ['customer-invoices', session.tenantId],
     queryFn: () => apiGet<Invoice[]>('/app/invoices'),
     enabled: tab === 'finance',
+  });
+  /** Marketplace purchases — cross-club, keyed by phone, not the active club. */
+  const ordersQuery = useQuery({
+    queryKey: ['customer-orders', session.phone ?? 'me'],
+    queryFn: () => apiGet<PortalOrder[]>('/app/orders'),
+    enabled: tab === 'orders',
+    refetchInterval: tab === 'orders' ? 20_000 : false,
+  });
+  const payOrder = useMutation({
+    mutationFn: (orderId: string) =>
+      apiPost<{ redirectUrl: string }>(`/app/orders/${orderId}/pay`),
+    onSuccess: (data) => {
+      window.location.href = data.redirectUrl;
+    },
+    onError: (error) =>
+      toast.error(error instanceof ApiClientError ? error.message : 'شروع پرداخت انجام نشد'),
+  });
+  const cancelOrder = useMutation({
+    mutationFn: (orderId: string) => apiPost(`/app/orders/${orderId}/cancel`),
+    onSuccess: () => {
+      toast.success('سفارش لغو شد');
+      void queryClient.invalidateQueries({ queryKey: ['customer-orders'] });
+    },
+    onError: (error) =>
+      toast.error(error instanceof ApiClientError ? error.message : 'لغو سفارش انجام نشد'),
   });
   const loyaltyQuery = useQuery({
     queryKey: ['customer-loyalty', session.tenantId],
@@ -1519,6 +1563,97 @@ function CustomerDashboard({
           </div>
         </CardBody>
       </Card>
+        </>
+      )}
+
+      {tab === 'orders' && (
+        <>
+          <Card>
+            <CardHeader
+              title="سفارش‌های من"
+              description="خریدهای شما از بازارگاه همهٔ اصناف — هر سفارش در مجموعهٔ فروشنده ثبت شده است"
+            />
+            <CardBody className="space-y-2">
+              {ordersQuery.isLoading ? (
+                <Skeleton className="h-24 w-full" />
+              ) : ordersQuery.data?.length ? (
+                ordersQuery.data.map((order) => (
+                  <div
+                    key={order.id}
+                    className="rounded-xl border border-slate-100 p-3 dark:border-slate-800"
+                  >
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <div className="min-w-0">
+                        <p className="flex flex-wrap items-center gap-2 text-sm font-bold text-slate-900 dark:text-slate-100">
+                          <span className="nums">{order.number}</span>
+                          <Badge tone={ORDER_STATUS_TONES[order.status] ?? 'neutral'}>
+                            {ORDER_STATUS_LABELS[order.status] ?? order.status}
+                          </Badge>
+                        </p>
+                        <a
+                          href={`/marketplace/b/${order.tenant.slug}`}
+                          className="mt-0.5 block text-xs text-slate-500 hover:text-brand-600"
+                        >
+                          {order.tenant.name}
+                        </a>
+                      </div>
+                      <p className="nums text-sm font-bold text-slate-800 dark:text-slate-100">
+                        {formatToman(Number(order.total))}
+                      </p>
+                    </div>
+
+                    <ul className="mt-2 space-y-0.5 text-xs text-slate-600 dark:text-slate-300">
+                      {order.items.slice(0, 4).map((item, index) => (
+                        <li key={`${order.id}-${index}`} className="flex justify-between gap-2">
+                          <span className="truncate">
+                            {item.title} × {formatNumber(item.quantity)}
+                          </span>
+                          <span className="nums shrink-0">
+                            {formatToman(item.unitPrice * item.quantity)}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+
+                    <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
+                      <span className="text-[11px] text-slate-500">
+                        {formatJalali(order.createdAt, true)}
+                        {order.shippingMethod ? ` — ${order.shippingMethod}` : ''}
+                        {order.trackingCode ? ` — رهگیری: ${order.trackingCode}` : ''}
+                      </span>
+                      {order.status === 'PENDING' ? (
+                        <span className="flex items-center gap-1">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => cancelOrder.mutate(order.id)}
+                            loading={cancelOrder.isPending}
+                          >
+                            لغو
+                          </Button>
+                          {order.payment?.status !== 'SUCCEEDED' ? (
+                            <Button
+                              size="sm"
+                              onClick={() => payOrder.mutate(order.id)}
+                              loading={payOrder.isPending}
+                            >
+                              <CreditCard className="h-4 w-4" />
+                              پرداخت
+                            </Button>
+                          ) : null}
+                        </span>
+                      ) : null}
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <EmptyState
+                  title="سفارشی ندارید"
+                  description="خریدهای شما از بازارگاه محصولات اصناف اینجا نمایش داده می‌شود."
+                />
+              )}
+            </CardBody>
+          </Card>
         </>
       )}
 

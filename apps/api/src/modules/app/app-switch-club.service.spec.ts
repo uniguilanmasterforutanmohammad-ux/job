@@ -7,6 +7,7 @@ import type { TokenService } from '../auth/token.service.js';
 import type { PaymentsService } from '../payments/payments.service.js';
 import type { MessagingService } from '../messaging/messaging.service.js';
 import type { AttendanceQrService } from '../attendance/attendance-qr.service.js';
+import type { ShopService } from '../shop/shop.service.js';
 
 const PHONE = '09120000099';
 const CONTEXT = { userAgent: 'vitest', ip: '127.0.0.1' };
@@ -81,6 +82,7 @@ function build() {
     {} as unknown as PaymentsService,
     {} as unknown as MessagingService,
     {} as unknown as AttendanceQrService,
+    {} as unknown as ShopService,
   );
   return { service, prisma, tx, tokens };
 }

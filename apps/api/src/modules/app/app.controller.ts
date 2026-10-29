@@ -298,6 +298,38 @@ export class AppController {
 
   // ----- APP-07 reviews -----
 
+  // ----- SHOP — my orders -----
+
+  @Get('orders')
+  @RequirePermissions('app:read')
+  @ApiOperation({ summary: 'سفارش‌های من در بازارگاه (همهٔ مجموعه‌ها)' })
+  myOrders(@CurrentUser('memberId') memberId: string) {
+    return this.app.myOrders(memberId);
+  }
+
+  @Get('orders/:id')
+  @RequirePermissions('app:read')
+  @ApiOperation({ summary: 'جزئیات یک سفارش من' })
+  myOrder(@CurrentUser('memberId') memberId: string, @Param('id') id: string) {
+    return this.app.myOrder(memberId, id);
+  }
+
+  @Post('orders/:id/cancel')
+  @RequirePermissions('app:write')
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
+  @ApiOperation({ summary: 'لغو سفارش در انتظار تأیید (بازگشت موجودی)' })
+  cancelMyOrder(@CurrentUser('memberId') memberId: string, @Param('id') id: string) {
+    return this.app.cancelMyOrder(memberId, id);
+  }
+
+  @Post('orders/:id/pay')
+  @RequirePermissions('app:write')
+  @Throttle({ default: { limit: 20, ttl: 60_000 } })
+  @ApiOperation({ summary: 'پرداخت آنلاین سفارش از پنل کاربری' })
+  payMyOrder(@CurrentUser('memberId') memberId: string, @Param('id') id: string) {
+    return this.app.payMyOrder(memberId, id);
+  }
+
   @Post('reviews')
   @RequirePermissions('app:write')
   @ApiOperation({ summary: 'ثبت نظر (APP-07)' })
