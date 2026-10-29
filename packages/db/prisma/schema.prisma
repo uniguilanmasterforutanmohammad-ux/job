@@ -100,6 +100,8 @@ model Tenant {
   discounts       DiscountCode[]
   shippingMethods ShippingMethod[]
   documents       Document[]
+  baleIntegration BaleIntegration?
+  announcements   Announcement[]
 
   // Phase 2 relations
   membershipPlans      MembershipPlan[]
@@ -1012,6 +1014,62 @@ model MessageConsent {
 
   @@unique([tenantId, customerId, channel])
   @@map("message_consents")
+}
+
+// ---------------------------------------------------------------------------
+// MSG-BALE — هم‌سان‌سازی اطلاعیه‌ها با گروه بیام‌رسان بله
+// ---------------------------------------------------------------------------
+
+/// Per-tenant bridge to a Bale (بیام‌رسان) group. The bot must be an admin in
+/// the target group with the «send message» permission.
+model BaleIntegration {
+  id             String   @id @default(uuid()) @db.Uuid
+  tenantId       String   @unique @db.Uuid
+  botToken       String
+  botUsername    String?
+  /// What the owner pasted (ble.ir/join/... or https://ble.ir/join/...).
+  groupLink      String?
+  /// Numeric chat id used by the Bot API (resolved from the link or discovered).
+  chatId         String?
+  chatTitle      String?
+  /// Owner ticked «ربات را به‌عنوان ادمین افزوده‌ام»; re-verified on save/test.
+  adminConfirmed Boolean  @default(false)
+  isActive       Boolean  @default(true)
+  /// Which events are mirrored; e.g. ["announcement", "order.created"].
+  events         Json     @default("[\"announcement\"]")
+  lastTestedAt   DateTime?
+  lastTestStatus String? // OK | FAILED
+  lastError      String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  tenant         Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@map("bale_integrations")
+}
+
+/// اطلاعیهٔ منتشرشده از پنل — برای هر مشتری یک ردیف `Message` ساخته می‌شود و
+/// یک نسخه هم به گروه بله آینه می‌شود.
+model Announcement {
+  id            String   @id @default(uuid()) @db.Uuid
+  tenantId      String   @db.Uuid
+  title         String
+  body          String
+  /// ALL | STUDENTS | CUSTOMERS — the audience resolved at publish time.
+  audience      String   @default("ALL")
+  /// روز رویداد (مثلاً روز تعطیلی باشگاه) — optional.
+  eventDate     DateTime?
+  recipients    Int      @default(0)
+  baleStatus    String   @default("SKIPPED") // SENT | FAILED | SKIPPED
+  baleError     String?
+  baleMessageId String?
+  createdById   String?  @db.Uuid
+  publishedAt   DateTime @default(now())
+
+  tenant        Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, publishedAt])
+  @@map("announcements")
 }
 
 // ---------------------------------------------------------------------------

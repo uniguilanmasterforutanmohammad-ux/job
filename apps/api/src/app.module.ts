@@ -23,6 +23,7 @@ import { FinanceModule } from './modules/finance/finance.module.js';
 import { PaymentsModule } from './modules/payments/payments.module.js';
 import { ReportsModule } from './modules/reports/reports.module.js';
 import { MessagingModule } from './modules/messaging/messaging.module.js';
+import { BaleModule } from './modules/bale/bale.module.js';
 import { SubscriptionsModule } from './modules/subscriptions/subscriptions.module.js';
 import { InventoryModule } from './modules/inventory/inventory.module.js';
 import { StaffModule } from './modules/staff/staff.module.js';
@@ -88,6 +89,7 @@ loadRootEnv();
     PaymentsModule,
     ReportsModule,
     MessagingModule,
+    BaleModule,
     SubscriptionsModule,
     InventoryModule,
     StaffModule,

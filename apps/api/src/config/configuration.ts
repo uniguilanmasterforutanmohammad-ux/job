@@ -48,6 +48,9 @@ const envSchema = z.object({
   SMTP_PASSWORD: z.string().optional(),
   SMTP_FROM: z.string().default('Business Platform <no-reply@localhost>'),
 
+  // Bale (بیام‌رسان) Bot API — wire-compatible with Telegram's bot API.
+  BALE_API_URL: z.string().url().default('https://tapi.bale.ai'),
+
   STORAGE_DRIVER: z.enum(['local', 's3']).default('local'),
   STORAGE_LOCAL_DIR: z.string().default('./storage'),
   STORAGE_PUBLIC_BASE: z.string().default('http://localhost:4000/api/v1/files'),
@@ -116,6 +119,7 @@ export function configuration() {
       password: env.SMTP_PASSWORD,
       from: env.SMTP_FROM,
     },
+    baleApiUrl: env.BALE_API_URL,
     storage: {
       driver: env.STORAGE_DRIVER,
       localDir: env.STORAGE_LOCAL_DIR,

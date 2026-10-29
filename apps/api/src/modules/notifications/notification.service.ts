@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service.js';
 import { SmsService } from './sms.service.js';
 import { EmailService } from './email.service.js';
+import { BaleService } from '../bale/bale.service.js';
 
 export type NotificationChannel = 'SMS' | 'EMAIL' | 'IN_APP' | 'PUSH' | 'WHATSAPP';
 
@@ -13,6 +14,8 @@ export type NotifyInput = {
   title: string;
   body: string;
   channels?: NotificationChannel[];
+  /** Set for notifications that are already mirrored explicitly (announcements). */
+  skipBaleMirror?: boolean;
 };
 
 /**
@@ -27,6 +30,7 @@ export class NotificationService {
     private readonly prisma: PrismaService,
     private readonly sms: SmsService,
     private readonly email: EmailService,
+    private readonly bale: BaleService,
   ) {}
 
   /** Resolves channels from member prefs, falling back to the provided default. */
@@ -103,6 +107,14 @@ export class NotificationService {
       where: { id: message.id },
       data: { status: failed.length === channels.length ? 'FAILED' : 'SENT', sentAt: new Date() },
     });
+
+    // MSG-BALE — mirror into the tenant's Bale group when the owner enabled it
+    // for this event. Fire-and-forget: a Bale outage must never break the flow.
+    if (!input.skipBaleMirror) {
+      void this.bale
+        .mirror(input.tenantId, input.event, { title: input.title, body: input.body })
+        .catch((error: Error) => this.logger.warn(`Bale mirror error: ${error.message}`));
+    }
 
     return { delivered, failed };
   }
