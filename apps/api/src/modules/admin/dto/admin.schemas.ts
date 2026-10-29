@@ -118,6 +118,42 @@ export const adminTenantStatusSchema = z.object({
 });
 export type AdminTenantStatusDto = z.infer<typeof adminTenantStatusSchema>;
 
+// ----- marketplace (trust & safety) -----
+export const adminMarketplaceBusinessesQuerySchema = z.object({
+  search: z.string().trim().max(120).optional(),
+  enabledOnly: z
+    .union([z.boolean(), z.enum(['true', 'false', '1', '0'])])
+    .transform((value) => value === true || value === 'true' || value === '1')
+    .optional(),
+});
+export type AdminMarketplaceBusinessesQueryDto = z.infer<
+  typeof adminMarketplaceBusinessesQuerySchema
+>;
+
+export const adminMarketplaceBusinessUpdateSchema = z
+  .object({
+    marketplaceEnabled: z.boolean().optional(),
+    status: z.enum(['ACTIVE', 'SUSPENDED', 'ARCHIVED']).optional(),
+    reason: z.string().trim().max(400).optional(),
+  })
+  .refine((value) => value.marketplaceEnabled !== undefined || value.status !== undefined, {
+    message: 'حداقل یکی از فیلدها لازم است',
+  });
+export type AdminMarketplaceBusinessUpdateDto = z.infer<
+  typeof adminMarketplaceBusinessUpdateSchema
+>;
+
+export const adminMarketplaceReviewsQuerySchema = z.object({
+  status: z.enum(['pending', 'published', 'all']).default('pending'),
+});
+export type AdminMarketplaceReviewsQueryDto = z.infer<typeof adminMarketplaceReviewsQuerySchema>;
+
+export const adminModerateReviewSchema = z.object({
+  approve: z.boolean(),
+  reason: z.string().trim().max(400).optional(),
+});
+export type AdminModerateReviewDto = z.infer<typeof adminModerateReviewSchema>;
+
 // ----- modules -----
 /** Activates/deactivates self-service registration for one industry. */
 export const adminIndustryRegistrationSchema = z.object({

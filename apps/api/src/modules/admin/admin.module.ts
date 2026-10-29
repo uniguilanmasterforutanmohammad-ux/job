@@ -7,6 +7,7 @@ import { AuthModule } from '../auth/auth.module.js';
 import { TenantsModule } from '../tenants/tenants.module.js';
 import { IndustriesModule } from '../industries/industries.module.js';
 import { AdminIndustryService } from './admin-industry.service.js';
+import { AdminMarketplaceService } from './admin-marketplace.service.js';
 import { AdminAuthController } from './admin-auth.controller.js';
 import { AdminController } from './admin.controller.js';
 import { AdminAuthService } from './admin-auth.service.js';
@@ -51,6 +52,7 @@ import { TwoFactorEnforcementGuard } from './guards/two-factor-enforcement.guard
     AdminPlanService,
     AdminTeamService,
     AdminIndustryService,
+    AdminMarketplaceService,
     PlatformTokenService,
     PlatformJwtStrategy,
     PlatformAuthGuard,

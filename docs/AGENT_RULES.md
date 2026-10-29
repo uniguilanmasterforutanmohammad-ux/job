@@ -165,6 +165,7 @@
 | ۸۷ | فاز ۲ — اعلان دوطرفهٔ سفارش (خریدار/فروشنده)                              | `1f1ffbd` | `feat(shop): two-way order notifications`                                 |
 | ۸۸ | فاز ۲ — روش‌های ارسال واقعی هر کسب‌وکار                                   | `a2e4978` | `feat(shop): real per-business shipping methods`                          |
 | ۸۹ | فاز ۲ — «سفارش‌های من» در پنل کاربری                                      | `5285e2f` | `feat(portal): my orders tab with pay and cancel`                         |
+| ۹۰ | فاز ۲ — نظرات و امتیاز خریداران                                           | `e15847f` | `feat(marketplace): verified-purchase reviews and ratings`                |
 
 > کامیت ثبت لاگ هر ردیف در اجرای بعدی در جدول ثبت می‌شود؛ چون
 > هیچ کامیتی نمی‌تواند هش خودش را درون خودش داشته باشد.
@@ -294,6 +295,8 @@
 | بازارگاه فاز۲ — پورتال زنده | زنده (HTTP+DB) | `GET /app/orders` سفارش خریدار را برگرداند؛ `POST /app/orders/:id/pay` → callback → `CONFIRMED/COMMITTED`؛ سفارش دوم → `cancel` → `CANCELED/RELEASED` و stock ۲۷→۲۹ | ✅ |
 | بازارگاه فاز۲ — نظرات واحد  | واحد           | `apps/api/src/modules/app/portal-review.service.spec.ts` (۴ تست: انتشار فوری خرید تأییدشده، صف تأیید برای بقیه، رد سفارش تحویل‌نشده، جلوگیری از نظر تکراری) | ✅ ۴/۴ |
 | بازارگاه فاز۲ — نظرات زنده  | زنده (HTTP)    | امتیاز محصول ۵/۱ نظر از دادهٔ نمونه؛ خرید+پرداخت+تحویل → ثبت نظر از پورتال → `isVerified/isPublic` و امتیاز ۵/۲؛ نظر تکراری ۴۰۹؛ `GET /products/:id/reviews` ۲۰۰ | ✅ |
+| بازارگاه فاز۲ — ادمین واحد | واحد           | `apps/api/src/modules/admin/admin-marketplace.service.spec.ts` (۴ تست: آمار، قطع انتشار + audit، تأیید نظر، فیلتر صف) | ✅ ۴/۴ |
+| بازارگاه فاز۲ — ادمین زنده | زنده (HTTP)    | ورود ادمین → `overview` (۱ کسب‌وکار، ۵ کالا، ۴ سفارش، GMV ۲٬۶۹۰٬۰۰۰)؛ `businesses?search=coach`؛ نظر بدون خرید → صف pending → تأیید → در `products/:id/reviews` عمومی؛ تغییر انتشار با audit | ✅ |
 
 ### نکتهٔ عملیاتی (کش Next در حالت توسعه)
 

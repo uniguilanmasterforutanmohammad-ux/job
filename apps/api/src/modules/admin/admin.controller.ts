@@ -31,6 +31,7 @@ import { AdminMemberService } from './admin-member.service.js';
 import { AdminPlanService } from './admin-plan.service.js';
 import { AdminTeamService } from './admin-team.service.js';
 import { AdminIndustryService } from './admin-industry.service.js';
+import { AdminMarketplaceService } from './admin-marketplace.service.js';
 import type { PlatformPrincipal } from './admin.constants.js';
 import { requestContext } from './admin-auth.controller.js';
 import {
@@ -43,6 +44,10 @@ import {
   adminIndustryRegistrationSchema,
   adminIndustryCreateSchema,
   adminIndustryUpdateSchema,
+  adminMarketplaceBusinessUpdateSchema,
+  adminMarketplaceBusinessesQuerySchema,
+  adminMarketplaceReviewsQuerySchema,
+  adminModerateReviewSchema,
   adminListMembersSchema,
   adminListTenantsSchema,
   adminMemberStatusSchema,
@@ -63,6 +68,10 @@ import {
   type AdminIndustryRegistrationDto,
   type AdminIndustryCreateDto,
   type AdminIndustryUpdateDto,
+  type AdminMarketplaceBusinessUpdateDto,
+  type AdminMarketplaceBusinessesQueryDto,
+  type AdminMarketplaceReviewsQueryDto,
+  type AdminModerateReviewDto,
   type AdminListMembersDto,
   type AdminListTenantsDto,
   type AdminMemberStatusDto,
@@ -96,6 +105,7 @@ export class AdminController {
     private readonly plans: AdminPlanService,
     private readonly team: AdminTeamService,
     private readonly industries: AdminIndustryService,
+    private readonly marketplace: AdminMarketplaceService,
     private readonly audit: AdminAuditService,
   ) {}
 
@@ -104,6 +114,57 @@ export class AdminController {
   @ApiOperation({ summary: 'آمار کلی پلتفرم' })
   stats() {
     return this.tenants.stats();
+  }
+
+  // ----- marketplace trust & safety -----
+
+  @Get('marketplace/overview')
+  @ApiOperation({ summary: 'آمار بازارگاه (کسب‌وکارها، کالاها، سفارش‌ها، نظرات در انتظار)' })
+  marketplaceOverview() {
+    return this.marketplace.overview();
+  }
+
+  @Get('marketplace/businesses')
+  @ApiOperation({ summary: 'کسب‌وکارها با وضعیت انتشار در بازارگاه' })
+  marketplaceBusinesses(
+    @Query(new ZodValidationPipe(adminMarketplaceBusinessesQuerySchema))
+    dto: AdminMarketplaceBusinessesQueryDto,
+  ) {
+    return this.marketplace.businesses(dto);
+  }
+
+  @Patch('marketplace/businesses/:id')
+  @RequirePlatformRoles('ADMIN')
+  @ApiOperation({ summary: 'فعال/غیرفعال‌کردن انتشار یا تعلیق کسب‌وکار در بازارگاه' })
+  updateMarketplaceBusiness(
+    @CurrentPlatform() actor: PlatformPrincipal,
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Body(new ZodValidationPipe(adminMarketplaceBusinessUpdateSchema))
+    dto: AdminMarketplaceBusinessUpdateDto,
+    @Req() req: Request,
+  ) {
+    return this.marketplace.updateBusiness(actor, id, dto, requestContext(req));
+  }
+
+  @Get('marketplace/reviews')
+  @ApiOperation({ summary: 'نظرات بازارگاه (در انتظار تأیید / منتشرشده)' })
+  marketplaceReviews(
+    @Query(new ZodValidationPipe(adminMarketplaceReviewsQuerySchema))
+    dto: AdminMarketplaceReviewsQueryDto,
+  ) {
+    return this.marketplace.reviews(dto);
+  }
+
+  @Patch('marketplace/reviews/:id')
+  @RequirePlatformRoles('ADMIN')
+  @ApiOperation({ summary: 'تأیید یا رد نظر بازارگاه' })
+  moderateReview(
+    @CurrentPlatform() actor: PlatformPrincipal,
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Body(new ZodValidationPipe(adminModerateReviewSchema)) dto: AdminModerateReviewDto,
+    @Req() req: Request,
+  ) {
+    return this.marketplace.moderateReview(actor, id, dto, requestContext(req));
   }
 
   // ----- module catalog -----

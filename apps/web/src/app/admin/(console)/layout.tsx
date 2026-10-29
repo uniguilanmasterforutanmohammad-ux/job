@@ -13,6 +13,7 @@ import {
   Layers,
   Tags,
   UserCog,
+  Store,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/empty-state';
@@ -31,6 +32,7 @@ const NAV = [
   { href: '/admin', label: 'داشبورد پلتفرم', icon: LayoutDashboard },
   { href: '/admin/tenants', label: 'کسب‌وکارها', icon: Building2 },
   { href: '/admin/industries', label: 'صنف‌ها و حوزه‌ها', icon: Tags, min: 'ADMIN' as const },
+  { href: '/admin/marketplace', label: 'بازارگاه', icon: Store, min: 'SUPPORT' as const },
   { href: '/admin/plans', label: 'پلن‌ها', icon: Layers, min: 'SUPER_ADMIN' as const },
   { href: '/admin/audit', label: 'گزارش تغییرات', icon: ScrollText, min: 'ADMIN' as const },
   { href: '/admin/team', label: 'مدیران پلتفرم', icon: Users, min: 'SUPER_ADMIN' as const },
