@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
   BarChart3,
+  CalendarClock,
   CalendarDays,
   CreditCard,
   FileSignature,
@@ -36,6 +37,7 @@ const NAV_ITEMS: NavItem[] = [
   { href: '/dashboard', label: 'داشبورد', icon: LayoutDashboard },
   { href: '/customers', label: 'مشتریان', icon: Users, module: 'CRM' },
   { href: '/appointments', label: 'نوبت‌ها', icon: CalendarDays, module: 'SCH' },
+  { href: '/services', label: 'خدمات', icon: CalendarClock, module: 'SCH' },
   { href: '/subscriptions', label: 'اشتراک و شهریه', icon: CreditCard, module: 'SUB' },
   { href: '/attendance', label: 'حضور و غیاب', icon: UserCheck, module: 'ATT' },
   { href: '/invoices', label: 'فاکتورها', icon: CreditCard, module: 'FIN' },

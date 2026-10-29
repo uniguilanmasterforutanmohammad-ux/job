@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { DatabaseBackup, Layers, Save, ShieldCheck } from 'lucide-react';
+import { DatabaseBackup, Layers, Save, ShieldCheck, Store } from 'lucide-react';
 import { toast } from 'sonner';
 import { MODULE_LABELS, type ModuleKey } from '@repo/shared';
 import { api, ApiClientError } from '@/lib/api-client';
@@ -30,6 +30,9 @@ type TenantDetail = {
   currency: string;
   calendar: 'JALALI' | 'GREGORIAN';
   taxRate: string;
+  marketplaceEnabled: boolean;
+  tagline: string | null;
+  city: string | null;
   modules: { key: ModuleKey; isEnabled: boolean }[];
   branches: { id: string; name: string; city: string | null }[];
 };
@@ -63,6 +66,9 @@ export default function SettingsPage() {
           currency: merged?.currency,
           calendar: merged?.calendar,
           taxRate: merged ? Number(merged.taxRate) : undefined,
+          marketplaceEnabled: merged?.marketplaceEnabled,
+          tagline: merged?.tagline ?? undefined,
+          city: merged?.city ?? undefined,
         },
         token,
       ),
@@ -170,6 +176,61 @@ export default function SettingsPage() {
             value={String(merged.taxRate ?? '')}
             onChange={(event) => setForm({ ...form, taxRate: event.target.value })}
           />
+        </CardBody>
+      </Card>
+
+      <Card>
+        <CardHeader
+          title="بازارگاه عمومی"
+          description="کسب‌وکار، محصولات و خدمات شما در ویترین بازارگاه دیده شود"
+          action={
+            <Button loading={saveMutation.isPending} onClick={() => saveMutation.mutate()}>
+              <Save className="h-4 w-4" />
+              ذخیره
+            </Button>
+          }
+        />
+        <CardBody className="space-y-4">
+          <label className="flex items-start gap-3 rounded-xl border border-slate-200 p-3 dark:border-slate-800">
+            <input
+              type="checkbox"
+              checked={Boolean(merged.marketplaceEnabled)}
+              onChange={(event) => setForm({ ...form, marketplaceEnabled: event.target.checked })}
+              className="mt-1 h-4 w-4 rounded border-slate-300"
+            />
+            <span className="text-sm">
+              <span className="block font-medium text-slate-800 dark:text-slate-100">
+                نمایش در بازارگاه
+              </span>
+              <span className="mt-1 block text-xs leading-5 text-slate-500">
+                با روشن بودن این گزینه، ویترین کسب‌وکار در بازارگاه قابل مشاهده است؛ اما
+                هر محصول یا خدمت فقط وقتی نمایش داده می‌شود که خودش «منتشرشده» باشد.
+              </span>
+            </span>
+          </label>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Input
+              label="شعار کوتاه (در کارت بازارگاه)"
+              value={merged.tagline ?? ''}
+              onChange={(event) => setForm({ ...form, tagline: event.target.value })}
+            />
+            <Input
+              label="شهر"
+              value={merged.city ?? ''}
+              onChange={(event) => setForm({ ...form, city: event.target.value })}
+            />
+          </div>
+          {merged.marketplaceEnabled ? (
+            <a
+              href={`/marketplace/b/${merged.slug}`}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-2 text-sm font-medium text-brand-600 hover:text-brand-700"
+            >
+              <Store className="h-4 w-4" />
+              مشاهدهٔ ویترین عمومی کسب‌وکار
+            </a>
+          ) : null}
         </CardBody>
       </Card>
 

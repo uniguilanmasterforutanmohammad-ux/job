@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { AlertTriangle, Package, Plus } from 'lucide-react';
+import { AlertTriangle, Package, Plus, Store } from 'lucide-react';
 import { toast } from 'sonner';
 import { api, ApiClientError } from '@/lib/api-client';
 import { getAccessToken } from '@/lib/auth';
@@ -31,7 +31,17 @@ export default function InventoryPage() {
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
   const [moveOpen, setMoveOpen] = useState(false);
-  const [form, setForm] = useState({ name: '', sku: '', costPrice: '0', salePrice: '0', minStock: '0' });
+  const [form, setForm] = useState({
+    name: '',
+    sku: '',
+    category: '',
+    description: '',
+    imageUrl: '',
+    costPrice: '0',
+    salePrice: '0',
+    minStock: '0',
+    isPublic: false,
+  });
   const [movement, setMovement] = useState({ productId: '', type: 'PURCHASE', quantity: '1' });
 
   const productsQuery = useQuery({
@@ -51,16 +61,30 @@ export default function InventoryPage() {
         {
           name: form.name,
           sku: form.sku || undefined,
+          category: form.category || undefined,
+          description: form.description || undefined,
+          imageUrl: form.imageUrl || undefined,
           costPrice: Number(form.costPrice),
           salePrice: Number(form.salePrice),
           minStock: Number(form.minStock),
+          isPublic: form.isPublic,
         },
         token,
       ),
     onSuccess: () => {
       toast.success('کالا ثبت شد');
       setOpen(false);
-      setForm({ name: '', sku: '', costPrice: '0', salePrice: '0', minStock: '0' });
+      setForm({
+        name: '',
+        sku: '',
+        category: '',
+        description: '',
+        imageUrl: '',
+        costPrice: '0',
+        salePrice: '0',
+        minStock: '0',
+        isPublic: false,
+      });
       void queryClient.invalidateQueries({ queryKey: ['products'] });
     },
     onError: (error) =>
@@ -86,6 +110,17 @@ export default function InventoryPage() {
     },
     onError: (error) =>
       toast.error(error instanceof ApiClientError ? error.message : 'خطا در ثبت سند'),
+  });
+
+  const togglePublish = useMutation({
+    mutationFn: ({ id, isPublic }: { id: string; isPublic: boolean }) =>
+      api.patch(`/inventory/products/${id}`, { isPublic }, token),
+    onSuccess: (_data, variables) => {
+      toast.success(variables.isPublic ? 'محصول در بازارگاه منتشر شد' : 'محصول از بازارگاه برداشته شد');
+      void queryClient.invalidateQueries({ queryKey: ['products'] });
+    },
+    onError: (error) =>
+      toast.error(error instanceof ApiClientError ? error.message : 'خطا در انتشار محصول'),
   });
 
   return (
@@ -155,6 +190,7 @@ export default function InventoryPage() {
                   <Th>قیمت فروش</Th>
                   <Th>موجودی</Th>
                   <Th>وضعیت</Th>
+                  <Th>بازارگاه</Th>
                 </tr>
               </thead>
               <tbody>
@@ -169,6 +205,20 @@ export default function InventoryPage() {
                     </Td>
                     <Td>
                       {p.lowStock ? <Badge tone="warning">کمبود</Badge> : <Badge tone="success">موجود</Badge>}
+                    </Td>
+                    <Td>
+                      <button
+                        type="button"
+                        onClick={() => togglePublish.mutate({ id: p.id, isPublic: !p.isPublic })}
+                        className={`inline-flex items-center gap-1.5 rounded-lg px-2 py-1 text-xs font-medium ${
+                          p.isPublic
+                            ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-200'
+                            : 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400'
+                        }`}
+                      >
+                        <Store className="h-3.5 w-3.5" />
+                        {p.isPublic ? 'منتشرشده' : 'منتشر نشده'}
+                      </button>
                     </Td>
                   </tr>
                 ))}
@@ -222,6 +272,24 @@ export default function InventoryPage() {
             value={form.sku}
             onChange={(e) => setForm({ ...form, sku: e.target.value })}
           />
+          <Input
+            label="دسته (برای فیلتر بازارگاه)"
+            value={form.category}
+            onChange={(e) => setForm({ ...form, category: e.target.value })}
+          />
+          <Input
+            label="آدرس تصویر"
+            dir="ltr"
+            className="text-left"
+            placeholder="/marketplace/product-shoes.svg"
+            value={form.imageUrl}
+            onChange={(e) => setForm({ ...form, imageUrl: e.target.value })}
+          />
+          <Input
+            label="توضیح کوتاه"
+            value={form.description}
+            onChange={(e) => setForm({ ...form, description: e.target.value })}
+          />
           <div className="grid grid-cols-2 gap-3">
             <Input
               label="قیمت خرید"
@@ -245,6 +313,15 @@ export default function InventoryPage() {
             value={form.minStock}
             onChange={(e) => setForm({ ...form, minStock: e.target.value.replace(/\D/g, '') })}
           />
+          <label className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300">
+            <input
+              type="checkbox"
+              checked={form.isPublic}
+              onChange={(e) => setForm({ ...form, isPublic: e.target.checked })}
+              className="h-4 w-4 rounded border-slate-300"
+            />
+            انتشار در بازارگاه
+          </label>
         </div>
       </Modal>
 

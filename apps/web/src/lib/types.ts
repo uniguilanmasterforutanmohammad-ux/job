@@ -129,6 +129,7 @@ export type Product = {
   id: string;
   sku: string | null;
   name: string;
+  description: string | null;
   unit: string;
   category: string | null;
   costPrice: string;
@@ -136,7 +137,9 @@ export type Product = {
   stock: string;
   minStock: string;
   barcode: string | null;
+  imageUrl: string | null;
   isActive: boolean;
+  isPublic: boolean;
   lowStock?: boolean;
 };
 
