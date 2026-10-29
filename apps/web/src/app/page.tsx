@@ -8,6 +8,7 @@ import {
   LayoutDashboard,
   Puzzle,
   ShieldCheck,
+  Store,
   UserRound,
   Wallet,
 } from 'lucide-react';
@@ -65,6 +66,9 @@ export default function HomePage() {
             <a href="#features" className="hover:text-brand-600">
               امکانات
             </a>
+            <Link href="/marketplace" className="hover:text-brand-600">
+              بازارگاه
+            </Link>
             <a href="#how" className="hover:text-brand-600">
               شروع کار
             </a>
@@ -298,6 +302,12 @@ export default function HomePage() {
               icon={<UserRound className="h-5 w-5" />}
               title="پنل کاربری مشتری"
               body="نوبت، فاکتور، حضور و کیف پول"
+            />
+            <EntryCard
+              href="/marketplace"
+              icon={<Store className="h-5 w-5" />}
+              title="بازارگاه محصولات و خدمات"
+              body="خرید از فروشگاه‌ها و رزرو خدمات اصناف"
             />
             <EntryCard
               href="/admin/login"
