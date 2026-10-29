@@ -94,6 +94,10 @@ async function seedDemoTenant() {
       marketplaceEnabled: true,
       tagline: 'باشگاه بدنسازی و تمرین اختصاصی',
       city: 'تهران',
+      // Demo data must stay visible after `pnpm db:seed`; earlier test runs may
+      // have archived the demo tenant.
+      status: 'ACTIVE',
+      deletedAt: null,
     },
     create: {
       slug: 'coach-demo',

@@ -16,6 +16,9 @@ export const updateTenantSchema = z.object({
   locale: z.string().trim().max(10).optional(),
   invoicePrefix: z.string().trim().max(10).optional(),
   taxRate: z.coerce.number().min(0).max(100).optional(),
+  marketplaceEnabled: z.boolean().optional(),
+  tagline: z.string().trim().max(160).optional(),
+  city: z.string().trim().max(80).optional(),
   settings: z.record(z.string(), z.unknown()).optional(),
 });
 export type UpdateTenantDto = z.infer<typeof updateTenantSchema>;

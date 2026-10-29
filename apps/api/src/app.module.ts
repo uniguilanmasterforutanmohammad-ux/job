@@ -28,6 +28,7 @@ import { InventoryModule } from './modules/inventory/inventory.module.js';
 import { StaffModule } from './modules/staff/staff.module.js';
 import { MarketingModule } from './modules/marketing/marketing.module.js';
 import { ShopModule } from './modules/shop/shop.module.js';
+import { MarketplaceModule } from './modules/marketplace/marketplace.module.js';
 import { DocumentsModule } from './modules/documents/documents.module.js';
 import { CampaignsModule } from './modules/campaigns/campaigns.module.js';
 import { FilesModule } from './modules/files/files.module.js';
@@ -92,6 +93,7 @@ loadRootEnv();
     StaffModule,
     MarketingModule,
     ShopModule,
+    MarketplaceModule,
     DocumentsModule,
     CampaignsModule,
     FilesModule,

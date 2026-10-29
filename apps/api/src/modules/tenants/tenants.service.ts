@@ -42,6 +42,9 @@ export class TenantsService {
       locale: string;
       invoicePrefix: string;
       taxRate: number;
+      marketplaceEnabled: boolean;
+      tagline: string;
+      city: string;
       settings: Record<string, unknown>;
     }>,
   ) {

@@ -12,6 +12,7 @@ export type CreateSupplierDto = z.infer<typeof createSupplierSchema>;
 export const createProductSchema = z.object({
   sku: z.string().trim().max(60).optional(),
   name: z.string().trim().min(2).max(160),
+  description: z.string().trim().max(1000).optional(),
   unit: z.string().trim().max(30).default('عدد'),
   category: z.string().trim().max(80).optional(),
   costPrice: z.coerce.number().min(0).default(0),
@@ -21,6 +22,7 @@ export const createProductSchema = z.object({
   imageUrl: z.string().trim().max(500).optional(),
   trackExpiry: z.boolean().default(false),
   isActive: z.boolean().default(true),
+  isPublic: z.boolean().default(false),
 });
 export type CreateProductDto = z.infer<typeof createProductSchema>;
 

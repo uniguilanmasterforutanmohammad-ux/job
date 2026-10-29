@@ -3,11 +3,14 @@ import { z } from 'zod';
 export const createServiceSchema = z.object({
   name: z.string().trim().min(2).max(120),
   description: z.string().trim().max(1000).optional(),
+  category: z.string().trim().max(80).optional(),
+  imageUrl: z.string().trim().max(500).optional(),
   durationMinutes: z.coerce.number().int().min(5).max(1440).default(60),
   bufferMinutes: z.coerce.number().int().min(0).max(240).default(0),
   price: z.coerce.number().int().min(0).default(0),
   color: z.string().trim().max(20).optional(),
   isActive: z.boolean().default(true),
+  isPublic: z.boolean().default(false),
 });
 export type CreateServiceDto = z.infer<typeof createServiceSchema>;
 
