@@ -393,6 +393,46 @@ async function seedDemoTenant() {
     else await prisma.product.create({ data: { tenantId: tenant.id, ...data } });
   }
 
+  // Published marketplace reviews (verified purchases) so the storefront is alive.
+  const reviewSeeds = [
+    {
+      productName: 'دستکش تمرین',
+      rating: 5,
+      comment: 'کیفیت چرم عالی و سایز دقیق بود؛ برای تمرین با میله خیلی راحت است.',
+    },
+    {
+      productName: 'کفش ورزشی',
+      rating: 4,
+      comment: 'سبک و راحت است، فقط کاش رنگ‌بندی بیشتری داشت.',
+    },
+    {
+      productName: 'بطری آب',
+      rating: 5,
+      comment: 'بدون بو و نشتی؛ برای باشگاه مناسب است.',
+    },
+  ];
+  for (const review of reviewSeeds) {
+    const product = await prisma.product.findFirst({
+      where: { tenantId: tenant.id, name: review.productName },
+    });
+    if (!product) continue;
+    const found = await prisma.review.findFirst({
+      where: { tenantId: tenant.id, productId: product.id },
+    });
+    const data = {
+      tenantId: tenant.id,
+      productId: product.id,
+      rating: review.rating,
+      comment: review.comment,
+      isVerified: true,
+      isPublic: true,
+      approvedAt: new Date(),
+    };
+    if (found) await prisma.review.update({ where: { id: found.id }, data });
+    else await prisma.review.create({ data });
+  }
+  console.log(`  ✓ marketplace reviews: ${reviewSeeds.length}`);
+
   // HR staff
   const staffSeeds = [
     { fullName: 'مربی رضا محمدی', phone: '09125555555', position: 'مربی بدنسازی', baseSalary: 20000000, commissionRate: 10 },

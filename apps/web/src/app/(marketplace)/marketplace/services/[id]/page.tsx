@@ -5,16 +5,26 @@ import { ArrowRight, Building2, CalendarClock, MapPin, Phone } from 'lucide-reac
 import { industryLabel } from '@repo/shared';
 import {
   marketplaceGet,
+  type MarketplaceReview,
   type MarketplaceService,
   type MarketplaceStorefront,
 } from '@/lib/marketplace';
 import { formatToman } from '@/lib/utils';
+import { RatingStars } from '@/components/marketplace/rating-stars';
 
 async function getService(id: string): Promise<MarketplaceService | null> {
   try {
     return await marketplaceGet<MarketplaceService>(`/services/${id}`);
   } catch {
     return null;
+  }
+}
+
+async function getReviews(id: string): Promise<MarketplaceReview[]> {
+  try {
+    return await marketplaceGet<MarketplaceReview[]>(`/services/${id}/reviews`);
+  } catch {
+    return [];
   }
 }
 
@@ -35,6 +45,7 @@ export default async function ServiceDetailPage({ params }: { params: Promise<{ 
   const { id } = await params;
   const service = await getService(id);
   if (!service) notFound();
+  const reviews = await getReviews(id);
 
   const storefront = await marketplaceGet<MarketplaceStorefront>(
     `/businesses/${service.tenant.slug}`,
@@ -97,6 +108,15 @@ export default async function ServiceDetailPage({ params }: { params: Promise<{ 
             <h1 className="mt-2 text-xl font-black text-slate-900 sm:text-2xl dark:text-slate-100">
               {service.name}
             </h1>
+            {service.rating && service.rating.count > 0 ? (
+              <p className="mt-2 flex items-center gap-2 text-xs text-slate-500">
+                <RatingStars value={service.rating.average} />
+                <span className="nums font-bold text-slate-700 dark:text-slate-200">
+                  {service.rating.average.toLocaleString('fa-IR')}
+                </span>
+                از {service.rating.count.toLocaleString('fa-IR')} نظر
+              </p>
+            ) : null}
             <p className="mt-3 text-sm leading-7 text-slate-600 dark:text-slate-300">
               {service.description ?? 'این خدمت هنوز توضیحی ندارد.'}
             </p>
@@ -162,6 +182,34 @@ export default async function ServiceDetailPage({ params }: { params: Promise<{ 
           </p>
         </div>
       </div>
+
+      {reviews.length > 0 ? (
+        <section className="rounded-3xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
+          <h2 className="text-base font-black text-slate-900 dark:text-slate-100">نظرات</h2>
+          <ul className="mt-3 divide-y divide-slate-100 dark:divide-slate-800">
+            {reviews.map((review) => (
+              <li key={review.id} className="space-y-1 py-3">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-sm font-semibold text-slate-800 dark:text-slate-100">
+                    {review.authorName}
+                  </span>
+                  <RatingStars value={review.rating} />
+                  {review.isVerified ? (
+                    <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-medium text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-200">
+                      خرید تأییدشده
+                    </span>
+                  ) : null}
+                </div>
+                {review.comment ? (
+                  <p className="text-sm leading-6 text-slate-600 dark:text-slate-300">
+                    {review.comment}
+                  </p>
+                ) : null}
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
     </div>
   );
 }

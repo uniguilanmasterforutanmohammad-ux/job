@@ -464,6 +464,7 @@ model Customer {
   makeupCredits MakeupCredit[]
   familyMemberships FamilyMember[]
   absenceRequests AbsenceRequest[]
+  reviews       Review[]
 
   @@unique([tenantId, phone])
   @@index([tenantId])
@@ -526,6 +527,7 @@ model Service {
 
   tenant          Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   appointments    Appointment[]
+  reviews         Review[]
 
   @@index([tenantId])
   @@index([isPublic, isActive])
@@ -1225,6 +1227,7 @@ model Product {
 
   tenant      Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   movements   StockMovement[]
+  reviews     Review[]
 
   @@index([tenantId, category])
   @@index([isPublic, isActive])
@@ -1423,6 +1426,12 @@ model Review {
   id         String   @id @default(uuid()) @db.Uuid
   tenantId   String   @db.Uuid
   customerId String?  @db.Uuid
+  /// The catalog item this review is about (marketplace product/service).
+  productId  String?  @db.Uuid
+  serviceId  String?  @db.Uuid
+  /// Set when the reviewer actually bought/booked the item.
+  orderId    String?  @db.Uuid
+  isVerified Boolean  @default(false)
   rating     Int
   comment    String?
   isPublic   Boolean  @default(false)
@@ -1430,8 +1439,14 @@ model Review {
   createdAt  DateTime @default(now())
 
   tenant     Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  customer   Customer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  product    Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+  service    Service? @relation(fields: [serviceId], references: [id], onDelete: SetNull)
+  order      Order?   @relation(fields: [orderId], references: [id], onDelete: SetNull)
 
   @@index([tenantId, isPublic])
+  @@index([productId, isPublic])
+  @@index([serviceId, isPublic])
   @@map("reviews")
 }
 
@@ -1477,6 +1492,7 @@ model Order {
 
   tenant         Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   payments       Payment[]
+  reviews        Review[]
   shippingOption ShippingMethod? @relation(fields: [shippingMethodId], references: [id], onDelete: SetNull)
 
   @@unique([tenantId, number])

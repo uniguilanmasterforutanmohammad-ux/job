@@ -123,7 +123,7 @@ type PortalOrder = {
   id: string;
   number: string;
   status: string;
-  items: Array<{ title: string; quantity: number; unitPrice: number }>;
+  items: Array<{ title: string; quantity: number; unitPrice: number; productId?: string }>;
   subtotal: string;
   shippingCost: string;
   total: string;
@@ -858,6 +858,31 @@ function CustomerDashboard({
     },
     onError: (error) =>
       toast.error(error instanceof ApiClientError ? error.message : 'لغو سفارش انجام نشد'),
+  });
+  const [reviewFor, setReviewFor] = useState<{
+    orderId: string;
+    productId?: string;
+    productName: string;
+  } | null>(null);
+  const [reviewRating, setReviewRating] = useState(5);
+  const [reviewComment, setReviewComment] = useState('');
+  const submitReview = useMutation({
+    mutationFn: () =>
+      apiPost('/app/reviews', {
+        rating: reviewRating,
+        comment: reviewComment.trim() || undefined,
+        orderId: reviewFor?.orderId,
+        productId: reviewFor?.productId,
+      }),
+    onSuccess: () => {
+      toast.success('نظر شما ثبت شد و برای دیگران نمایش داده می‌شود');
+      setReviewFor(null);
+      setReviewComment('');
+      setReviewRating(5);
+      void queryClient.invalidateQueries({ queryKey: ['customer-orders'] });
+    },
+    onError: (error) =>
+      toast.error(error instanceof ApiClientError ? error.message : 'ثبت نظر انجام نشد'),
   });
   const loyaltyQuery = useQuery({
     queryKey: ['customer-loyalty', session.tenantId],
@@ -1643,7 +1668,69 @@ function CustomerDashboard({
                           ) : null}
                         </span>
                       ) : null}
+                      {order.status === 'DELIVERED' ? (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() =>
+                            setReviewFor({
+                              orderId: order.id,
+                              productId: order.items[0]?.productId as string | undefined,
+                              productName: order.items[0]?.title ?? 'این سفارش',
+                            })
+                          }
+                        >
+                          <Star className="h-4 w-4" />
+                          ثبت نظر
+                        </Button>
+                      ) : null}
                     </div>
+
+                    {reviewFor?.orderId === order.id ? (
+                      <div className="mt-3 space-y-2 rounded-xl bg-slate-50 p-3 dark:bg-slate-800/50">
+                        <p className="text-xs text-slate-600 dark:text-slate-300">
+                          نظر شما دربارهٔ «{reviewFor.productName}»
+                        </p>
+                        <div className="flex items-center gap-1" dir="ltr">
+                          {[1, 2, 3, 4, 5].map((star) => (
+                            <button
+                              key={star}
+                              type="button"
+                              aria-label={`${star} ستاره`}
+                              onClick={() => setReviewRating(star)}
+                            >
+                              <Star
+                                className={cn(
+                                  'h-6 w-6',
+                                  star <= reviewRating
+                                    ? 'fill-amber-400 text-amber-400'
+                                    : 'fill-transparent text-slate-300',
+                                )}
+                              />
+                            </button>
+                          ))}
+                        </div>
+                        <textarea
+                          value={reviewComment}
+                          onChange={(event) => setReviewComment(event.target.value)}
+                          rows={2}
+                          placeholder="تجربه‌تان از این خرید (اختیاری)"
+                          className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-950"
+                        />
+                        <div className="flex gap-2">
+                          <Button
+                            size="sm"
+                            loading={submitReview.isPending}
+                            onClick={() => submitReview.mutate()}
+                          >
+                            ثبت نظر
+                          </Button>
+                          <Button size="sm" variant="ghost" onClick={() => setReviewFor(null)}>
+                            انصراف
+                          </Button>
+                        </div>
+                      </div>
+                    ) : null}
                   </div>
                 ))
               ) : (

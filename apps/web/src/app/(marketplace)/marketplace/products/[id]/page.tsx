@@ -3,15 +3,28 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { ArrowRight, Building2, PackageCheck, Truck } from 'lucide-react';
 import { industryLabel } from '@repo/shared';
-import { marketplaceGet, type MarketplaceProduct } from '@/lib/marketplace';
+import {
+  marketplaceGet,
+  type MarketplaceProduct,
+  type MarketplaceReview,
+} from '@/lib/marketplace';
 import { formatToman } from '@/lib/utils';
 import { AddToCartButton } from '@/components/marketplace/add-to-cart-button';
+import { RatingStars } from '@/components/marketplace/rating-stars';
 
 async function getProduct(id: string): Promise<MarketplaceProduct | null> {
   try {
     return await marketplaceGet<MarketplaceProduct>(`/products/${id}`);
   } catch {
     return null;
+  }
+}
+
+async function getReviews(id: string): Promise<MarketplaceReview[]> {
+  try {
+    return await marketplaceGet<MarketplaceReview[]>(`/products/${id}/reviews`);
+  } catch {
+    return [];
   }
 }
 
@@ -32,6 +45,7 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
   const { id } = await params;
   const product = await getProduct(id);
   if (!product) notFound();
+  const reviews = await getReviews(id);
 
   const stock = Number(product.stock);
   const site = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000';
@@ -89,6 +103,15 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
             <h1 className="mt-2 text-xl font-black text-slate-900 sm:text-2xl dark:text-slate-100">
               {product.name}
             </h1>
+            {product.rating && product.rating.count > 0 ? (
+              <p className="mt-2 flex items-center gap-2 text-xs text-slate-500">
+                <RatingStars value={product.rating.average} />
+                <span className="nums font-bold text-slate-700 dark:text-slate-200">
+                  {product.rating.average.toLocaleString('fa-IR')}
+                </span>
+                از {product.rating.count.toLocaleString('fa-IR')} نظر
+              </p>
+            ) : null}
             <p className="mt-3 text-sm leading-7 text-slate-600 dark:text-slate-300">
               {product.description ?? 'این محصول هنوز توضیحی ندارد.'}
             </p>
@@ -142,6 +165,50 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
           </Link>
         </div>
       </div>
+
+      <section className="rounded-3xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h2 className="text-base font-black text-slate-900 dark:text-slate-100">
+            نظرات خریداران
+          </h2>
+          {reviews.length === 0 ? (
+            <span className="text-xs text-slate-500">هنوز نظری ثبت نشده است</span>
+          ) : null}
+        </div>
+
+        {reviews.length > 0 ? (
+          <ul className="mt-3 divide-y divide-slate-100 dark:divide-slate-800">
+            {reviews.map((review) => (
+              <li key={review.id} className="space-y-1 py-3">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-sm font-semibold text-slate-800 dark:text-slate-100">
+                    {review.authorName}
+                  </span>
+                  <RatingStars value={review.rating} />
+                  {review.isVerified ? (
+                    <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-medium text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-200">
+                      خرید تأییدشده
+                    </span>
+                  ) : null}
+                  <span className="nums mr-auto text-[10px] text-slate-400">
+                    {new Date(review.createdAt).toLocaleDateString('fa-IR')}
+                  </span>
+                </div>
+                {review.comment ? (
+                  <p className="text-sm leading-6 text-slate-600 dark:text-slate-300">
+                    {review.comment}
+                  </p>
+                ) : null}
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="mt-2 rounded-xl bg-slate-50 p-3 text-xs leading-5 text-slate-500 dark:bg-slate-800/50">
+            نظرها فقط توسط خریداران ثبت می‌شود؛ بعد از تحویل سفارش، از «سفارش‌های من» در
+            پنل کاربری می‌توانید امتیاز و نظر بدهید.
+          </p>
+        )}
+      </section>
     </div>
   );
 }

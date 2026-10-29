@@ -20,6 +20,22 @@ export type MarketplaceProduct = {
   stock: string;
   createdAt: string;
   tenant: MarketplaceTenant;
+  rating?: MarketplaceRating;
+};
+
+export type MarketplaceRating = {
+  average: number;
+  count: number;
+  distribution: { rating: number; count: number }[];
+};
+
+export type MarketplaceReview = {
+  id: string;
+  rating: number;
+  comment: string | null;
+  isVerified: boolean;
+  createdAt: string;
+  authorName: string;
 };
 
 export type MarketplaceService = {
@@ -32,6 +48,7 @@ export type MarketplaceService = {
   price: string;
   createdAt: string;
   tenant: MarketplaceTenant;
+  rating?: MarketplaceRating;
 };
 
 export type MarketplaceBusiness = MarketplaceTenant & {

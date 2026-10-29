@@ -85,6 +85,10 @@ export const appReviewSchema = z.object({
   rating: z.coerce.number().int().min(1).max(5),
   comment: z.string().trim().max(1000).optional(),
   appointmentId: z.string().uuid().optional(),
+  productId: z.string().uuid().optional(),
+  serviceId: z.string().uuid().optional(),
+  /** Purchase that proves the reviewer actually received the item. */
+  orderId: z.string().uuid().optional(),
 });
 export type AppReviewDto = z.infer<typeof appReviewSchema>;
 

@@ -163,7 +163,7 @@ export class MarketplaceService {
       select: PRODUCT_SELECT,
     });
     if (!product) throw DomainException.notFound('محصول');
-    return product;
+    return { ...product, rating: await this.reviewStats({ productId: id }) };
   }
 
   /** Services published by opted-in businesses (classes, sessions, treatments…). */
@@ -219,7 +219,68 @@ export class MarketplaceService {
       select: SERVICE_SELECT,
     });
     if (!service) throw DomainException.notFound('خدمت');
-    return service;
+    return { ...service, rating: await this.reviewStats({ serviceId: id }) };
+  }
+
+  /** Published reviews of one product (approved or verified purchase). */
+  async productReviews(id: string) {
+    await this.product(id);
+    return this.reviewList({ productId: id });
+  }
+
+  async serviceReviews(id: string) {
+    await this.service(id);
+    return this.reviewList({ serviceId: id });
+  }
+
+  private reviewWhere(filter: { productId?: string; serviceId?: string }): Prisma.ReviewWhereInput {
+    return {
+      ...filter,
+      isPublic: true,
+      approvedAt: { not: null },
+    };
+  }
+
+  private async reviewStats(filter: { productId?: string; serviceId?: string }) {
+    const [aggregate, histogram] = await Promise.all([
+      this.prisma.client.review.aggregate({
+        where: this.reviewWhere(filter),
+        _avg: { rating: true },
+        _count: { _all: true },
+      }),
+      this.prisma.client.review.groupBy({
+        by: ['rating'],
+        where: this.reviewWhere(filter),
+        _count: { _all: true },
+      }),
+    ]);
+    const average = aggregate._avg.rating ? Math.round(aggregate._avg.rating * 10) / 10 : 0;
+    const distribution = [5, 4, 3, 2, 1].map((rating) => ({
+      rating,
+      count: histogram.find((row) => row.rating === rating)?._count._all ?? 0,
+    }));
+    return { average, count: aggregate._count._all, distribution };
+  }
+
+  private async reviewList(filter: { productId?: string; serviceId?: string }) {
+    const rows = await this.prisma.client.review.findMany({
+      where: this.reviewWhere(filter),
+      orderBy: { createdAt: 'desc' },
+      take: 30,
+      select: {
+        id: true,
+        rating: true,
+        comment: true,
+        isVerified: true,
+        createdAt: true,
+        customer: { select: { fullName: true } },
+      },
+    });
+    return rows.map(({ customer, ...row }) => ({
+      ...row,
+      // Only the first name is shown publicly.
+      authorName: customer?.fullName?.trim().split(/\s+/)[0] ?? 'خریدار',
+    }));
   }
 
   /** Business cards with live counts of published items. */

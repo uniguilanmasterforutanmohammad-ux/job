@@ -1053,12 +1053,60 @@ export class AppService {
 
   async submitReview(memberId: string, dto: AppReviewDto) {
     const customer = await this.customerFor(memberId);
+
+    let orderId: string | null = null;
+    let productId = dto.productId ?? null;
+    let serviceId = dto.serviceId ?? null;
+    let isVerified = false;
+
+    if (dto.orderId) {
+      const order = await this.prisma.client.order.findFirst({
+        where: { id: dto.orderId, customerId: customer.id },
+      });
+      if (!order) throw DomainException.notFound('سفارش');
+      if (order.status !== 'DELIVERED') {
+        throw DomainException.badRequest('ثبت نظر پس از تحویل سفارش ممکن است');
+      }
+      const items = Array.isArray(order.items) ? (order.items as Array<{ productId?: string }>) : [];
+      if (!productId) productId = items.find((item) => item.productId)?.productId ?? null;
+      orderId = order.id;
+      isVerified = true;
+    }
+
+    if (productId) {
+      const product = await this.prisma.client.product.findFirst({
+        where: { id: productId, tenantId: customer.tenantId },
+        select: { id: true },
+      });
+      if (!product) throw DomainException.notFound('محصول');
+      const duplicate = await this.prisma.client.review.findFirst({
+        where: { customerId: customer.id, productId },
+        select: { id: true },
+      });
+      if (duplicate) throw DomainException.conflict('برای این محصول قبلاً نظر ثبت کرده‌اید');
+    }
+    if (serviceId) {
+      const service = await this.prisma.client.service.findFirst({
+        where: { id: serviceId, tenantId: customer.tenantId },
+        select: { id: true },
+      });
+      if (!service) throw DomainException.notFound('خدمت');
+    }
+
     const review = await this.prisma.client.review.create({
       data: {
         tenantId: customer.tenantId,
         customerId: customer.id,
+        productId,
+        serviceId,
+        orderId,
+        isVerified,
         rating: dto.rating,
         comment: dto.comment ?? null,
+        // A verified purchase can be published right away; anything else waits
+        // for the platform moderation queue.
+        isPublic: isVerified,
+        approvedAt: isVerified ? new Date() : null,
       },
     });
     // ACK via in-app message so the customer sees confirmation (APP-05).
@@ -1066,7 +1114,9 @@ export class AppService {
       .send(customer.tenantId, {
         customerId: customer.id,
         channel: 'IN_APP',
-        body: 'نظر شما ثبت شد. سپاسگزاریم!',
+        body: isVerified
+          ? 'نظر شما ثبت و منتشر شد. سپاسگزاریم!'
+          : 'نظر شما ثبت شد و پس از تأیید نمایش داده می‌شود. سپاسگزاریم!',
       })
       .catch(() => undefined);
     return review;

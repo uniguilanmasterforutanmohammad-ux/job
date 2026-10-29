@@ -164,6 +164,7 @@
 | ۸۶ | فاز ۲ — اتصال پرداخت به سفارش، رزرو و بازگشت موجودی                       | `c94b724` | `feat(shop): link payments to orders with stock reservation`              |
 | ۸۷ | فاز ۲ — اعلان دوطرفهٔ سفارش (خریدار/فروشنده)                              | `1f1ffbd` | `feat(shop): two-way order notifications`                                 |
 | ۸۸ | فاز ۲ — روش‌های ارسال واقعی هر کسب‌وکار                                   | `a2e4978` | `feat(shop): real per-business shipping methods`                          |
+| ۸۹ | فاز ۲ — «سفارش‌های من» در پنل کاربری                                      | `5285e2f` | `feat(portal): my orders tab with pay and cancel`                         |
 
 > کامیت ثبت لاگ هر ردیف در اجرای بعدی در جدول ثبت می‌شود؛ چون
 > هیچ کامیتی نمی‌تواند هش خودش را درون خودش داشته باشد.
@@ -291,6 +292,8 @@
 | بازارگاه فاز۲ — ارسال زنده  | زنده (HTTP)    | `GET /public/marketplace/businesses/coach-demo/shipping` دو روش (پیک ۵۰٬۰۰۰ / پست ۸۰٬۰۰۰)؛ checkout با `shippingMethodId` → `total=300000` برای کالای ۲۵۰٬۰۰۰ | ✅ |
 | بازارگاه فاز۲ — سفارش پورتال | واحد          | `apps/api/src/modules/app/portal-orders.service.spec.ts` (۶ تست: اسکوپ مشتری، پورتال بدون پرونده، لغو PENDING، رد CONFIRMED، پرداخت با tenant سفارش، عدم دسترسی به سفارش دیگر) | ✅ ۶/۶ |
 | بازارگاه فاز۲ — پورتال زنده | زنده (HTTP+DB) | `GET /app/orders` سفارش خریدار را برگرداند؛ `POST /app/orders/:id/pay` → callback → `CONFIRMED/COMMITTED`؛ سفارش دوم → `cancel` → `CANCELED/RELEASED` و stock ۲۷→۲۹ | ✅ |
+| بازارگاه فاز۲ — نظرات واحد  | واحد           | `apps/api/src/modules/app/portal-review.service.spec.ts` (۴ تست: انتشار فوری خرید تأییدشده، صف تأیید برای بقیه، رد سفارش تحویل‌نشده، جلوگیری از نظر تکراری) | ✅ ۴/۴ |
+| بازارگاه فاز۲ — نظرات زنده  | زنده (HTTP)    | امتیاز محصول ۵/۱ نظر از دادهٔ نمونه؛ خرید+پرداخت+تحویل → ثبت نظر از پورتال → `isVerified/isPublic` و امتیاز ۵/۲؛ نظر تکراری ۴۰۹؛ `GET /products/:id/reviews` ۲۰۰ | ✅ |
 
 ### نکتهٔ عملیاتی (کش Next در حالت توسعه)
 

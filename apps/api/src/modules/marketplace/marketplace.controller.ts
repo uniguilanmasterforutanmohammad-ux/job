@@ -48,6 +48,13 @@ export class MarketplaceController {
     return this.marketplace.product(id);
   }
 
+  @Get('products/:id/reviews')
+  @Throttle({ default: { limit: 60, ttl: 60_000 } })
+  @ApiOperation({ summary: 'نظرات منتشرشدهٔ یک محصول' })
+  productReviews(@Param('id', new ZodValidationPipe(marketplaceIdParamSchema)) id: string) {
+    return this.marketplace.productReviews(id);
+  }
+
   @Get('services')
   @Throttle({ default: { limit: 90, ttl: 60_000 } })
   @ApiOperation({ summary: 'خدمات عمومی همهٔ اصناف (کلاس، جلسه، درمان…)' })
@@ -60,6 +67,13 @@ export class MarketplaceController {
   @ApiOperation({ summary: 'جزئیات خدمت عمومی' })
   service(@Param('id', new ZodValidationPipe(marketplaceIdParamSchema)) id: string) {
     return this.marketplace.service(id);
+  }
+
+  @Get('services/:id/reviews')
+  @Throttle({ default: { limit: 60, ttl: 60_000 } })
+  @ApiOperation({ summary: 'نظرات منتشرشدهٔ یک خدمت' })
+  serviceReviews(@Param('id', new ZodValidationPipe(marketplaceIdParamSchema)) id: string) {
+    return this.marketplace.serviceReviews(id);
   }
 
   @Get('businesses')
