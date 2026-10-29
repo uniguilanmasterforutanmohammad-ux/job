@@ -34,9 +34,30 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
   if (!product) notFound();
 
   const stock = Number(product.stock);
+  const site = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000';
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'Product',
+    name: product.name,
+    description: product.description ?? undefined,
+    image: product.imageUrl ? new URL(product.imageUrl, site).toString() : undefined,
+    brand: { '@type': 'Organization', name: product.tenant.name },
+    url: `${site}/marketplace/products/${product.id}`,
+    offers: {
+      '@type': 'Offer',
+      price: Number(product.salePrice),
+      priceCurrency: 'IRR',
+      availability:
+        stock > 0 ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
+    },
+  };
 
   return (
     <div className="space-y-5">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       <Link
         href="/marketplace/products"
         className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-brand-600"

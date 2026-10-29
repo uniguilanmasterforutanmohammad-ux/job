@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { ShoppingBag } from 'lucide-react';
 import { toast } from 'sonner';
-import { addToCart } from '@/lib/marketplace-cart';
+import { addToCart, readCart } from '@/lib/marketplace-cart';
 import type { MarketplaceProduct } from '@/lib/marketplace';
 
 export function AddToCartButton({
@@ -41,8 +41,7 @@ export function AddToCartButton({
     setBusy(false);
 
     if (!result.ok && result.reason === 'other-tenant') {
-      const cartTenant = JSON.parse(window.localStorage.getItem('bp_marketplace_cart_v1') ?? '[]')[0]
-        ?.tenantName;
+      const cartTenant = readCart()[0]?.tenantName;
       const replace = window.confirm(
         `سبد خرید شما مربوط به «${cartTenant ?? 'کسب‌وکار دیگر'}» است. برای افزودن این کالا، سبد فعلی خالی شود؟`,
       );

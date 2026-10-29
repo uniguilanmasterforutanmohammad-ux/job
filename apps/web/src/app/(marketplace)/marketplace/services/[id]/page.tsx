@@ -40,9 +40,32 @@ export default async function ServiceDetailPage({ params }: { params: Promise<{ 
     `/businesses/${service.tenant.slug}`,
   ).catch(() => null);
   const contact = storefront?.tenant;
+  const site = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000';
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'Service',
+    name: service.name,
+    description: service.description ?? undefined,
+    url: `${site}/marketplace/services/${service.id}`,
+    provider: {
+      '@type': 'LocalBusiness',
+      name: service.tenant.name,
+      telephone: contact?.phone ?? undefined,
+      address: contact?.address ?? undefined,
+    },
+    offers: {
+      '@type': 'Offer',
+      price: Number(service.price),
+      priceCurrency: 'IRR',
+    },
+  };
 
   return (
     <div className="space-y-5">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       <Link
         href="/marketplace/services"
         className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-brand-600"

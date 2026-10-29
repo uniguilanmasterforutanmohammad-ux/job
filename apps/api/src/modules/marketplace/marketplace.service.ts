@@ -254,11 +254,10 @@ export class MarketplaceService {
       take: 100,
     });
 
-    return rows.map((row) => ({
+    return rows.map(({ _count, ...row }) => ({
       ...row,
-      productCount: row._count.products,
-      serviceCount: row._count.services,
-      _count: undefined,
+      productCount: _count.products,
+      serviceCount: _count.services,
     }));
   }
 
