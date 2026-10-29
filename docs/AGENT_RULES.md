@@ -155,6 +155,12 @@
 | ۷۷ | انتخاب نقش سفارشی در فرم افزودن کاربر `/team`                              | `71fb55f` | `feat(web): pick a custom role when adding a panel member`               |
 | ۷۸ | ثبت تسک «حذف کاربر» در تسک‌فایل + کامنت ✅                                  | `e351205` | `docs(taskfile): mark the delete-user task as done`                      |
 | ۷۹ | ثبت ردیف‌های ۷۴ تا ۷۸ + ردیف‌های تست حذف کاربر                             | این کامیت | `docs(agent): log the customer-delete task and the role-linking fix`     |
+| ۸۰ | بازارگاه — فیلدهای انتشار، مهاجرت و دادهٔ نمونه                          | `55b6e63` | `feat(db): marketplace visibility fields and demo publishing`            |
+| ۸۱ | API بازارگاه عمومی چند-صنفی + خرید مهمان                                | `4ae3ab4` | `feat(api): public multi-industry marketplace + guest checkout`          |
+| ۸۲ | وب بازارگاه (محصولات، خدمات، سبد، پیگیری)                                | `46c1c62` | `feat(web): public marketplace pages, cart and order tracking`           |
+| ۸۳ | کنترل انتشار بازارگاه در پنل کسب‌وکار                                    | `d2e74e5` | `feat(web): marketplace publishing controls in the business panel`       |
+| ۸۴ | سئوی ساختاریافته و پاک‌سازی پاسخ‌های بازارگاه                             | `013f745` | `refactor(marketplace): structured SEO data and response cleanup`        |
+| ۸۵ | مستندات بازارگاه + وضعیت + ثبت قوانین و تکمیل تسک                        | این کامیت | `docs(marketplace): document the public marketplace and log the work`     |
 
 > کامیت ثبت لاگ هر ردیف در اجرای بعدی در جدول ثبت می‌شود؛ چون
 > هیچ کامیتی نمی‌تواند هش خودش را درون خودش داشته باشد.
@@ -270,6 +276,11 @@
 | ۷۵ — مجوز حذف (زندهٔ HTTP)   | زنده (HTTP)    | `DELETE /customers/:id` → مدیر `MANAGER` (پس از پیوند نقش) ۲۰۰ و «مربی» `STAFF` ۴۰۳ `FORBIDDEN`؛ افزودن دوبارهٔ شمارهٔ حذف‌شده → ۲۰۱؛ `deletedAt` ست و `meta.archivedPhone` پر | ✅ |
 | ۷۶/۷۷ — حذف کاربر (UI)      | زنده (Chrome/CDP) | `/tmp/cdp-verify-customer-delete.mjs` → ۱۶/۱۶: ستون «عملیات»، aria-label «حذف شاگرد»، متن تأیید داده‌محور (بایگانی + آزادشدن شماره)، انصراف بدون حذف، تأیید → ناپدیدشدن ردیف و نبودن در جست‌وجو، توست «شاگرد حذف شد»، و حذف موفق با حساب «مدیر» | ✅ ۱۶/۱۶ |
 | ۷۴/۷۵/۷۶ — کل بسته‌ها        | واحد + typecheck/lint/build | `pnpm test` → API ۱۷۳ پاس (۲۷ فایل) + shared ۲۴ پاس؛ `pnpm lint` → ۶ تسک سبز، ۰ خطا؛ `pnpm --filter @repo/web build` ✅ (۳۶ روت) | ✅ |
+| بازارگاه — واحد             | واحد           | `apps/api/src/modules/marketplace/marketplace.service.spec.ts` (۸ تست: فیلتر tenant/module، ترتیب قیمت، عدم سفارش برای کسب‌وکار غیرفعال، موجودی ناکافی، جمع سرور-محور، عدم افشای سفارش) → `pnpm --filter @repo/api test` ۱۸۱ پاس/۲۸ فایل | ✅ ۸/۸ |
+| بازارگاه — API زنده         | زنده (HTTP)    | products/services/businesses/facets ۲۰۰ با دادهٔ دمو؛ OTP ۲۰۱؛ checkout → `ORD-00002` + پرداخت mock؛ track با موبایل درست ۲۰۰ و نامرتبط ۴۰۴ | ✅ |
+| بازارگاه — UI عمومی         | زنده (Chrome/CDP) | `/tmp/cdp-verify-marketplace.mjs` → ۲۱/۲۱: خانه، فهرست محصول، افزودن به سبد و شمارنده، سبد، OTP، ثبت سفارش، پرداخت، پیگیری، خدمات و ویترین کسب‌وکار | ✅ ۲۱/۲۱ |
+| بازارگاه — UI پنل           | زنده (Chrome/CDP) | `/tmp/cdp-verify-marketplace-panel.mjs` → ۱۱/۱۱: توکن مالک، صفحهٔ خدمات، ستون‌های بازارگاه، ثبت و انتشار خدمت، تنظیمات و لینک ویترین | ✅ ۱۱/۱۱ |
+| بازارگاه — کل بسته‌ها        | typecheck/lint/build | `pnpm --filter @repo/api typecheck` ✅؛ `pnpm --filter @repo/web typecheck` ✅؛ `pnpm --filter @repo/web lint` → ۰ خطا (۲۱ هشدار advisory)؛ `pnpm --filter @repo/web build` ✅ (۴۱ روت، ۸ روت بازارگاه) | ✅ |
 
 ### نکتهٔ عملیاتی (کش Next در حالت توسعه)
 
