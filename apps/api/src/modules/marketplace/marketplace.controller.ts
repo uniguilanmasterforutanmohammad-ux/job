@@ -78,6 +78,13 @@ export class MarketplaceController {
     return this.marketplace.business(slug);
   }
 
+  @Get('businesses/:slug/shipping')
+  @Throttle({ default: { limit: 60, ttl: 60_000 } })
+  @ApiOperation({ summary: 'روش‌های ارسال یک کسب‌وکار برای سبد خرید' })
+  shipping(@Param('slug', new ZodValidationPipe(marketplaceSlugParamSchema)) slug: string) {
+    return this.marketplace.shippingOptions(slug);
+  }
+
   @Get('facets')
   @Throttle({ default: { limit: 60, ttl: 60_000 } })
   @ApiOperation({ summary: 'فیلترهای موجود (دسته‌ها و صنف‌ها)' })

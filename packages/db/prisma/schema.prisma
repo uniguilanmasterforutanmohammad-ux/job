@@ -98,6 +98,7 @@ model Tenant {
   wallets         Wallet[]
   plans           Plan[]
   discounts       DiscountCode[]
+  shippingMethods ShippingMethod[]
   documents       Document[]
 
   // Phase 2 relations
@@ -1467,6 +1468,7 @@ model Order {
   shippingCost   Decimal     @default(0) @db.Decimal(14, 0)
   total          Decimal     @default(0) @db.Decimal(14, 0)
   shippingMethod String?
+  shippingMethodId String?   @db.Uuid
   trackingCode   String?
   address        String?
   note           String?
@@ -1475,10 +1477,34 @@ model Order {
 
   tenant         Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   payments       Payment[]
+  shippingOption ShippingMethod? @relation(fields: [shippingMethodId], references: [id], onDelete: SetNull)
 
   @@unique([tenantId, number])
   @@index([tenantId, status])
   @@map("orders")
+}
+
+/// Per-business delivery options shown at checkout (SHOP-04).
+model ShippingMethod {
+  id            String   @id @default(uuid()) @db.Uuid
+  tenantId      String   @db.Uuid
+  name          String
+  description   String?
+  cost          Decimal  @default(0) @db.Decimal(14, 0)
+  /// Free shipping once the goods subtotal reaches this amount.
+  freeAbove     Decimal? @db.Decimal(14, 0)
+  estimatedDays String?
+  isActive      Boolean  @default(true)
+  sortOrder     Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  tenant        Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  orders        Order[]
+
+  @@unique([tenantId, name])
+  @@index([tenantId, isActive])
+  @@map("shipping_methods")
 }
 
 // ---------------------------------------------------------------------------

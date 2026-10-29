@@ -272,13 +272,15 @@ export class MarketplaceService {
       },
       select: {
         ...PUBLIC_TENANT_FIELDS,
+        id: true,
         address: true,
         phone: true,
       },
     });
     if (!tenant) throw DomainException.notFound('کسب‌وکار');
+    const { id: tenantId, ...publicTenant } = tenant;
 
-    const [products, services] = await Promise.all([
+    const [products, services, shippingMethods] = await Promise.all([
       this.prisma.client.product.findMany({
         where: {
           isPublic: true,
@@ -302,9 +304,21 @@ export class MarketplaceService {
         orderBy: { createdAt: 'desc' },
         take: 48,
       }),
+      this.prisma.client.shippingMethod.findMany({
+        where: { tenantId, isActive: true },
+        select: {
+          id: true,
+          name: true,
+          description: true,
+          cost: true,
+          freeAbove: true,
+          estimatedDays: true,
+        },
+        orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }],
+      }),
     ]);
 
-    return { tenant, products, services };
+    return { tenant: publicTenant, products, services, shippingMethods };
   }
 
   /** Filter chips for the catalogue pages. */
@@ -346,6 +360,29 @@ export class MarketplaceService {
       serviceCategories: serviceCategories.map((row) => row.category).filter(Boolean),
       industries: industries.map((row) => row.industry),
     };
+  }
+
+  /** Delivery options of one business, used by the cart before checkout. */
+  async shippingOptions(slug: string) {
+    const tenant = await this.prisma.client.tenant.findFirst({
+      where: { slug, status: 'ACTIVE', deletedAt: null, marketplaceEnabled: true },
+      select: { id: true, slug: true, name: true },
+    });
+    if (!tenant) throw DomainException.notFound('کسب‌وکار');
+
+    const methods = await this.prisma.client.shippingMethod.findMany({
+      where: { tenantId: tenant.id, isActive: true },
+      select: {
+        id: true,
+        name: true,
+        description: true,
+        cost: true,
+        freeAbove: true,
+        estimatedDays: true,
+      },
+      orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }],
+    });
+    return { tenant: { slug: tenant.slug, name: tenant.name }, methods };
   }
 
   async requestOtp(phone: string) {
@@ -413,6 +450,7 @@ export class MarketplaceService {
       customerId: user.customerId,
       items: lines,
       shippingMethod: dto.shippingMethod,
+      shippingMethodId: dto.shippingMethodId,
       shippingCost: 0,
       address: dto.address,
       note: dto.note,

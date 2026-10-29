@@ -16,6 +16,7 @@ import { Badge } from '@/components/ui/badge';
 import { Table, Td, Th } from '@/components/ui/table';
 import { BranchesCard } from '@/components/settings/branches-card';
 import { ChangePasswordCard } from '@/components/settings/change-password-card';
+import { ShippingMethodsCard } from '@/components/settings/shipping-methods-card';
 import { useBranchNoun } from '@/lib/use-industry-registry';
 import type { BackupRecord, Paginated } from '@/lib/types';
 
@@ -233,6 +234,10 @@ export default function SettingsPage() {
           ) : null}
         </CardBody>
       </Card>
+
+      {merged.modules?.some((module) => module.key === 'SHOP' && module.isEnabled) ? (
+        <ShippingMethodsCard />
+      ) : null}
 
       <div className="grid gap-5 lg:grid-cols-2">
         <Card>

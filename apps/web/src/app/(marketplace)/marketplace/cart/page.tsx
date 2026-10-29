@@ -15,6 +15,15 @@ type CheckoutResult = {
   payment: { paymentId: string; redirectUrl: string; provider: string } | null;
 };
 
+type ShippingOption = {
+  id: string;
+  name: string;
+  description: string | null;
+  cost: string;
+  freeAbove: string | null;
+  estimatedDays: string | null;
+};
+
 export default function MarketplaceCartPage() {
   const [items, setItems] = useState<CartItem[]>([]);
   const [ready, setReady] = useState(false);
@@ -26,17 +35,43 @@ export default function MarketplaceCartPage() {
   const [codeSent, setCodeSent] = useState(false);
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<CheckoutResult | null>(null);
+  const [shippingOptions, setShippingOptions] = useState<ShippingOption[]>([]);
+  const [shippingId, setShippingId] = useState('');
 
   useEffect(() => {
     setItems(readCart());
     setReady(true);
   }, []);
 
-  const total = useMemo(
+  const subtotal = useMemo(
     () => items.reduce((sum, item) => sum + item.price * item.quantity, 0),
     [items],
   );
   const tenantName = items[0]?.tenantName ?? '';
+  const tenantSlug = items[0]?.tenantSlug ?? '';
+
+  useEffect(() => {
+    if (!tenantSlug) return;
+    let alive = true;
+    marketplaceFetch<{ methods: ShippingOption[] }>(`/businesses/${tenantSlug}/shipping`)
+      .then((data) => {
+        if (!alive) return;
+        setShippingOptions(data.methods ?? []);
+        setShippingId((current) => current || data.methods?.[0]?.id || '');
+      })
+      .catch(() => undefined);
+    return () => {
+      alive = false;
+    };
+  }, [tenantSlug]);
+
+  const selectedShipping = shippingOptions.find((option) => option.id === shippingId) ?? null;
+  const shippingCost = useMemo(() => {
+    if (!selectedShipping) return 0;
+    if (selectedShipping.freeAbove && subtotal >= Number(selectedShipping.freeAbove)) return 0;
+    return Number(selectedShipping.cost);
+  }, [selectedShipping, subtotal]);
+  const total = subtotal + shippingCost;
 
   function updateQuantity(productId: string, quantity: number) {
     const next = items
@@ -97,6 +132,7 @@ export default function MarketplaceCartPage() {
           fullName: fullName.trim() || undefined,
           address: address.trim() || undefined,
           note: note.trim() || undefined,
+          shippingMethodId: shippingId || undefined,
           items: items.map((item) => ({ productId: item.productId, quantity: item.quantity })),
           payOnline: true,
         }),
@@ -238,12 +274,64 @@ export default function MarketplaceCartPage() {
         <div className="space-y-3 rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
           <div className="flex items-center justify-between text-sm">
             <span className="text-slate-500">جمع کالاها</span>
-            <span className="nums font-bold">{formatToman(total)}</span>
+            <span className="nums font-bold">{formatToman(subtotal)}</span>
           </div>
-          <p className="rounded-xl bg-slate-50 p-2.5 text-[11px] leading-5 text-slate-500 dark:bg-slate-800/60">
-            هزینهٔ ارسال به عهدهٔ فروشنده و پس از هماهنگی است؛ پرداخت آنلاین فعلاً فقط
-            بهای کالاها را پوشش می‌دهد.
-          </p>
+
+          {shippingOptions.length > 0 ? (
+            <div className="space-y-2">
+              <span className="block text-xs text-slate-500">روش ارسال</span>
+              {shippingOptions.map((option) => {
+                const free = option.freeAbove && subtotal >= Number(option.freeAbove);
+                return (
+                  <label
+                    key={option.id}
+                    className={`flex cursor-pointer items-start gap-2 rounded-xl border p-2.5 text-sm ${
+                      shippingId === option.id
+                        ? 'border-brand-400 bg-brand-50/60 dark:bg-brand-950/30'
+                        : 'border-slate-200 dark:border-slate-700'
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="shipping"
+                      className="mt-1"
+                      checked={shippingId === option.id}
+                      onChange={() => setShippingId(option.id)}
+                    />
+                    <span className="flex-1">
+                      <span className="flex items-center justify-between gap-2">
+                        <b className="font-semibold">{option.name}</b>
+                        <span className="nums text-xs text-slate-600 dark:text-slate-300">
+                          {free ? 'رایگان' : formatToman(Number(option.cost))}
+                        </span>
+                      </span>
+                      <span className="mt-0.5 block text-[11px] text-slate-500">
+                        {option.description}
+                        {option.estimatedDays ? ` — ${option.estimatedDays}` : ''}
+                        {option.freeAbove && !free
+                          ? ` — رایگان برای خرید بالای ${formatToman(Number(option.freeAbove))}`
+                          : ''}
+                      </span>
+                    </span>
+                  </label>
+                );
+              })}
+            </div>
+          ) : (
+            <p className="rounded-xl bg-slate-50 p-2.5 text-[11px] leading-5 text-slate-500 dark:bg-slate-800/60">
+              هزینهٔ ارسال با فروشنده هماهنگ می‌شود؛ پرداخت آنلاین فعلاً فقط بهای کالاها را
+              پوشش می‌دهد.
+            </p>
+          )}
+
+          <div className="flex items-center justify-between border-t border-slate-100 pt-2 text-sm dark:border-slate-800">
+            <span className="text-slate-500">هزینهٔ ارسال</span>
+            <span className="nums">{formatToman(shippingCost)}</span>
+          </div>
+          <div className="flex items-center justify-between text-sm font-bold">
+            <span>مبلغ قابل پرداخت</span>
+            <span className="nums">{formatToman(total)}</span>
+          </div>
 
           <label className="block">
             <span className="mb-1 block text-xs text-slate-500">نام و نام خانوادگی (اختیاری)</span>

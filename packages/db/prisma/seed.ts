@@ -317,6 +317,37 @@ async function seedDemoTenant() {
     if (!found) await prisma.membershipPlan.create({ data: { tenantId: tenant.id, ...plan } });
   }
 
+  // SHOP-04 delivery options (shown in the public marketplace cart)
+  const shippingDefs = [
+    {
+      name: 'پیک موتوری',
+      description: 'تحویل در تهران، همان روز برای سفارش‌های قبل از ساعت ۱۴',
+      cost: 50000,
+      freeAbove: 1000000,
+      estimatedDays: 'همان روز',
+      sortOrder: 1,
+    },
+    {
+      name: 'پست پیشتاز',
+      description: 'ارسال به سراسر کشور',
+      cost: 80000,
+      freeAbove: null,
+      estimatedDays: '۲ تا ۴ روز کاری',
+      sortOrder: 2,
+    },
+  ];
+  for (const method of shippingDefs) {
+    const found = await prisma.shippingMethod.findFirst({
+      where: { tenantId: tenant.id, name: method.name },
+    });
+    if (found) {
+      await prisma.shippingMethod.update({ where: { id: found.id }, data: method });
+    } else {
+      await prisma.shippingMethod.create({ data: { tenantId: tenant.id, ...method } });
+    }
+  }
+  console.log(`  ✓ shipping methods: ${shippingDefs.length}`);
+
   // INV products
   const productSeeds = [
     {

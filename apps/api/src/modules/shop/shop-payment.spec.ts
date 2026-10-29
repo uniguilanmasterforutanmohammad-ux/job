@@ -28,11 +28,20 @@ function prismaMock() {
       findFirst: vi.fn().mockResolvedValue({ fullName: 'خریدار تست' }),
     },
     product: {
+      findMany: vi.fn().mockResolvedValue([]),
       updateMany: vi.fn().mockResolvedValue({ count: 1 }),
       update: vi.fn().mockResolvedValue({}),
       findFirst: vi.fn().mockResolvedValue({ id: 'p1' }),
     },
     stockMovement: { create: vi.fn().mockResolvedValue({}) },
+    shippingMethod: {
+      findFirst: vi.fn().mockResolvedValue({
+        id: 'ship-1',
+        name: 'پیک موتوری',
+        cost: 50000,
+        freeAbove: 1000000,
+      }),
+    },
     payment: {
       create: vi.fn().mockImplementation(({ data }: { data: Record<string, unknown> }) =>
         Promise.resolve({ id: 'pay-1', ...data }),
@@ -172,6 +181,32 @@ describe('ShopService — stock ownership', () => {
         body: expect.stringContaining('تأیید شد'),
       }),
     );
+  });
+
+  it('charges the delivery option and stores it on the order', async () => {
+    const order = await shop.createOrder('t1', {
+      items: [{ productId: 'p1', title: 'توپ', quantity: 1, unitPrice: 250000 }],
+      shippingMethodId: 'ship-1',
+      shippingCost: 0,
+    });
+
+    expect(client.order.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          shippingMethodId: 'ship-1',
+          shippingMethod: 'پیک موتوری',
+          shippingCost: 50000,
+          total: 300000,
+        }),
+      }),
+    );
+    expect(order.total).toBe(300000);
+  });
+
+  it('waives delivery cost above the free-shipping threshold', () => {
+    expect(shop.shippingCostFor({ cost: 50000, freeAbove: 1000000 }, 1200000)).toBe(0);
+    expect(shop.shippingCostFor({ cost: 50000, freeAbove: 1000000 }, 900000)).toBe(50000);
+    expect(shop.shippingCostFor({ cost: 80000, freeAbove: null }, 5000000)).toBe(80000);
   });
 });
 

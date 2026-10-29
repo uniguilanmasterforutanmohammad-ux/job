@@ -162,6 +162,7 @@
 | ۸۴ | سئوی ساختاریافته و پاک‌سازی پاسخ‌های بازارگاه                             | `013f745` | `refactor(marketplace): structured SEO data and response cleanup`        |
 | ۸۵ | مستندات بازارگاه + وضعیت + ثبت قوانین و تکمیل تسک                        | `caea040` | `docs(marketplace): document the public marketplace and log the work`     |
 | ۸۶ | فاز ۲ — اتصال پرداخت به سفارش، رزرو و بازگشت موجودی                       | `c94b724` | `feat(shop): link payments to orders with stock reservation`              |
+| ۸۷ | فاز ۲ — اعلان دوطرفهٔ سفارش (خریدار/فروشنده)                              | `1f1ffbd` | `feat(shop): two-way order notifications`                                 |
 
 > کامیت ثبت لاگ هر ردیف در اجرای بعدی در جدول ثبت می‌شود؛ چون
 > هیچ کامیتی نمی‌تواند هش خودش را درون خودش داشته باشد.
@@ -285,6 +286,8 @@
 | بازارگاه فاز۲ — واحد         | واحد           | `apps/api/src/modules/shop/shop-payment.spec.ts` (۱۱ تست: رزرو اتمیک، کمبود موجودی، پرداخت→CONFIRMED بدون کسر دوباره، لغو→RELEASED، idempotency، مبلغ از سفارش، استرداد، اعلان‌ها) | ✅ ۱۱/۱۱ |
 | بازارگاه فاز۲ — زنده         | زنده (HTTP+DB) | checkout ۲ عدد → stock ۳۰→۲۸ و `RESERVED` → callback mock → `CONFIRMED/COMMITTED` → استرداد → `CANCELED/RELEASED` و stock=۳۰؛ حرکت‌های `RESERVATION`/`RELEASE` ثبت شد | ✅ |
 | بازارگاه فاز۲ — اعلان       | زنده (DB)      | پس از checkout: پیام «سفارش جدید» برای مالک (`order.created`) + «سفارش شما ثبت شد» و «وضعیت سفارش» برای خریدار (`order.confirmed`) در `messages` | ✅ |
+| بازارگاه فاز۲ — ارسال       | واحد           | همان اسپک: `shippingCostFor` (آستانهٔ ارسال رایگان) + ثبت `shippingMethodId`/هزینه در سفارش → ۱۳/۱۳ | ✅ ۱۳/۱۳ |
+| بازارگاه فاز۲ — ارسال زنده  | زنده (HTTP)    | `GET /public/marketplace/businesses/coach-demo/shipping` دو روش (پیک ۵۰٬۰۰۰ / پست ۸۰٬۰۰۰)؛ checkout با `shippingMethodId` → `total=300000` برای کالای ۲۵۰٬۰۰۰ | ✅ |
 
 ### نکتهٔ عملیاتی (کش Next در حالت توسعه)
 

@@ -81,6 +81,7 @@ export const marketplaceCheckoutSchema = z.object({
     .min(1, 'سبد خرید خالی است')
     .max(50),
   shippingMethod: z.string().trim().max(80).optional(),
+  shippingMethodId: z.string().uuid('روش ارسال نامعتبر است').optional(),
   address: z.string().trim().max(500).optional(),
   note: z.string().trim().max(500).optional(),
   payOnline: z.boolean().default(true),

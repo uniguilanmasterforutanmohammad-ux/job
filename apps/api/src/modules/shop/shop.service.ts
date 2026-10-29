@@ -7,8 +7,10 @@ import { NotificationService } from '../notifications/notification.service.js';
 import type {
   CatalogQueryDto,
   CreateOrderDto,
+  CreateShippingMethodDto,
   ListOrdersDto,
   UpdateOrderStatusDto,
+  UpdateShippingMethodDto,
   UpdateShippingDto,
 } from './dto/shop.schemas.js';
 
@@ -84,7 +86,19 @@ export class ShopService {
     }
 
     const subtotal = dto.items.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0);
-    const total = subtotal + dto.shippingCost;
+    const shippingMethod = dto.shippingMethodId
+      ? await this.prisma.client.shippingMethod.findFirst({
+          where: { id: dto.shippingMethodId, tenantId, isActive: true },
+        })
+      : null;
+    if (dto.shippingMethodId && !shippingMethod) {
+      throw DomainException.badRequest('روش ارسال انتخاب‌شده معتبر نیست');
+    }
+    const shippingCost = shippingMethod
+      ? this.shippingCostFor(shippingMethod, subtotal)
+      : dto.shippingCost;
+    const shippingName = shippingMethod?.name ?? dto.shippingMethod ?? null;
+    const total = subtotal + shippingCost;
 
     // `number` is derived from a count, so two simultaneous checkouts can race
     // for the same value; the unique (tenantId, number) index rejects the loser
@@ -100,9 +114,10 @@ export class ShopService {
               number,
               items: dto.items as never,
               subtotal,
-              shippingCost: dto.shippingCost,
+              shippingCost,
               total,
-              shippingMethod: dto.shippingMethod ?? null,
+              shippingMethodId: shippingMethod?.id ?? null,
+              shippingMethod: shippingName,
               address: dto.address ?? null,
               note: dto.note ?? null,
               status: 'PENDING',
@@ -131,6 +146,14 @@ export class ShopService {
 
   private isUniqueViolation(error: unknown): boolean {
     return error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002';
+  }
+
+  /** Cost of a delivery option for the given goods subtotal. */
+  shippingCostFor(method: { cost: unknown; freeAbove: unknown }, subtotal: number): number {
+    if (method.freeAbove !== null && method.freeAbove !== undefined) {
+      if (subtotal >= Number(method.freeAbove)) return 0;
+    }
+    return Number(method.cost);
   }
 
   private async nextOrderNumber(
@@ -422,5 +445,63 @@ export class ShopService {
       note: order.note,
       total: order.total,
     };
+  }
+
+  // ----- SHOP-04 delivery options -----
+
+  shippingMethods(tenantId: string) {
+    return this.prisma.client.shippingMethod.findMany({
+      where: { tenantId },
+      orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }],
+    });
+  }
+
+  async createShippingMethod(tenantId: string, dto: CreateShippingMethodDto) {
+    const duplicate = await this.prisma.client.shippingMethod.findFirst({
+      where: { tenantId, name: dto.name },
+      select: { id: true },
+    });
+    if (duplicate) throw DomainException.conflict('روشی با این نام قبلاً ثبت شده است');
+
+    return this.prisma.client.shippingMethod.create({
+      data: {
+        tenantId,
+        name: dto.name,
+        description: dto.description ?? null,
+        cost: dto.cost,
+        freeAbove: dto.freeAbove ?? null,
+        estimatedDays: dto.estimatedDays ?? null,
+        isActive: dto.isActive,
+        sortOrder: dto.sortOrder,
+      },
+    });
+  }
+
+  async updateShippingMethod(tenantId: string, id: string, dto: UpdateShippingMethodDto) {
+    const method = await this.prisma.client.shippingMethod.findFirst({ where: { id, tenantId } });
+    if (!method) throw DomainException.notFound('روش ارسال');
+
+    return this.prisma.client.shippingMethod.update({
+      where: { id },
+      data: {
+        ...(dto.name !== undefined ? { name: dto.name } : {}),
+        ...(dto.description !== undefined ? { description: dto.description } : {}),
+        ...(dto.cost !== undefined ? { cost: dto.cost } : {}),
+        ...(dto.freeAbove !== undefined ? { freeAbove: dto.freeAbove } : {}),
+        ...(dto.estimatedDays !== undefined ? { estimatedDays: dto.estimatedDays } : {}),
+        ...(dto.isActive !== undefined ? { isActive: dto.isActive } : {}),
+        ...(dto.sortOrder !== undefined ? { sortOrder: dto.sortOrder } : {}),
+      },
+    });
+  }
+
+  /** Soft-deactivate: past orders keep their shipping method reference. */
+  async deactivateShippingMethod(tenantId: string, id: string) {
+    const method = await this.prisma.client.shippingMethod.findFirst({ where: { id, tenantId } });
+    if (!method) throw DomainException.notFound('روش ارسال');
+    return this.prisma.client.shippingMethod.update({
+      where: { id },
+      data: { isActive: false },
+    });
   }
 }

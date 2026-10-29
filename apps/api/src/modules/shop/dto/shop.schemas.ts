@@ -12,6 +12,7 @@ export const createOrderSchema = z.object({
   customerId: z.string().uuid().optional(),
   items: z.array(orderItemSchema).min(1, 'حداقل یک قلم لازم است'),
   shippingMethod: z.string().trim().max(80).optional(),
+  shippingMethodId: z.string().uuid().optional(),
   shippingCost: z.coerce.number().min(0).default(0),
   address: z.string().trim().max(500).optional(),
   note: z.string().trim().max(500).optional(),
@@ -46,3 +47,18 @@ export const catalogQuerySchema = z.object({
   search: z.string().trim().max(120).optional(),
 });
 export type CatalogQueryDto = z.infer<typeof catalogQuerySchema>;
+
+// SHOP-04 — delivery options per business
+export const createShippingMethodSchema = z.object({
+  name: z.string().trim().min(2).max(60),
+  description: z.string().trim().max(200).optional(),
+  cost: z.coerce.number().int().min(0).default(0),
+  freeAbove: z.coerce.number().int().min(0).optional(),
+  estimatedDays: z.string().trim().max(60).optional(),
+  isActive: z.boolean().default(true),
+  sortOrder: z.coerce.number().int().min(0).max(1000).default(0),
+});
+export type CreateShippingMethodDto = z.infer<typeof createShippingMethodSchema>;
+
+export const updateShippingMethodSchema = createShippingMethodSchema.partial();
+export type UpdateShippingMethodDto = z.infer<typeof updateShippingMethodSchema>;

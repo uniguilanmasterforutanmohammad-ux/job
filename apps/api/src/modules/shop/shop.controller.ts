@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Patch, Post, Query } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Query } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { PERMISSIONS } from '@repo/shared';
 import { CurrentUser } from '../../common/decorators/current-user.decorator.js';
@@ -9,13 +9,17 @@ import { ShopService } from './shop.service.js';
 import {
   catalogQuerySchema,
   createOrderSchema,
+  createShippingMethodSchema,
   listOrdersSchema,
   updateOrderStatusSchema,
+  updateShippingMethodSchema,
   updateShippingSchema,
   type CatalogQueryDto,
   type CreateOrderDto,
+  type CreateShippingMethodDto,
   type ListOrdersDto,
   type UpdateOrderStatusDto,
+  type UpdateShippingMethodDto,
   type UpdateShippingDto,
 } from './dto/shop.schemas.js';
 
@@ -89,5 +93,42 @@ export class ShopController {
     @Body(new ZodValidationPipe(updateShippingSchema)) dto: UpdateShippingDto,
   ) {
     return this.shop.updateShipping(tenantId, id, dto);
+  }
+
+  // ----- SHOP-04 delivery options -----
+
+  @Get('shipping-methods')
+  @RequirePermissions(PERMISSIONS.SHOP_READ)
+  @ApiOperation({ summary: 'روش‌های ارسال کسب‌وکار' })
+  shippingMethods(@CurrentUser('tenantId') tenantId: string) {
+    return this.shop.shippingMethods(tenantId);
+  }
+
+  @Post('shipping-methods')
+  @RequirePermissions(PERMISSIONS.SHOP_WRITE)
+  @ApiOperation({ summary: 'ثبت روش ارسال' })
+  createShippingMethod(
+    @CurrentUser('tenantId') tenantId: string,
+    @Body(new ZodValidationPipe(createShippingMethodSchema)) dto: CreateShippingMethodDto,
+  ) {
+    return this.shop.createShippingMethod(tenantId, dto);
+  }
+
+  @Patch('shipping-methods/:id')
+  @RequirePermissions(PERMISSIONS.SHOP_WRITE)
+  @ApiOperation({ summary: 'ویرایش روش ارسال' })
+  updateShippingMethod(
+    @CurrentUser('tenantId') tenantId: string,
+    @Param('id') id: string,
+    @Body(new ZodValidationPipe(updateShippingMethodSchema)) dto: UpdateShippingMethodDto,
+  ) {
+    return this.shop.updateShippingMethod(tenantId, id, dto);
+  }
+
+  @Delete('shipping-methods/:id')
+  @RequirePermissions(PERMISSIONS.SHOP_WRITE)
+  @ApiOperation({ summary: 'غیرفعال‌کردن روش ارسال' })
+  deactivateShippingMethod(@CurrentUser('tenantId') tenantId: string, @Param('id') id: string) {
+    return this.shop.deactivateShippingMethod(tenantId, id);
   }
 }
