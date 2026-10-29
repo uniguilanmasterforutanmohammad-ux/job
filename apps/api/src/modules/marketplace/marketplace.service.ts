@@ -416,12 +416,12 @@ export class MarketplaceService {
       shippingCost: 0,
       address: dto.address,
       note: dto.note,
-    });
+    }, { reserveStock: true });
 
     const payment = dto.payOnline
       ? await this.payments.createOnlinePayment(tenant.id, {
+          orderId: order.id,
           customerId: user.customerId,
-          amount: Number(order.total),
           description: `پرداخت سفارش ${order.number}`,
         })
       : null;
@@ -467,6 +467,11 @@ export class MarketplaceService {
         shippingMethod: true,
         createdAt: true,
         updatedAt: true,
+        payments: {
+          select: { status: true, method: true },
+          orderBy: { createdAt: 'desc' },
+          take: 1,
+        },
         tenant: { select: { slug: true, name: true } },
       },
     });

@@ -1,8 +1,9 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { forwardRef, Inject, Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { DomainException } from '../../common/exceptions/domain.exception.js';
 import { PrismaService } from '../../database/prisma.service.js';
 import type { AppConfig } from '../../config/configuration.js';
+import { ShopService } from '../shop/shop.service.js';
 import { PaymentProviderRegistry } from './providers/provider.registry.js';
 import type { CreatePaymentDto, ManualPaymentDto } from './dto/payment.schemas.js';
 
@@ -14,6 +15,7 @@ export class PaymentsService {
     private readonly prisma: PrismaService,
     private readonly config: ConfigService<AppConfig>,
     private readonly registry: PaymentProviderRegistry,
+    @Inject(forwardRef(() => ShopService)) private readonly shop: ShopService,
   ) {}
 
   private get provider() {
@@ -24,6 +26,15 @@ export class PaymentsService {
   /** Starts an online payment: creates a PENDING row then a gateway session. */
   async createOnlinePayment(tenantId: string, dto: CreatePaymentDto) {
     if (dto.invoiceId) await this.assertInvoiceBelongsToTenant(tenantId, dto.invoiceId);
+    if (dto.invoiceId && dto.orderId) {
+      throw DomainException.badRequest('پرداخت نمی‌تواند هم‌زمان به فاکتور و سفارش وصل باشد');
+    }
+
+    // An order payment must always cover the full order: the amount comes from
+    // the order row, never from the client.
+    const order = dto.orderId ? await this.assertOrderPayable(tenantId, dto.orderId) : null;
+    const amount = order ? Number(order.total) : dto.amount;
+    if (!amount || amount <= 0) throw DomainException.badRequest('مبلغ پرداخت معتبر نیست');
 
     const providerKey = dto.provider ?? this.provider;
     if (!this.registry.has(providerKey)) {
@@ -35,8 +46,9 @@ export class PaymentsService {
       data: {
         tenantId,
         invoiceId: dto.invoiceId ?? null,
+        orderId: order?.id ?? null,
         customerId: dto.customerId ?? null,
-        amount: dto.amount,
+        amount,
         method: 'ONLINE_GATEWAY',
         status: 'PENDING',
         provider: providerKey,
@@ -47,7 +59,7 @@ export class PaymentsService {
     const callbackUrl = `${callbackBase}?paymentId=${payment.id}`;
 
     const session = await gateway.createPayment({
-      amount: dto.amount,
+      amount,
       description: dto.description,
       callbackUrl,
       orderId: payment.id,
@@ -70,13 +82,25 @@ export class PaymentsService {
     paymentId: string;
     authority?: string;
     status?: string;
-  }): Promise<{ success: boolean; paymentId: string; trackingCode?: string; message?: string }> {
+  }): Promise<{
+    success: boolean;
+    paymentId: string;
+    trackingCode?: string;
+    orderId?: string;
+    orderNumber?: string;
+    message?: string;
+  }> {
     const payment = await this.prisma.client.payment.findUnique({
       where: { id: params.paymentId },
     });
     if (!payment) throw DomainException.notFound('پرداخت');
     if (payment.status === 'SUCCEEDED') {
-      return { success: true, paymentId: payment.id, trackingCode: payment.trackingCode ?? undefined };
+      return {
+        success: true,
+        paymentId: payment.id,
+        trackingCode: payment.trackingCode ?? undefined,
+        ...(await this.orderRef(payment.orderId)),
+      };
     }
 
     const gateway = this.registry.get(payment.provider ?? 'mock');
@@ -111,17 +135,23 @@ export class PaymentsService {
       success: true,
       paymentId: payment.id,
       trackingCode: verification.trackingCode,
+      ...(await this.orderRef(payment.orderId)),
     };
   }
 
   /** Manually recorded payments (cash/POS/card-to-card/cheque). */
   async recordManualPayment(tenantId: string, dto: ManualPaymentDto, memberId: string) {
     if (dto.invoiceId) await this.assertInvoiceBelongsToTenant(tenantId, dto.invoiceId);
+    const order = dto.orderId ? await this.assertOrderPayable(tenantId, dto.orderId) : null;
+    if (order && Number(dto.amount) < Number(order.total)) {
+      throw DomainException.badRequest('مبلغ ثبت‌شده کمتر از مبلغ سفارش است');
+    }
 
     const payment = await this.prisma.client.payment.create({
       data: {
         tenantId,
         invoiceId: dto.invoiceId ?? null,
+        orderId: order?.id ?? null,
         customerId: dto.customerId ?? null,
         amount: dto.amount,
         method: dto.method,
@@ -132,7 +162,51 @@ export class PaymentsService {
     });
 
     if (dto.invoiceId) await this.recalculateInvoicePaid(dto.invoiceId);
+    if (order) await this.shop.confirmAfterPayment(tenantId, order.id);
     return payment;
+  }
+
+  /**
+   * Refunds a settled payment. Orders linked to it go back to CANCELED and
+   * their reserved stock is restored.
+   */
+  async refundPayment(tenantId: string, paymentId: string, memberId: string, reason?: string) {
+    const payment = await this.prisma.client.payment.findFirst({
+      where: { id: paymentId, tenantId },
+    });
+    if (!payment) throw DomainException.notFound('پرداخت');
+    if (payment.status !== 'SUCCEEDED') {
+      throw DomainException.badRequest('فقط پرداخت موفق قابل استرداد است');
+    }
+
+    const refund = await this.prisma.client.$transaction(async (tx) => {
+      const row = await tx.refund.create({
+        data: {
+          tenantId,
+          invoiceId: payment.invoiceId,
+          paymentId: payment.id,
+          customerId: payment.customerId,
+          amount: payment.amount,
+          reason: reason ?? 'استرداد پرداخت آنلاین',
+          status: 'COMPLETED',
+          requestedBy: memberId,
+          approvedBy: memberId,
+          approvedAt: new Date(),
+          completedAt: new Date(),
+        },
+      });
+      await tx.payment.update({
+        where: { id: payment.id },
+        data: { status: 'REFUNDED' },
+      });
+      return row;
+    });
+
+    if (payment.invoiceId) await this.recalculateInvoicePaid(payment.invoiceId);
+    if (payment.orderId) await this.shop.releaseAfterRefund(tenantId, payment.orderId);
+
+    this.logger.log(`Payment refunded: ${payment.id} order=${payment.orderId ?? '-'}`);
+    return refund;
   }
 
   async listForTenant(tenantId: string, limit = 50) {
@@ -166,7 +240,38 @@ export class PaymentsService {
     });
 
     if (payment.invoiceId) await this.recalculateInvoicePaid(payment.invoiceId);
+    if (payment.orderId) {
+      // A settled gateway payment confirms the order (and finalises stock).
+      await this.shop.confirmAfterPayment(payment.tenantId, payment.orderId).catch((error) => {
+        // The money is already captured; never fail the callback because the
+        // order was canceled in the meantime — the business can refund it.
+        this.logger.error(
+          `Order ${payment.orderId} could not be confirmed after payment ${payment.id}: ${(error as Error).message}`,
+        );
+      });
+    }
     this.logger.log(`Payment settled: ${paymentId} tracking=${trackingCode ?? '-'}`);
+  }
+
+  private async orderRef(orderId: string | null) {
+    if (!orderId) return {};
+    const order = await this.prisma.client.order.findUnique({
+      where: { id: orderId },
+      select: { id: true, number: true },
+    });
+    return order ? { orderId: order.id, orderNumber: order.number } : {};
+  }
+
+  private async assertOrderPayable(tenantId: string, orderId: string) {
+    const order = await this.prisma.client.order.findFirst({
+      where: { id: orderId, tenantId },
+      select: { id: true, number: true, status: true, total: true },
+    });
+    if (!order) throw DomainException.notFound('سفارش');
+    if (order.status !== 'PENDING') {
+      throw DomainException.badRequest('این سفارش دیگر قابل پرداخت نیست');
+    }
+    return order;
   }
 
   private async recalculateInvoicePaid(invoiceId: string): Promise<void> {

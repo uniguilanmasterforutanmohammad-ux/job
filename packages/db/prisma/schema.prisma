@@ -650,6 +650,7 @@ model Payment {
   id             String        @id @default(uuid()) @db.Uuid
   tenantId       String        @db.Uuid
   invoiceId      String?       @db.Uuid
+  orderId        String?       @db.Uuid
   customerId     String?       @db.Uuid
   amount         Decimal       @db.Decimal(14, 0)
   currency       String        @default("IRR")
@@ -665,10 +666,12 @@ model Payment {
 
   tenant         Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   invoice        Invoice?      @relation(fields: [invoiceId], references: [id], onDelete: SetNull)
+  order          Order?        @relation(fields: [orderId], references: [id], onDelete: SetNull)
   walletTx       WalletTransaction?
   refunds        Refund[]
 
   @@index([tenantId, status])
+  @@index([tenantId, orderId])
   @@index([providerRef])
   @@map("payments")
 }
@@ -1172,6 +1175,8 @@ model CashSession {
 enum StockMovementType {
   PURCHASE
   SALE
+  RESERVATION
+  RELEASE
   CONSUMPTION
   WASTE
   TRANSFER_IN
@@ -1433,6 +1438,14 @@ model Review {
 // SHOP — فروش آنلاین (§4.11)
 // ---------------------------------------------------------------------------
 
+/// Tracks how the order owns its inventory so stock is never deducted twice.
+enum OrderStockState {
+  NONE // سفارش دستی پنل؛ با تأیید سفارش کسر می‌شود
+  RESERVED // هنگام ثبت سفارش (بازارگاه/checkout) کسر شده است
+  COMMITTED // پرداخت/تأیید انجام شده و رزرو قطعی است
+  RELEASED // لغو یا استرداد؛ موجودی برگشته است
+}
+
 enum OrderStatus {
   PENDING
   CONFIRMED
@@ -1448,6 +1461,7 @@ model Order {
   customerId     String?     @db.Uuid
   number         String
   status         OrderStatus @default(PENDING)
+  stockState     OrderStockState @default(NONE)
   items          Json        @default("[]")
   subtotal       Decimal     @default(0) @db.Decimal(14, 0)
   shippingCost   Decimal     @default(0) @db.Decimal(14, 0)
@@ -1460,6 +1474,7 @@ model Order {
   updatedAt      DateTime    @updatedAt
 
   tenant         Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  payments       Payment[]
 
   @@unique([tenantId, number])
   @@index([tenantId, status])

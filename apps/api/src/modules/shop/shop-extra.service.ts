@@ -61,15 +61,15 @@ export class ShopExtraService {
       shippingCost: dto.shippingCost,
       address: dto.address,
       note: dto.note,
-    });
+    }, { reserveStock: true });
 
     if (!dto.payOnline) {
       return { order, payment: null };
     }
 
     const payment = await this.payments.createOnlinePayment(tenantId, {
+      orderId: order.id,
       customerId: dto.customerId,
-      amount: quote.total,
       description: `پرداخت سفارش ${order.number}`,
       provider: dto.provider,
     });

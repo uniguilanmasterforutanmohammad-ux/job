@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post, Query, Res } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Query, Res } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import type { Response } from 'express';
@@ -13,8 +13,10 @@ import {
   callbackSchema,
   createPaymentSchema,
   manualPaymentSchema,
+  refundPaymentSchema,
   type CreatePaymentDto,
   type ManualPaymentDto,
+  type RefundPaymentDto,
 } from './dto/payment.schemas.js';
 
 @ApiTags('payments')
@@ -56,6 +58,18 @@ export class PaymentsController {
     return this.payments.recordManualPayment(tenantId, dto, memberId);
   }
 
+  @Post(':id/refund')
+  @RequirePermissions(PERMISSIONS.FIN_WRITE)
+  @ApiOperation({ summary: 'استرداد پرداخت موفق (بازگشت موجودی سفارش مرتبط)' })
+  refund(
+    @CurrentUser('tenantId') tenantId: string,
+    @CurrentUser('memberId') memberId: string,
+    @Param('id') id: string,
+    @Body(new ZodValidationPipe(refundPaymentSchema)) dto: RefundPaymentDto,
+  ) {
+    return this.payments.refundPayment(tenantId, id, memberId, dto.reason);
+  }
+
   @Public()
   @Get('callback')
   @ApiOperation({ summary: 'بازگشت از درگاه پرداخت' })
@@ -71,8 +85,11 @@ export class PaymentsController {
     const appUrl = process.env.APP_URL ?? 'http://localhost:3000';
     try {
       const result = await this.payments.verifyCallback({ paymentId, authority, status });
+      const orderQuery = result.orderNumber
+        ? `&order=${encodeURIComponent(result.orderNumber)}`
+        : '';
       return res.redirect(
-        `${appUrl}/payments/result?status=success&paymentId=${result.paymentId}&ref=${result.trackingCode ?? ''}`,
+        `${appUrl}/payments/result?status=success&paymentId=${result.paymentId}&ref=${result.trackingCode ?? ''}${orderQuery}`,
       );
     } catch (error) {
       const message = error instanceof Error ? error.message : 'خطای پرداخت';

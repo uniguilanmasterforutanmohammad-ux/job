@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { Suspense, useState } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { PackageSearch } from 'lucide-react';
 import { toast } from 'sonner';
 import { formatJalali, formatToman } from '@/lib/utils';
@@ -11,8 +12,9 @@ import { Badge } from '@/components/ui/badge';
 
 const STEPS = ['PENDING', 'CONFIRMED', 'PREPARING', 'SHIPPED', 'DELIVERED'] as const;
 
-export default function MarketplaceOrderTrackingPage() {
-  const [number, setNumber] = useState('');
+function TrackingContent() {
+  const searchParams = useSearchParams();
+  const [number, setNumber] = useState(searchParams.get('number') ?? '');
   const [phone, setPhone] = useState('');
   const [busy, setBusy] = useState(false);
   const [order, setOrder] = useState<MarketplaceTrackedOrder | null>(null);
@@ -159,5 +161,13 @@ export default function MarketplaceOrderTrackingPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function MarketplaceOrderTrackingPage() {
+  return (
+    <Suspense fallback={null}>
+      <TrackingContent />
+    </Suspense>
   );
 }
