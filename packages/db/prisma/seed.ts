@@ -90,7 +90,11 @@ async function seedPlans() {
 async function seedDemoTenant() {
   const tenant = await prisma.tenant.upsert({
     where: { slug: 'coach-demo' },
-    update: {},
+    update: {
+      marketplaceEnabled: true,
+      tagline: 'باشگاه بدنسازی و تمرین اختصاصی',
+      city: 'تهران',
+    },
     create: {
       slug: 'coach-demo',
       name: 'باشگاه نمونه مربی‌گری',
@@ -100,6 +104,9 @@ async function seedDemoTenant() {
       calendar: 'JALALI',
       locale: 'fa-IR',
       taxRate: 9,
+      marketplaceEnabled: true,
+      tagline: 'باشگاه بدنسازی و تمرین اختصاصی',
+      city: 'تهران',
     },
   });
   console.log(`  ✓ tenant: ${tenant.name} (${tenant.id})`);
@@ -220,18 +227,39 @@ async function seedDemoTenant() {
   console.log('  ✓ subscription: TRIAL (14 days)');
 
   const serviceDefs = [
-    { name: 'تمرین بدنسازی یک‌ساعته', durationMinutes: 60, price: 300000 },
-    { name: 'تمرین اختصاصی', durationMinutes: 90, price: 500000 },
-    { name: 'کلاس گروهی', durationMinutes: 60, price: 150000 },
+    {
+      name: 'تمرین بدنسازی یک‌ساعته',
+      description: 'جلسهٔ تمرین با مربی، مناسب شروع و تثبیت فرم حرکات.',
+      category: 'بدنسازی',
+      imageUrl: '/marketplace/service-fitness.svg',
+      durationMinutes: 60,
+      price: 300000,
+    },
+    {
+      name: 'تمرین اختصاصی',
+      description: 'برنامهٔ تمرین اختصاصی بر اساس هدف و سطح آمادگی شما.',
+      category: 'تمرین اختصاصی',
+      imageUrl: '/marketplace/service-private.svg',
+      durationMinutes: 90,
+      price: 500000,
+    },
+    {
+      name: 'کلاس گروهی',
+      description: 'کلاس گروهی پرانرژی با ظرفیت محدود و مربی حاضر.',
+      category: 'کلاس گروهی',
+      imageUrl: '/marketplace/service-group.svg',
+      durationMinutes: 60,
+      price: 150000,
+    },
   ];
   let serviceCount = 0;
   for (const def of serviceDefs) {
     const found = await prisma.service.findFirst({
       where: { tenantId: tenant.id, name: def.name },
     });
-    if (!found) {
-      await prisma.service.create({ data: { tenantId: tenant.id, ...def } });
-    }
+    const data = { ...def, isPublic: true };
+    if (found) await prisma.service.update({ where: { id: found.id }, data });
+    else await prisma.service.create({ data: { tenantId: tenant.id, ...data } });
     serviceCount += 1;
   }
   console.log(`  ✓ services: ${serviceCount}`);
@@ -287,15 +315,47 @@ async function seedDemoTenant() {
 
   // INV products
   const productSeeds = [
-    { name: 'کفش ورزشی', sku: 'SH-01', costPrice: 800000, salePrice: 1200000, stock: 12, minStock: 3 },
-    { name: 'دستکش تمرین', sku: 'GL-01', costPrice: 150000, salePrice: 250000, stock: 30, minStock: 5 },
-    { name: 'بطری آب', sku: 'BT-01', costPrice: 40000, salePrice: 80000, stock: 2, minStock: 5 },
+    {
+      name: 'کفش ورزشی',
+      sku: 'SH-01',
+      description: 'کفش سبک تمرین با کفی ضربه‌گیر، مناسب باشگاه و دویدن.',
+      category: 'کفش و پوشاک',
+      imageUrl: '/marketplace/product-shoes.svg',
+      costPrice: 800000,
+      salePrice: 1200000,
+      stock: 12,
+      minStock: 3,
+    },
+    {
+      name: 'دستکش تمرین',
+      sku: 'GL-01',
+      description: 'دستکش چرمی با مچ‌بند برای تمرین با وزنه و میله.',
+      category: 'تجهیزات تمرین',
+      imageUrl: '/marketplace/product-gloves.svg',
+      costPrice: 150000,
+      salePrice: 250000,
+      stock: 30,
+      minStock: 5,
+    },
+    {
+      name: 'بطری آب',
+      sku: 'BT-01',
+      description: 'بطری آب یک لیتری بدون BPA برای باشگاه.',
+      category: 'لوازم جانبی',
+      imageUrl: '/marketplace/product-bottle.svg',
+      costPrice: 40000,
+      salePrice: 80000,
+      stock: 2,
+      minStock: 5,
+    },
   ];
   for (const product of productSeeds) {
     const found = await prisma.product.findFirst({
       where: { tenantId: tenant.id, name: product.name },
     });
-    if (!found) await prisma.product.create({ data: { tenantId: tenant.id, ...product } });
+    const data = { ...product, isPublic: true };
+    if (found) await prisma.product.update({ where: { id: found.id }, data });
+    else await prisma.product.create({ data: { tenantId: tenant.id, ...data } });
   }
 
   // HR staff

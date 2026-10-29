@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 400" role="img" aria-label="کلاس گروهی">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#db2777"/>
+      <stop offset="1" stop-color="#f59e0b"/>
+    </linearGradient>
+  </defs>
+  <rect width="640" height="400" fill="#fff1f2"/>
+  <circle cx="320" cy="150" r="46" fill="url(#g)"/>
+  <path d="M232 300c0-41 33-74 74-74h28c41 0 74 33 74 74z" fill="url(#g)"/>
+  <circle cx="190" cy="190" r="34" fill="#fbcfe8"/>
+  <path d="M128 300c0-31 25-56 56-56h12c8 0 15 2 22 5-19 14-31 36-33 61z" fill="#fbcfe8"/>
+  <circle cx="450" cy="190" r="34" fill="#fde68a"/>
+  <path d="M455 310h57c-2-25-14-47-33-61 7-3 14-5 22-5h12c31 0 56 25 56 56z" fill="#fde68a"/>
+</svg>

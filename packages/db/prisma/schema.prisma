@@ -71,6 +71,11 @@ model Tenant {
   invoicePrefix   String             @default("INV")
   taxRate         Decimal            @default(9) @db.Decimal(5, 2)
   status          TenantStatus       @default(ACTIVE)
+  // Public marketplace opt-in (B2C discovery). A business is only listed when
+  // the owner enables this and marks individual items as public.
+  marketplaceEnabled Boolean         @default(false)
+  tagline         String?
+  city            String?
   settings        Json               @default("{}")
   createdAt       DateTime           @default(now())
   updatedAt       DateTime           @updatedAt
@@ -139,6 +144,7 @@ model Tenant {
     industryRef          Industry             @relation(fields: [industry], references: [key])
 
     @@index([industry])
+    @@index([marketplaceEnabled, status])
     @@map("tenants")
 }
 
@@ -503,11 +509,15 @@ model Service {
   tenantId        String        @db.Uuid
   name            String
   description     String?
+  category        String?
+  imageUrl        String?
   durationMinutes Int           @default(60)
   bufferMinutes   Int           @default(0)
   price           Decimal       @default(0) @db.Decimal(14, 0)
   color           String?
   isActive        Boolean       @default(true)
+  /// Publish this service to the public marketplace catalog.
+  isPublic        Boolean       @default(false)
   meta            Json          @default("{}")
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
@@ -517,6 +527,7 @@ model Service {
   appointments    Appointment[]
 
   @@index([tenantId])
+  @@index([isPublic, isActive])
   @@map("services")
 }
 
@@ -1189,6 +1200,7 @@ model Product {
   tenantId    String    @db.Uuid
   sku         String?
   name        String
+  description String?
   unit        String    @default("عدد")
   category    String?
   costPrice   Decimal   @default(0) @db.Decimal(14, 0)
@@ -1199,6 +1211,8 @@ model Product {
   imageUrl    String?
   trackExpiry Boolean   @default(false)
   isActive    Boolean   @default(true)
+  /// Publish this product to the public marketplace catalog.
+  isPublic    Boolean   @default(false)
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
   deletedAt   DateTime?
@@ -1207,6 +1221,7 @@ model Product {
   movements   StockMovement[]
 
   @@index([tenantId, category])
+  @@index([isPublic, isActive])
   @@map("products")
 }
 
