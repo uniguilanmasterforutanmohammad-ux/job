@@ -1056,7 +1056,7 @@ export class AppService {
 
     let orderId: string | null = null;
     let productId = dto.productId ?? null;
-    let serviceId = dto.serviceId ?? null;
+    const serviceId = dto.serviceId ?? null;
     let isVerified = false;
 
     if (dto.orderId) {

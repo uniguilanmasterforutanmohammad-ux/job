@@ -1,4 +1,5 @@
 // TaskForMyAgent — بازارگاه عمومی: محصولات و خدمات همهٔ اصناف + خرید مهمان
+// TaskForMyAgent — بازارگاه فاز ۲: پرداخت به سفارش، رزرو موجودی و ارسال سرور-محور
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { MarketplaceService } from './marketplace.service.js';
 import type { PrismaService } from '../../database/prisma.service.js';
@@ -150,10 +151,13 @@ describe('MarketplaceService — خرید مهمان', () => {
         shippingCost: 0,
         items: [{ productId: 'p1', title: 'کفش ورزشی', quantity: 2, unitPrice: 1200000 }],
       }),
+      { reserveStock: true },
     );
     expect(payments.createOnlinePayment).toHaveBeenCalledWith(
       't1',
-      expect.objectContaining({ customerId: 'cust-1', amount: 500000 }),
+      // The amount is derived from the order row by PaymentsService (فاز ۲),
+      // so the marketplace never sends a client-computed total.
+      expect.objectContaining({ customerId: 'cust-1', orderId: 'order-1' }),
     );
     expect(result.order.number).toBe('ORD-00009');
   });

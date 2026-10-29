@@ -16,8 +16,16 @@ export const metadata: Metadata = {
     description:
       'محصولات فروشگاه‌ها و خدمات همهٔ اصناف — کلاس ورزشی، آموزش موسیقی، زبان، زیبایی و بیشتر — یک‌جا.',
     url: '/marketplace',
+    images: [
+      {
+        url: '/marketplace/og-cover.png',
+        width: 1200,
+        height: 630,
+        alt: 'بازارگاه محصولات و خدمات اصناف',
+      },
+    ],
   },
-  twitter: { card: 'summary_large_image' },
+  twitter: { card: 'summary_large_image', images: ['/marketplace/og-cover.png'] },
 };
 
 export default function MarketplaceLayout({ children }: { children: React.ReactNode }) {
