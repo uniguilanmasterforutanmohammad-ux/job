@@ -277,6 +277,21 @@ export class ShopService {
     order: { id: string; number?: string; customerId?: string | null },
     next: string,
   ) {
+    if (next === 'CANCELED') {
+      const owner = await this.prisma.client.member.findFirst({
+        where: { tenantId, systemRole: 'OWNER', isActive: true, deletedAt: null },
+        select: { id: true },
+      });
+      if (owner) {
+        await this.notifications.notify({
+          tenantId,
+          memberId: owner.id,
+          event: 'order.canceled',
+          title: 'لغو سفارش',
+          body: `سفارش ${order.number ?? ''} لغو شد و موجودی کالاها آزاد شد.`.trim(),
+        });
+      }
+    }
     if (!order.customerId) return;
     const label = STATUS_LABELS[next] ?? next;
     await this.notifications.notify({
