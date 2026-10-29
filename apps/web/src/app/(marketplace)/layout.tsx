@@ -1,6 +1,24 @@
 import Link from 'next/link';
 import { LayoutDashboard, Store } from 'lucide-react';
 import { CartLink } from '@/components/marketplace/cart-link';
+import type { Metadata } from 'next';
+
+const site = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000';
+
+export const metadata: Metadata = {
+  metadataBase: new URL(site),
+  alternates: { canonical: '/marketplace' },
+  openGraph: {
+    type: 'website',
+    locale: 'fa_IR',
+    siteName: 'بازارگاه اصناف',
+    title: 'بازارگاه محصولات و خدمات اصناف',
+    description:
+      'محصولات فروشگاه‌ها و خدمات همهٔ اصناف — کلاس ورزشی، آموزش موسیقی، زبان، زیبایی و بیشتر — یک‌جا.',
+    url: '/marketplace',
+  },
+  twitter: { card: 'summary_large_image' },
+};
 
 export default function MarketplaceLayout({ children }: { children: React.ReactNode }) {
   return (

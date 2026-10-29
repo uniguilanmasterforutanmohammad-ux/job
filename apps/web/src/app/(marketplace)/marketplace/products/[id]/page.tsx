@@ -61,9 +61,40 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
       '@type': 'Offer',
       price: Number(product.salePrice),
       priceCurrency: 'IRR',
+      url: `${site}/marketplace/products/${product.id}`,
       availability:
         stock > 0 ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
     },
+    ...(product.rating && product.rating.count > 0
+      ? {
+          aggregateRating: {
+            '@type': 'AggregateRating',
+            ratingValue: product.rating.average,
+            reviewCount: product.rating.count,
+            bestRating: 5,
+            worstRating: 1,
+          },
+        }
+      : {}),
+  };
+  const breadcrumbs = {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'بازارگاه', item: `${site}/marketplace` },
+      {
+        '@type': 'ListItem',
+        position: 2,
+        name: 'محصولات',
+        item: `${site}/marketplace/products`,
+      },
+      {
+        '@type': 'ListItem',
+        position: 3,
+        name: product.name,
+        item: `${site}/marketplace/products/${product.id}`,
+      },
+    ],
   };
 
   return (
@@ -71,6 +102,10 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbs) }}
       />
       <Link
         href="/marketplace/products"

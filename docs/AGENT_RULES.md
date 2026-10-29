@@ -166,6 +166,7 @@
 | ۸۸ | فاز ۲ — روش‌های ارسال واقعی هر کسب‌وکار                                   | `a2e4978` | `feat(shop): real per-business shipping methods`                          |
 | ۸۹ | فاز ۲ — «سفارش‌های من» در پنل کاربری                                      | `5285e2f` | `feat(portal): my orders tab with pay and cancel`                         |
 | ۹۰ | فاز ۲ — نظرات و امتیاز خریداران                                           | `e15847f` | `feat(marketplace): verified-purchase reviews and ratings`                |
+| ۹۱ | فاز ۲ — کنسول مدیریت بازارگاه                                             | `b1cbc0c` | `feat(admin): marketplace console with moderation queue`                  |
 
 > کامیت ثبت لاگ هر ردیف در اجرای بعدی در جدول ثبت می‌شود؛ چون
 > هیچ کامیتی نمی‌تواند هش خودش را درون خودش داشته باشد.
@@ -297,6 +298,7 @@
 | بازارگاه فاز۲ — نظرات زنده  | زنده (HTTP)    | امتیاز محصول ۵/۱ نظر از دادهٔ نمونه؛ خرید+پرداخت+تحویل → ثبت نظر از پورتال → `isVerified/isPublic` و امتیاز ۵/۲؛ نظر تکراری ۴۰۹؛ `GET /products/:id/reviews` ۲۰۰ | ✅ |
 | بازارگاه فاز۲ — ادمین واحد | واحد           | `apps/api/src/modules/admin/admin-marketplace.service.spec.ts` (۴ تست: آمار، قطع انتشار + audit، تأیید نظر، فیلتر صف) | ✅ ۴/۴ |
 | بازارگاه فاز۲ — ادمین زنده | زنده (HTTP)    | ورود ادمین → `overview` (۱ کسب‌وکار، ۵ کالا، ۴ سفارش، GMV ۲٬۶۹۰٬۰۰۰)؛ `businesses?search=coach`؛ نظر بدون خرید → صف pending → تأیید → در `products/:id/reviews` عمومی؛ تغییر انتشار با audit | ✅ |
+| بازارگاه فاز۲ — سئو        | زنده (HTTP)    | `/robots.txt` با Disallow ادمین/پنل/پرداخت و `Sitemap`؛ `/sitemap.xml` با ۱۲ URL (۵ صفحه + ۳ محصول + ۳ خدمت + ۱ ویترین)؛ متادیتای OG بازارگاه در head | ✅ |
 
 ### نکتهٔ عملیاتی (کش Next در حالت توسعه)
 

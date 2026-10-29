@@ -68,7 +68,34 @@ export default async function ServiceDetailPage({ params }: { params: Promise<{ 
       '@type': 'Offer',
       price: Number(service.price),
       priceCurrency: 'IRR',
+      url: `${site}/marketplace/services/${service.id}`,
+      availability: 'https://schema.org/InStock',
     },
+    ...(service.rating && service.rating.count > 0
+      ? {
+          aggregateRating: {
+            '@type': 'AggregateRating',
+            ratingValue: service.rating.average,
+            reviewCount: service.rating.count,
+            bestRating: 5,
+            worstRating: 1,
+          },
+        }
+      : {}),
+  };
+  const breadcrumbs = {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'بازارگاه', item: `${site}/marketplace` },
+      {
+        '@type': 'ListItem',
+        position: 2,
+        name: 'خدمات',
+        item: `${site}/marketplace/services`,
+      },
+      { '@type': 'ListItem', position: 3, name: service.name, item: `${site}/marketplace/services/${service.id}` },
+    ],
   };
 
   return (
@@ -76,6 +103,10 @@ export default async function ServiceDetailPage({ params }: { params: Promise<{ 
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbs) }}
       />
       <Link
         href="/marketplace/services"

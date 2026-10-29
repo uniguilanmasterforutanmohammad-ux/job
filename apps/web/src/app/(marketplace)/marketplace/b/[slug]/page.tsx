@@ -38,9 +38,30 @@ export default async function BusinessStorefrontPage({
   const storefront = await getStorefront(slug);
   if (!storefront) notFound();
   const { tenant, products, services } = storefront;
+  const site = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000';
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'Store',
+    name: tenant.name,
+    url: `${site}/marketplace/b/${tenant.slug}`,
+    image: tenant.logoUrl ?? undefined,
+    description: tenant.tagline ?? undefined,
+    address: tenant.address ?? undefined,
+    telephone: tenant.phone ?? undefined,
+    makesOffer: [...products, ...services].slice(0, 20).map((item) => ({
+      '@type': 'Offer',
+      name: item.name,
+      price: Number('salePrice' in item ? item.salePrice : item.price),
+      priceCurrency: 'IRR',
+    })),
+  };
 
   return (
     <div className="space-y-8">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       <section className="overflow-hidden rounded-3xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
         <div className="h-24 bg-gradient-to-l from-brand-600 via-brand-500 to-cyan-500" />
         <div className="-mt-10 flex flex-col gap-4 p-5 sm:flex-row sm:items-end">
