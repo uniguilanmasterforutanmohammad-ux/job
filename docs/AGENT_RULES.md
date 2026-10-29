@@ -167,6 +167,7 @@
 | ۸۹ | فاز ۲ — «سفارش‌های من» در پنل کاربری                                      | `5285e2f` | `feat(portal): my orders tab with pay and cancel`                         |
 | ۹۰ | فاز ۲ — نظرات و امتیاز خریداران                                           | `e15847f` | `feat(marketplace): verified-purchase reviews and ratings`                |
 | ۹۱ | فاز ۲ — کنسول مدیریت بازارگاه                                             | `b1cbc0c` | `feat(admin): marketplace console with moderation queue`                  |
+| ۹۲ | فاز ۲ — سئو، نقشهٔ سایت و داده‌های ساختاریافته                            | `ad4c9d0` | `feat(seo): sitemap, robots, OG image and rich JSON-LD`                   |
 
 > کامیت ثبت لاگ هر ردیف در اجرای بعدی در جدول ثبت می‌شود؛ چون
 > هیچ کامیتی نمی‌تواند هش خودش را درون خودش داشته باشد.
