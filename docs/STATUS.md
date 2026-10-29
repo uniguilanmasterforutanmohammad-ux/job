@@ -1,6 +1,6 @@
 # وضعیت پیاده‌سازی
 
-آخرین به‌روزرسانی: فاز ۴ + کنسول ادمین `/admin` + بازارگاه عمومی `/marketplace` (فاز ۲: فروش واقعی و اعتماد)
+آخرین به‌روزرسانی: فاز ۴ + کنسول ادمین `/admin` + بازارگاه عمومی `/marketplace` (فاز ۲: فروش واقعی و اعتماد) + ماژول بله و اطلاعیه‌ها (`docs/BALE.md`)
 
 ## خلاصه
 
@@ -481,3 +481,27 @@ pnpm db:migrate && pnpm db:seed && pnpm dev
 - **سئو**: `sitemap.xml` پویا، `robots.txt`، OG image و متادیتای بازارگاه.
 - **تست**: ۲۷ تست واحد تازه (`shop-payment` ۱۳، `portal-orders` ۶،
   `portal-review` ۴، `admin-marketplace` ۴) + تست‌های زندهٔ HTTP/دیتابیس.
+
+## ماژول بله و اطلاعیه‌ها (`MSG-BALE` / `MSG-ANN`) — تکمیل‌شده
+
+هدف: اطلاعیه‌های پنل، هم در پنل کاربری اعضا و هم در **گروه بیام‌رسان بله** منتشر
+شوند. طراحی و راهنمای عیب‌یابی در `docs/BALE.md`.
+
+- **مدل داده**: `BaleIntegration` (توکن، لینک/شناسهٔ گروه، تیک ادمین، رویدادها،
+  وضعیت آخرین تست) و `Announcement` (گیرندگان، روز رویداد، وضعیت بله) — مهاجرت
+  `20261029181904_bale_announcements`.
+- **API**: `GET/PUT/DELETE /bale/settings`، `POST /bale/discover`، `POST /bale/test`،
+  `GET/POST /messages/announcements`، `POST /messages/announcements/:id/bale`.
+  همه با گارد ماژول `MSG` و مجوزهای `msg:read`/`msg:write`.
+- **تشخیص گروه**: از `getUpdates` + `getChatMember`؛ اگر لینک دعوت بازتولید شده
+  باشد، تنها گروهی که ربات در آن ادمین است خودکار انتخاب می‌شود.
+- **هم‌سان‌سازی رویدادها**: `NotificationService` رویدادهای انتخابی
+  (`announcement`، سفارش، یادآوری نوبت، انقضای مدارک) را fire-and-forget به
+  `BaleService.mirror()` می‌دهد؛ خطای بله جریان اصلی را نمی‌شکند.
+- **پنل**: کارت «اتصال به بیام‌رسان بله» در `/settings` (توکن ماسک‌شده، لینک گروه،
+  تیک ادمین، تشخیص گروه، پیام آزمایشی، انتخاب رویدادها) و صفحهٔ `/messages` با فرم
+  انتشار اطلاعیه + انتخاب گیرندگان + تاریخچه و وضعیت بله.
+- **تست**: ۱۳ تست واحد تازه (`bale.service.spec.ts` ۹ + `announcements.service.spec.ts` ۴)؛
+  کل API ۲۲۱ پاس/۳۴ فایل؛ زندهٔ HTTP با ربات واقعی (تأیید ادمین، پیام آزمایشی،
+  انتشار برای ۱۲ گیرنده و `baleMessageId`، نمایش در `/app/overview`)؛
+  UI با Chrome/CDP `/tmp/cdp-verify-bale.mjs` → ۱۹/۱۹.
