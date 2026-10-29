@@ -176,6 +176,8 @@
 | ۹۸ | اطلاعیه‌ها — انتشار برای اعضا + آینه در بله                             | `19c6c2f` | `feat(msg): announcements with Bale mirroring`                            |
 | ۹۹ | وب — کارت اتصال بله و صفحهٔ اطلاعیه‌ها                                   | `393b733` | `feat(web): Bale connection card and announcements page`                  |
 | ۱۰۰ | مستندات ماژول بله                                                      | `2efb995` | `docs(bale): document the Bale bridge and announcements`                  |
+| ۱۰۱ | ثبت جدول کامیت‌ها و تست‌های بله                                         | `be8817b` | `docs(agent): log Bale commits and test results`                          |
+| ۱۰۲ | ثبت تکمیل تسک بله در فایل تسک‌ها                                        | `4715f5a` | `chore(agent): mark the Bale task complete`                               |
 
 > کامیت ثبت لاگ هر ردیف در اجرای بعدی در جدول ثبت می‌شود؛ چون
 > هیچ کامیتی نمی‌تواند هش خودش را درون خودش داشته باشد.
