@@ -154,13 +154,13 @@
 | ۷۶ | ستون «عملیات» و حذف کاربر با تأیید در `/customers`                         | `f944978` | `feat(web): let the manager delete a user from /customers`               |
 | ۷۷ | انتخاب نقش سفارشی در فرم افزودن کاربر `/team`                              | `71fb55f` | `feat(web): pick a custom role when adding a panel member`               |
 | ۷۸ | ثبت تسک «حذف کاربر» در تسک‌فایل + کامنت ✅                                  | `e351205` | `docs(taskfile): mark the delete-user task as done`                      |
-| ۷۹ | ثبت ردیف‌های ۷۴ تا ۷۸ + ردیف‌های تست حذف کاربر                             | این کامیت | `docs(agent): log the customer-delete task and the role-linking fix`     |
+| ۷۹ | ثبت ردیف‌های ۷۴ تا ۷۸ + ردیف‌های تست حذف کاربر                             | `28afc5e` | `docs(agent): log the customer-delete task and the role-linking fix`     |
 | ۸۰ | بازارگاه — فیلدهای انتشار، مهاجرت و دادهٔ نمونه                          | `55b6e63` | `feat(db): marketplace visibility fields and demo publishing`            |
 | ۸۱ | API بازارگاه عمومی چند-صنفی + خرید مهمان                                | `4ae3ab4` | `feat(api): public multi-industry marketplace + guest checkout`          |
 | ۸۲ | وب بازارگاه (محصولات، خدمات، سبد، پیگیری)                                | `46c1c62` | `feat(web): public marketplace pages, cart and order tracking`           |
 | ۸۳ | کنترل انتشار بازارگاه در پنل کسب‌وکار                                    | `d2e74e5` | `feat(web): marketplace publishing controls in the business panel`       |
 | ۸۴ | سئوی ساختاریافته و پاک‌سازی پاسخ‌های بازارگاه                             | `013f745` | `refactor(marketplace): structured SEO data and response cleanup`        |
-| ۸۵ | مستندات بازارگاه + وضعیت + ثبت قوانین و تکمیل تسک                        | این کامیت | `docs(marketplace): document the public marketplace and log the work`     |
+| ۸۵ | مستندات بازارگاه + وضعیت + ثبت قوانین و تکمیل تسک                        | `caea040` | `docs(marketplace): document the public marketplace and log the work`     |
 
 > کامیت ثبت لاگ هر ردیف در اجرای بعدی در جدول ثبت می‌شود؛ چون
 > هیچ کامیتی نمی‌تواند هش خودش را درون خودش داشته باشد.
