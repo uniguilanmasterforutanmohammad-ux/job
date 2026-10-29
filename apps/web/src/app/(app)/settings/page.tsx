@@ -17,6 +17,7 @@ import { Table, Td, Th } from '@/components/ui/table';
 import { BranchesCard } from '@/components/settings/branches-card';
 import { ChangePasswordCard } from '@/components/settings/change-password-card';
 import { ShippingMethodsCard } from '@/components/settings/shipping-methods-card';
+import { BaleConnectionCard } from '@/components/settings/bale-connection-card';
 import { useBranchNoun } from '@/lib/use-industry-registry';
 import type { BackupRecord, Paginated } from '@/lib/types';
 
@@ -237,6 +238,10 @@ export default function SettingsPage() {
 
       {merged.modules?.some((module) => module.key === 'SHOP' && module.isEnabled) ? (
         <ShippingMethodsCard />
+      ) : null}
+
+      {merged.modules?.some((module) => module.key === 'MSG' && module.isEnabled) ? (
+        <BaleConnectionCard />
       ) : null}
 
       <div className="grid gap-5 lg:grid-cols-2">
