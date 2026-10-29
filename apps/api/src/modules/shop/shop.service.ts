@@ -3,6 +3,7 @@ import { Prisma } from '@repo/db';
 import { buildMeta, toSkipTake } from '../../common/dto/pagination.dto.js';
 import { DomainException } from '../../common/exceptions/domain.exception.js';
 import { PrismaService } from '../../database/prisma.service.js';
+import { NotificationService } from '../notifications/notification.service.js';
 import type {
   CatalogQueryDto,
   CreateOrderDto,
@@ -21,6 +22,15 @@ const TRANSITIONS: Record<string, string[]> = {
   CANCELED: [],
 };
 
+const STATUS_LABELS: Record<string, string> = {
+  PENDING: 'در انتظار تأیید',
+  CONFIRMED: 'تأیید شد',
+  PREPARING: 'در حال آماده‌سازی',
+  SHIPPED: 'ارسال شد',
+  DELIVERED: 'تحویل شد',
+  CANCELED: 'لغو شد',
+};
+
 type OrderItem = { productId?: string; title?: string; quantity?: number; unitPrice?: number };
 
 type CreateOrderOptions = {
@@ -35,7 +45,10 @@ type CreateOrderOptions = {
 export class ShopService {
   private readonly logger = new Logger(ShopService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly notifications: NotificationService,
+  ) {}
 
   /** SHOP-01 — public catalog of sellable products. */
   async catalog(tenantId: string, dto: CatalogQueryDto) {
@@ -78,7 +91,7 @@ export class ShopService {
     // and we retry with a fresh number.
     for (let attempt = 0; attempt < 3; attempt += 1) {
       try {
-        return await this.prisma.client.$transaction(async (tx) => {
+        const created = await this.prisma.client.$transaction(async (tx) => {
           const number = await this.nextOrderNumber(tenantId, tx);
           const order = await tx.order.create({
             data: {
@@ -104,6 +117,9 @@ export class ShopService {
             data: { stockState: 'RESERVED' },
           });
         });
+
+        await this.notifyNewOrder(tenantId, created).catch(() => undefined);
+        return created;
       } catch (error) {
         if (this.isUniqueViolation(error) && attempt < 2) continue;
         throw error;
@@ -156,7 +172,15 @@ export class ShopService {
 
   private async advance(
     tenantId: string,
-    order: { id: string; status: string; stockState: string; items: unknown; total: unknown },
+    order: {
+      id: string;
+      number?: string;
+      status: string;
+      stockState: string;
+      items: unknown;
+      total: unknown;
+      customerId?: string | null;
+    },
     next: string,
   ) {
     const allowed = TRANSITIONS[order.status] ?? [];
@@ -179,9 +203,65 @@ export class ShopService {
     }
 
     this.logger.log(`Order ${order.id} ${order.status} → ${next} (stock ${stockState})`);
-    return this.prisma.client.order.update({
+    const updated = await this.prisma.client.order.update({
       where: { id: order.id },
       data: { status: next as never, stockState: stockState as never },
+    });
+
+    await this.notifyStatusChange(tenantId, order, next).catch(() => undefined);
+    return updated;
+  }
+
+  /** Buyer + business owner both hear about a new order (CORE-08). */
+  private async notifyNewOrder(
+    tenantId: string,
+    order: { id: string; number: string; total: unknown; customerId?: string | null },
+  ) {
+    const customer = order.customerId
+      ? await this.prisma.client.customer.findFirst({
+          where: { id: order.customerId, tenantId },
+          select: { fullName: true },
+        })
+      : null;
+
+    const owner = await this.prisma.client.member.findFirst({
+      where: { tenantId, systemRole: 'OWNER', isActive: true, deletedAt: null },
+      select: { id: true },
+    });
+    if (owner) {
+      await this.notifications.notify({
+        tenantId,
+        memberId: owner.id,
+        event: 'order.created',
+        title: 'سفارش جدید',
+        body: `سفارش ${order.number} از ${customer?.fullName ?? 'خریدار'} ثبت شد؛ مبلغ ${Number(order.total).toLocaleString('fa-IR')} تومان.`,
+      });
+    }
+
+    if (order.customerId) {
+      await this.notifications.notify({
+        tenantId,
+        customerId: order.customerId,
+        event: 'order.created',
+        title: 'سفارش شما ثبت شد',
+        body: `سفارش ${order.number} ثبت شد و پس از تأیید/پرداخت آماده‌سازی می‌شود.`,
+      });
+    }
+  }
+
+  private async notifyStatusChange(
+    tenantId: string,
+    order: { id: string; number?: string; customerId?: string | null },
+    next: string,
+  ) {
+    if (!order.customerId) return;
+    const label = STATUS_LABELS[next] ?? next;
+    await this.notifications.notify({
+      tenantId,
+      customerId: order.customerId,
+      event: `order.${next.toLowerCase()}`,
+      title: `وضعیت سفارش ${order.number ?? ''}`.trim(),
+      body: `سفارش ${order.number ?? ''} به «${label}» تغییر کرد.`.replace('  ', ' '),
     });
   }
 
@@ -306,8 +386,8 @@ export class ShopService {
 
   /** SHOP-04 — shipping details / tracking. */
   async updateShipping(tenantId: string, id: string, dto: UpdateShippingDto) {
-    await this.findOne(tenantId, id);
-    return this.prisma.client.order.update({
+    const order = await this.findOne(tenantId, id);
+    const updated = await this.prisma.client.order.update({
       where: { id },
       data: {
         ...(dto.shippingMethod !== undefined ? { shippingMethod: dto.shippingMethod } : {}),
@@ -316,6 +396,19 @@ export class ShopService {
         ...(dto.address !== undefined ? { address: dto.address } : {}),
       },
     });
+
+    if (dto.trackingCode && order.customerId) {
+      await this.notifications
+        .notify({
+          tenantId,
+          customerId: order.customerId,
+          event: 'order.shipped',
+          title: `سفارش ${order.number} ارسال شد`,
+          body: `کد رهگیری: ${dto.trackingCode}`,
+        })
+        .catch(() => undefined);
+    }
+    return updated;
   }
 
   /** SHOP-05 — kitchen/warehouse order slip. */

@@ -161,6 +161,7 @@
 | ۸۳ | کنترل انتشار بازارگاه در پنل کسب‌وکار                                    | `d2e74e5` | `feat(web): marketplace publishing controls in the business panel`       |
 | ۸۴ | سئوی ساختاریافته و پاک‌سازی پاسخ‌های بازارگاه                             | `013f745` | `refactor(marketplace): structured SEO data and response cleanup`        |
 | ۸۵ | مستندات بازارگاه + وضعیت + ثبت قوانین و تکمیل تسک                        | `caea040` | `docs(marketplace): document the public marketplace and log the work`     |
+| ۸۶ | فاز ۲ — اتصال پرداخت به سفارش، رزرو و بازگشت موجودی                       | `c94b724` | `feat(shop): link payments to orders with stock reservation`              |
 
 > کامیت ثبت لاگ هر ردیف در اجرای بعدی در جدول ثبت می‌شود؛ چون
 > هیچ کامیتی نمی‌تواند هش خودش را درون خودش داشته باشد.
@@ -281,6 +282,9 @@
 | بازارگاه — UI عمومی         | زنده (Chrome/CDP) | `/tmp/cdp-verify-marketplace.mjs` → ۲۱/۲۱: خانه، فهرست محصول، افزودن به سبد و شمارنده، سبد، OTP، ثبت سفارش، پرداخت، پیگیری، خدمات و ویترین کسب‌وکار | ✅ ۲۱/۲۱ |
 | بازارگاه — UI پنل           | زنده (Chrome/CDP) | `/tmp/cdp-verify-marketplace-panel.mjs` → ۱۱/۱۱: توکن مالک، صفحهٔ خدمات، ستون‌های بازارگاه، ثبت و انتشار خدمت، تنظیمات و لینک ویترین | ✅ ۱۱/۱۱ |
 | بازارگاه — کل بسته‌ها        | typecheck/lint/build | `pnpm --filter @repo/api typecheck` ✅؛ `pnpm --filter @repo/web typecheck` ✅؛ `pnpm --filter @repo/web lint` → ۰ خطا (۲۱ هشدار advisory)؛ `pnpm --filter @repo/web build` ✅ (۴۱ روت، ۸ روت بازارگاه) | ✅ |
+| بازارگاه فاز۲ — واحد         | واحد           | `apps/api/src/modules/shop/shop-payment.spec.ts` (۱۱ تست: رزرو اتمیک، کمبود موجودی، پرداخت→CONFIRMED بدون کسر دوباره، لغو→RELEASED، idempotency، مبلغ از سفارش، استرداد، اعلان‌ها) | ✅ ۱۱/۱۱ |
+| بازارگاه فاز۲ — زنده         | زنده (HTTP+DB) | checkout ۲ عدد → stock ۳۰→۲۸ و `RESERVED` → callback mock → `CONFIRMED/COMMITTED` → استرداد → `CANCELED/RELEASED` و stock=۳۰؛ حرکت‌های `RESERVATION`/`RELEASE` ثبت شد | ✅ |
+| بازارگاه فاز۲ — اعلان       | زنده (DB)      | پس از checkout: پیام «سفارش جدید» برای مالک (`order.created`) + «سفارش شما ثبت شد» و «وضعیت سفارش» برای خریدار (`order.confirmed`) در `messages` | ✅ |
 
 ### نکتهٔ عملیاتی (کش Next در حالت توسعه)
 

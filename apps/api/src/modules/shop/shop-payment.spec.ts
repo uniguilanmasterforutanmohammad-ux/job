@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ShopService } from './shop.service.js';
 import { PaymentsService } from '../payments/payments.service.js';
 import type { PrismaService } from '../../database/prisma.service.js';
+import type { NotificationService } from '../notifications/notification.service.js';
 import type { ConfigService } from '@nestjs/config';
 import type { AppConfig } from '../../config/configuration.js';
 import type { PaymentProviderRegistry } from '../payments/providers/provider.registry.js';
@@ -19,6 +20,12 @@ function prismaMock() {
       ),
       findFirst: vi.fn(),
       findUnique: vi.fn(),
+    },
+    member: {
+      findFirst: vi.fn().mockResolvedValue({ id: 'owner-1' }),
+    },
+    customer: {
+      findFirst: vi.fn().mockResolvedValue({ fullName: 'خریدار تست' }),
     },
     product: {
       updateMany: vi.fn().mockResolvedValue({ count: 1 }),
@@ -64,11 +71,16 @@ const pendingOrder = {
 describe('ShopService — stock ownership', () => {
   let shop: ShopService;
   let client: ReturnType<typeof prismaMock>['client'];
+  let notifications: { notify: ReturnType<typeof vi.fn> };
 
   beforeEach(() => {
     const mock = prismaMock();
     client = mock.client;
-    shop = new ShopService(mock.prisma as unknown as PrismaService);
+    notifications = { notify: vi.fn().mockResolvedValue({ delivered: ['IN_APP'], failed: [] }) };
+    shop = new ShopService(
+      mock.prisma as unknown as PrismaService,
+      notifications as unknown as NotificationService,
+    );
   });
 
   it('reserves stock atomically when checkout asks for it', async () => {
@@ -131,6 +143,35 @@ describe('ShopService — stock ownership', () => {
     client.order.findFirst.mockResolvedValue({ ...pendingOrder, status: 'CONFIRMED', stockState: 'COMMITTED' });
     await shop.confirmAfterPayment('t1', 'order-1');
     expect(client.order.update).not.toHaveBeenCalled();
+  });
+
+  it('notifies the business owner and the buyer about a new order', async () => {
+    await shop.createOrder('t1', {
+      customerId: 'c1',
+      items: [{ productId: 'p1', title: 'توپ', quantity: 1, unitPrice: 100 }],
+      shippingCost: 0,
+    });
+
+    expect(notifications.notify).toHaveBeenCalledWith(
+      expect.objectContaining({ memberId: 'owner-1', event: 'order.created' }),
+    );
+    expect(notifications.notify).toHaveBeenCalledWith(
+      expect.objectContaining({ customerId: 'c1', event: 'order.created' }),
+    );
+  });
+
+  it('notifies the buyer when the order status changes', async () => {
+    client.order.findFirst.mockResolvedValue({ ...pendingOrder, customerId: 'c1', number: 'ORD-00001' });
+
+    await shop.confirmAfterPayment('t1', 'order-1');
+
+    expect(notifications.notify).toHaveBeenCalledWith(
+      expect.objectContaining({
+        customerId: 'c1',
+        event: 'order.confirmed',
+        body: expect.stringContaining('تأیید شد'),
+      }),
+    );
   });
 });
 
